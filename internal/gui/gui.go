@@ -46,6 +46,11 @@ func Initialize(eventCH chan events.Event) (err error) {
 	}
 
 	listBox.ItemActivated().Attach(func() { eventCH <- events.ACTIVATE_MENU })
+	listBox.KeyPress().Attach(func(key walk.Key) {
+		if key == walk.KeySpace {
+			eventCH <- events.ACTIVATE_MENU
+		}
+	})
 
 	return nil
 }
