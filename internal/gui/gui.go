@@ -19,10 +19,10 @@ const (
 )
 
 var (
-	mainWindow    *walk.MainWindow
-	statusBarItem *walk.StatusBarItem
-	textLabel     *walk.TextLabel
-	listBox       *walk.ListBox
+	mainWindow *walk.MainWindow
+	statusBar  *walk.StatusBar
+	textLabel  *walk.TextLabel
+	listBox    *walk.ListBox
 )
 
 func Initialize(eventCH chan events.Event) (err error) {
@@ -30,10 +30,16 @@ func Initialize(eventCH chan events.Event) (err error) {
 		panic("GUI already initialized")
 	}
 
-	mainWindow, statusBarItem, err = CreateWND(eventCH)
+	mainWindow, err = CreateWND(eventCH)
 	if err != nil {
 		return err
 	}
+
+	statusBar, err = walk.NewStatusBar(mainWindow)
+	if err != nil {
+		return err
+	}
+	statusBar.SetVisible(true)
 
 	textLabel, err = walk.NewTextLabel(mainWindow)
 	if err != nil {

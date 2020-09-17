@@ -6,21 +6,13 @@ import (
 	. "github.com/lxn/walk/declarative"
 )
 
-func CreateWND(actionQueue chan events.Event) (*walk.MainWindow, *walk.StatusBarItem, error) {
+func CreateWND(actionQueue chan events.Event) (*walk.MainWindow, error) {
 	var wnd *walk.MainWindow
-	var sbi *walk.StatusBarItem
 
 	var layout = MainWindow{
 		Title:    "AV3715 Library",
 		Layout:   VBox{},
 		AssignTo: &wnd,
-
-		StatusBarItems: []StatusBarItem{
-			StatusBarItem{
-				AssignTo: &sbi,
-				Text:     "Status bar text",
-			},
-		},
 
 		MenuItems: []MenuItem{
 
@@ -104,5 +96,5 @@ func CreateWND(actionQueue chan events.Event) (*walk.MainWindow, *walk.StatusBar
 	}
 
 	err := layout.Create()
-	return wnd, sbi, err
+	return wnd, err
 }
