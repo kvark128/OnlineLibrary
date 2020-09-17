@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"sync"
+	"time"
 
 	"github.com/kvark128/av3715/internal/config"
 	"github.com/kvark128/av3715/internal/connect"
@@ -31,6 +32,7 @@ type Player struct {
 	wg                *sync.WaitGroup
 	pause             bool
 	src               io.ReadCloser
+	dec               io.Seeker
 	wp                *winmm.WavePlayer
 	currentTrackIndex int
 }
@@ -87,6 +89,19 @@ func (p *Player) ChangeVolume(offset int) {
 	}
 
 	p.wp.SetVolume(uint16(newL), uint16(newR))
+}
+
+func (p *Player) Rewind(offset time.Duration) {
+	if p == nil {
+		return
+	}
+
+	p.Lock()
+	if p.dec != nil {
+		t := 22050.0 * 2.0 * offset.Seconds()
+		p.dec.Seek(int64(t), io.SeekCurrent)
+	}
+	p.Unlock()
 }
 
 func (p *Player) Play(trackIndex int) {
@@ -173,10 +188,11 @@ func (p *Player) start(trackIndex int) {
 		dec := minimp3.NewDecoder(mp3)
 		dec.Read([]byte{}) // Reads first frame
 		SampleRate, Channels, _, _ := dec.Info()
-		samples := make([]byte, 1024*32)
+		samples := make([]byte, SampleRate*Channels*2) // buffer for 1 second
 
 		p.Lock()
 		p.src = src
+		p.dec = dec
 		p.wp = winmm.NewWavePlayer(Channels, SampleRate, 16, len(samples), winmm.WAVE_MAPPER)
 		p.currentTrackIndex = trackIndex + i
 		p.Unlock()
@@ -198,6 +214,7 @@ func (p *Player) start(trackIndex int) {
 		p.src.Close()
 		p.wp.Close()
 		p.src = nil
+		p.dec = nil
 		p.wp = nil
 		p.Unlock()
 

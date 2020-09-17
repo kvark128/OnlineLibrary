@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"sync"
+	"time"
 
 	"github.com/kvark128/av3715/internal/config"
 	"github.com/kvark128/av3715/internal/connect"
@@ -141,6 +142,12 @@ func (m *Manager) Listen(eventCH chan events.Event) {
 
 		case events.PLAYER_VOLUME_DOWN:
 			m.bookplayer.ChangeVolume(-1)
+
+		case events.PLAYER_FORWARD:
+			m.bookplayer.Rewind(time.Second * +5)
+
+		case events.PLAYER_BACK:
+			m.bookplayer.Rewind(time.Second * -5)
 
 		default:
 			log.Printf("Unknown event: %v", evt)

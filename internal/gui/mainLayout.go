@@ -66,6 +66,16 @@ func CreateWND(actionQueue chan events.Event) (*walk.MainWindow, error) {
 				Text: "&Воспроизведение",
 				Items: []MenuItem{
 					Action{
+						Text:        "Перемотка вперёд",
+						Shortcut:    Shortcut{walk.ModControl, walk.KeyO},
+						OnTriggered: func() { actionQueue <- events.PLAYER_FORWARD },
+					},
+					Action{
+						Text:        "Перемотка назад",
+						Shortcut:    Shortcut{walk.ModControl, walk.KeyI},
+						OnTriggered: func() { actionQueue <- events.PLAYER_BACK },
+					},
+					Action{
 						Text:        "У&величить громкость",
 						Shortcut:    Shortcut{walk.ModControl, walk.KeyB},
 						OnTriggered: func() { actionQueue <- events.PLAYER_VOLUME_UP },
