@@ -46,6 +46,10 @@ func NewPlayer(book string, r *daisy.Resources) *Player {
 }
 
 func (p *Player) ChangeTrack(offset int) {
+	if p == nil {
+		return
+	}
+
 	p.Lock()
 	newTrackIndex := p.currentTrackIndex + offset
 	p.Unlock()
@@ -53,6 +57,10 @@ func (p *Player) ChangeTrack(offset int) {
 }
 
 func (p *Player) ChangeVolume(offset int) {
+	if p == nil {
+		return
+	}
+
 	p.Lock()
 	defer p.Unlock()
 	if p.wp == nil {
@@ -82,6 +90,10 @@ func (p *Player) ChangeVolume(offset int) {
 }
 
 func (p *Player) Play(trackIndex int) {
+	if p == nil {
+		return
+	}
+
 	if trackIndex < 0 || trackIndex >= len(p.playList) {
 		return
 	}
@@ -92,6 +104,10 @@ func (p *Player) Play(trackIndex int) {
 }
 
 func (p *Player) Pause() {
+	if p == nil {
+		return
+	}
+
 	p.Lock()
 	p.pause = !p.pause
 	if p.wp != nil {
@@ -101,6 +117,10 @@ func (p *Player) Pause() {
 }
 
 func (p *Player) Stop() {
+	if p == nil {
+		return
+	}
+
 	p.playing.Clear()
 	p.Lock()
 	if p.src != nil {

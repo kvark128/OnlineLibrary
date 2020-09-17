@@ -122,40 +122,28 @@ func (m *Manager) Listen(eventCH chan events.Event) {
 			}
 
 		case events.PLAYER_PAUSE:
-			if m.bookplayer != nil {
-				m.bookplayer.Pause()
-			}
+			m.bookplayer.Pause()
 
 		case events.PLAYER_STOP:
-			if m.bookplayer != nil {
-				m.bookplayer.Stop()
-			}
+			m.bookplayer.Stop()
 
 		case events.PLAYER_NEXT_TRACK:
-			if m.bookplayer != nil {
-				m.bookplayer.ChangeTrack(+1)
-			}
+			m.bookplayer.ChangeTrack(+1)
 
 		case events.PLAYER_PREVIOUS_TRACK:
-			if m.bookplayer != nil {
-				m.bookplayer.ChangeTrack(-1)
-			}
+			m.bookplayer.ChangeTrack(-1)
 
 		case events.DOWNLOAD_BOOK:
 			m.DownloadBook(gui.CurrentListBoxIndex())
 
 		case events.PLAYER_VOLUME_UP:
-			if m.bookplayer != nil {
-				m.bookplayer.ChangeVolume(+1)
-			}
+			m.bookplayer.ChangeVolume(+1)
 
 		case events.PLAYER_VOLUME_DOWN:
-			if m.bookplayer != nil {
-				m.bookplayer.ChangeVolume(-1)
-			}
+			m.bookplayer.ChangeVolume(-1)
 
 		default:
-			log.Printf("Unknown event: %v\n", evt)
+			log.Printf("Unknown event: %v", evt)
 
 		}
 	}
@@ -256,9 +244,7 @@ func (m *Manager) SetContent(contentID string) {
 }
 
 func (m *Manager) PlayBook(index int) {
-	if m.bookplayer != nil {
-		m.bookplayer.Stop()
-	}
+	m.bookplayer.Stop()
 	book := m.books.ContentItems[index]
 
 	r, err := m.client.GetContentResources(book.ID)
