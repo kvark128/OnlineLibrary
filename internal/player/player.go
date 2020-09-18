@@ -12,9 +12,7 @@ import (
 	"github.com/kvark128/av3715/internal/connect"
 	"github.com/kvark128/av3715/internal/flag"
 	"github.com/kvark128/av3715/internal/lkf"
-	"github.com/kvark128/av3715/internal/winmm"
 	daisy "github.com/kvark128/daisyonline"
-	"github.com/kvark128/minimp3"
 )
 
 // Supported mime types of content
@@ -31,10 +29,8 @@ type Player struct {
 	playing           *flag.Flag
 	wg                *sync.WaitGroup
 	pause             bool
-	src               io.ReadCloser
-	dec               io.Seeker
-	wp                *winmm.WavePlayer
 	currentTrackIndex int
+	trk               *track
 }
 
 func NewPlayer(book string, r *daisy.Resources) *Player {
@@ -65,11 +61,11 @@ func (p *Player) ChangeVolume(offset int) {
 
 	p.Lock()
 	defer p.Unlock()
-	if p.wp == nil {
+	if p.trk == nil {
 		return
 	}
 
-	l, r := p.wp.GetVolume()
+	l, r := p.trk.wp.GetVolume()
 	newOffset := offset * 4096
 	newL := int(l) + newOffset
 	newR := int(r) + newOffset
@@ -88,7 +84,7 @@ func (p *Player) ChangeVolume(offset int) {
 		newR = 0xffff
 	}
 
-	p.wp.SetVolume(uint16(newL), uint16(newR))
+	p.trk.wp.SetVolume(uint16(newL), uint16(newR))
 }
 
 func (p *Player) Rewind(offset time.Duration) {
@@ -97,9 +93,8 @@ func (p *Player) Rewind(offset time.Duration) {
 	}
 
 	p.Lock()
-	if p.dec != nil {
-		t := 22050.0 * 2.0 * offset.Seconds()
-		p.dec.Seek(int64(t), io.SeekCurrent)
+	if p.trk != nil {
+		p.trk.rewind(offset)
 	}
 	p.Unlock()
 }
@@ -125,8 +120,8 @@ func (p *Player) Pause() {
 
 	p.Lock()
 	p.pause = !p.pause
-	if p.wp != nil {
-		p.wp.Pause(p.pause)
+	if p.trk != nil {
+		p.trk.pause(p.pause)
 	}
 	p.Unlock()
 }
@@ -138,11 +133,8 @@ func (p *Player) Stop() {
 
 	p.playing.Clear()
 	p.Lock()
-	if p.src != nil {
-		p.src.Close()
-	}
-	if p.wp != nil {
-		p.wp.Stop()
+	if p.trk != nil {
+		p.trk.stop()
 	}
 	p.Unlock()
 	p.wg.Wait()
@@ -185,38 +177,15 @@ func (p *Player) start(trackIndex int) {
 		}
 
 		log.Printf("Playing %s: %s", uri, track.MimeType)
-		dec := minimp3.NewDecoder(mp3)
-		dec.Read([]byte{}) // Reads first frame
-		SampleRate, Channels, _, _ := dec.Info()
-		samples := make([]byte, SampleRate*Channels*2) // buffer for 1 second
 
 		p.Lock()
-		p.src = src
-		p.dec = dec
-		p.wp = winmm.NewWavePlayer(Channels, SampleRate, 16, len(samples), winmm.WAVE_MAPPER)
+		p.trk = newTrack(mp3)
 		p.currentTrackIndex = trackIndex + i
 		p.Unlock()
 
 		p.playing.Set()
-		for p.playing.IsSet() {
-			n, err := dec.Read(samples)
-			if n > 0 {
-				p.wp.Write(samples[:n])
-			}
-			if err != nil {
-				break
-			}
-		}
-
-		p.wp.Sync()
-
-		p.Lock()
-		p.src.Close()
-		p.wp.Close()
-		p.src = nil
-		p.dec = nil
-		p.wp = nil
-		p.Unlock()
+		p.trk.play()
+		src.Close()
 
 		if !p.playing.IsSet() {
 			break
