@@ -71,44 +71,20 @@ func (m *Manager) Listen(eventCH chan events.Event) {
 			m.SetQuestions(daisy.UserResponse{QuestionID: daisy.Back})
 
 		case events.LIBRARY_LOGON:
-			username := config.Conf.Credentials.Username
-			password := config.Conf.Credentials.Password
-			var err error
-			var save bool
-
-			if username == "" || password == "" {
-				username, password, save, err = gui.Credentials()
-				if err != nil {
-					log.Printf("Credentials: %s", err)
+			for {
+				if m.logon() == nil {
 					break
 				}
 			}
 
-			_, err = daisy.Authentication(m.client, m.readingSystemAttributes, username, password)
-			if err != nil {
-				msg := fmt.Sprintf("Authorization: %s", err)
-				log.Printf(msg)
-				gui.MessageBox("Ошибка", msg, gui.MsgBoxOK|gui.MsgBoxIconWarning)
-				eventCH <- events.LIBRARY_LOGON
-				break
-			}
-
-			if save {
-				config.Conf.Credentials.Username = username
-				config.Conf.Credentials.Password = password
-			}
-
-			m.SetQuestions(daisy.UserResponse{QuestionID: daisy.Default})
-
 		case events.LIBRARY_LOGOFF:
-			ok, err := m.client.LogOff()
-			log.Printf("LogOff: %v, error: %v", ok, err)
-			m.books = nil
-			m.questions = nil
+			m.logoff()
+
+		case events.LIBRARY_RELOGON:
+			m.logoff()
 			config.Conf.Credentials.Username = ""
 			config.Conf.Credentials.Password = ""
-			gui.SetListBoxItems([]string{}, "")
-			eventCH <- events.LIBRARY_LOGON
+			m.logon()
 
 		case events.ISSUE_BOOK:
 			if m.books != nil {
@@ -154,6 +130,48 @@ func (m *Manager) Listen(eventCH chan events.Event) {
 
 		}
 	}
+}
+
+func (m *Manager) logoff() {
+	_, err := m.client.LogOff()
+	if err != nil {
+		log.Printf("logoff: %v", err)
+	}
+
+	m.books = nil
+	m.questions = nil
+	gui.SetListBoxItems([]string{}, "")
+}
+
+func (m *Manager) logon() error {
+	username := config.Conf.Credentials.Username
+	password := config.Conf.Credentials.Password
+	var err error
+	var save bool
+
+	if username == "" || password == "" {
+		username, password, save, err = gui.Credentials()
+		if err != nil {
+			log.Printf("Credentials: %s", err)
+			return nil
+		}
+	}
+
+	_, err = daisy.Authentication(m.client, m.readingSystemAttributes, username, password)
+	if err != nil {
+		msg := fmt.Sprintf("Authorization: %s", err)
+		log.Printf(msg)
+		gui.MessageBox("Ошибка", msg, gui.MsgBoxOK|gui.MsgBoxIconWarning)
+		return err
+	}
+
+	if save {
+		config.Conf.Credentials.Username = username
+		config.Conf.Credentials.Password = password
+	}
+
+	m.SetQuestions(daisy.UserResponse{QuestionID: daisy.Default})
+	return nil
 }
 
 func (m *Manager) SetQuestions(response ...daisy.UserResponse) {

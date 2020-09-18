@@ -57,7 +57,7 @@ func CreateWND(actionQueue chan events.Event) (*walk.MainWindow, error) {
 					Action{
 						Text:        "Выйти из учётной записи",
 						Shortcut:    Shortcut{walk.ModControl, walk.KeyQ},
-						OnTriggered: func() { actionQueue <- events.LIBRARY_LOGOFF },
+						OnTriggered: func() { actionQueue <- events.LIBRARY_RELOGON },
 					},
 				},
 			},
