@@ -11,17 +11,16 @@ import (
 
 type track struct {
 	sync.Mutex
-	stopped           bool
-	paused            bool
-	beRewind          bool
-	lost              time.Duration
-	readsBytesFromSrc int64
-	start             time.Time
-	dec               *minimp3.Decoder
-	sampleRate        int
-	channels          int
-	samples           []byte
-	wp                *winmm.WavePlayer
+	stopped    bool
+	paused     bool
+	beRewind   bool
+	lost       time.Duration
+	start      time.Time
+	dec        *minimp3.Decoder
+	sampleRate int
+	channels   int
+	samples    []byte
+	wp         *winmm.WavePlayer
 }
 
 func newTrack(mp3 io.Reader) *track {
@@ -43,7 +42,6 @@ func (trk *track) play() {
 			break
 		}
 		n, err := trk.dec.Read(trk.samples)
-		trk.readsBytesFromSrc += int64(n)
 		trk.Unlock()
 		if n > 0 {
 			trk.wp.Write(trk.samples[:n])
@@ -86,30 +84,24 @@ func (trk *track) stop() {
 }
 
 func (trk *track) rewind(offset time.Duration) error {
-	ok := trk.pause(true)
-	trk.Lock()
-	lostInBytes := int64(float64(trk.sampleRate*trk.channels*2) * trk.lost.Seconds())
-	offsetInBytes := int64(float64(trk.sampleRate*trk.channels*2) * offset.Seconds())
-	newOffsetInBytes := offsetInBytes - (trk.readsBytesFromSrc - lostInBytes)
-	if trk.readsBytesFromSrc + newOffsetInBytes < 0 {
-		newOffsetInBytes = trk.readsBytesFromSrc
+	if trk.pause(true) {
+		defer trk.pause(false)
 	}
-	pos, err := trk.dec.Seek(newOffsetInBytes, io.SeekCurrent)
-	if err != nil {
+
+	trk.Lock()
+	defer trk.Unlock()
+
+	lost := trk.lost + offset
+	if lost < 0 {
+		lost = time.Duration(0)
+	}
+	lostInBytes := int64(float64(trk.sampleRate*trk.channels*2) * lost.Seconds())
+
+	if _, err := trk.dec.Seek(lostInBytes, io.SeekStart); err != nil {
 		return err
 	}
 
-	trk.lost += offset
-	if trk.lost < 0 {
-		trk.lost = time.Duration(0)
-	}
-
-	trk.readsBytesFromSrc = pos
+	trk.lost = lost
 	trk.beRewind = true
-
-	if ok {
-		trk.pause(false)
-	}
-	trk.Unlock()
 	return nil
 }
