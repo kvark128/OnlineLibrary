@@ -94,7 +94,10 @@ func (p *Player) Rewind(offset time.Duration) {
 
 	p.Lock()
 	if p.trk != nil {
-		p.trk.rewind(offset)
+		err := p.trk.rewind(offset)
+		if err != nil {
+			log.Printf("rewind: %v", err)
+		}
 	}
 	p.Unlock()
 }
@@ -176,16 +179,16 @@ func (p *Player) start(trackIndex int) {
 			continue
 		}
 
-		log.Printf("Playing %s: %s", uri, track.MimeType)
-
 		p.Lock()
 		p.trk = newTrack(mp3)
 		p.currentTrackIndex = trackIndex + i
 		p.Unlock()
 
 		p.playing.Set()
+		log.Printf("playing %s: %s", uri, track.MimeType)
 		p.trk.play()
 		src.Close()
+		log.Printf("stopping %s: %s", uri, track.MimeType)
 
 		if !p.playing.IsSet() {
 			break

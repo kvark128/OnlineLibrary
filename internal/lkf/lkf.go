@@ -49,6 +49,10 @@ func (r *LKFReader) Seek(offset int64, whence int) (int64, error) {
 		panic("LKFReader: r.src is not seeker")
 	}
 
+	if whence == io.SeekCurrent {
+		offset -= int64(r.bufLength)
+	}
+
 	r.bufLength = 0
 	r.lastErr = nil
 

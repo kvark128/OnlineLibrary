@@ -2,7 +2,6 @@ package player
 
 import (
 	"io"
-	"log"
 	"sync"
 	"time"
 
@@ -12,15 +11,17 @@ import (
 
 type track struct {
 	sync.Mutex
-	stopped     bool
-	lost        time.Duration
-	lostSamples int64
-	start       time.Time
-	dec         *minimp3.Decoder
-	sampleRate  int
-	channels    int
-	samples     []byte
-	wp          *winmm.WavePlayer
+	stopped           bool
+	paused            bool
+	beRewind          bool
+	lost              time.Duration
+	readsBytesFromSrc int64
+	start             time.Time
+	dec               *minimp3.Decoder
+	sampleRate        int
+	channels          int
+	samples           []byte
+	wp                *winmm.WavePlayer
 }
 
 func newTrack(mp3 io.Reader) *track {
@@ -42,7 +43,7 @@ func (trk *track) play() {
 			break
 		}
 		n, err := trk.dec.Read(trk.samples)
-		trk.lostSamples += int64(n / (trk.channels*2))
+		trk.readsBytesFromSrc += int64(n)
 		trk.Unlock()
 		if n > 0 {
 			trk.wp.Write(trk.samples[:n])
@@ -55,13 +56,26 @@ func (trk *track) play() {
 	trk.wp.Close()
 }
 
-func (trk *track) pause(pause bool) {
-	if pause {
-		trk.lost += time.Since(trk.start)
+func (trk *track) pause(pause bool) bool {
+	if trk.paused == pause {
+		return false
+	}
+	trk.paused = pause
+
+	if trk.paused {
+		if !trk.start.IsZero() {
+			trk.lost += time.Since(trk.start)
+		}
 	} else {
 		trk.start = time.Now()
 	}
-	trk.wp.Pause(pause)
+	if trk.beRewind {
+		trk.beRewind = false
+		trk.wp.Stop()
+		return true
+	}
+	trk.wp.Pause(trk.paused)
+	return true
 }
 
 func (trk *track) stop() {
@@ -71,19 +85,31 @@ func (trk *track) stop() {
 	trk.Unlock()
 }
 
-func (trk *track) rewind(offset time.Duration) {
-	trk.pause(true)
+func (trk *track) rewind(offset time.Duration) error {
+	ok := trk.pause(true)
 	trk.Lock()
-	lostFromDec := time.Second / time.Duration(trk.sampleRate) * time.Duration(trk.lostSamples)
-	newOffset := offset - (lostFromDec - trk.lost)
-	trk.lost += offset
-	bytesOffset := trk.sampleRate * trk.channels * 2 * int(newOffset.Seconds())
-	pos, err := trk.dec.Seek(int64(bytesOffset), io.SeekCurrent)
-	if err != nil {
-		log.Printf("rewind: %v", err)
-		return
+	lostInBytes := int64(float64(trk.sampleRate*trk.channels*2) * trk.lost.Seconds())
+	offsetInBytes := int64(float64(trk.sampleRate*trk.channels*2) * offset.Seconds())
+	newOffsetInBytes := offsetInBytes - (trk.readsBytesFromSrc - lostInBytes)
+	if trk.readsBytesFromSrc + newOffsetInBytes < 0 {
+		newOffsetInBytes = trk.readsBytesFromSrc
 	}
-	trk.lostSamples = pos / int64(trk.channels*2)
-	trk.wp.Stop()
+	pos, err := trk.dec.Seek(newOffsetInBytes, io.SeekCurrent)
+	if err != nil {
+		return err
+	}
+
+	trk.lost += offset
+	if trk.lost < 0 {
+		trk.lost = time.Duration(0)
+	}
+
+	trk.readsBytesFromSrc = pos
+	trk.beRewind = true
+
+	if ok {
+		trk.pause(false)
+	}
 	trk.Unlock()
+	return nil
 }
