@@ -185,6 +185,8 @@ func (m *Manager) setQuestions(response ...daisy.UserResponse) {
 		msg := fmt.Sprintf("GetQuestions: %s", err)
 		log.Printf(msg)
 		gui.MessageBox("Ошибка", msg, gui.MsgBoxOK|gui.MsgBoxIconError)
+		m.questions = nil
+		gui.SetListBoxItems([]string{}, "")
 		return
 	}
 
