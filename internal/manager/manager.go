@@ -158,7 +158,7 @@ func (m *Manager) logon() error {
 	if err != nil {
 		msg := fmt.Sprintf("Authorization: %s", err)
 		log.Printf(msg)
-		gui.MessageBox("Ошибка", msg, gui.MsgBoxOK|gui.MsgBoxIconWarning)
+		gui.MessageBox("Ошибка", msg, gui.MsgBoxOK|gui.MsgBoxIconError)
 		return err
 	}
 
@@ -184,7 +184,7 @@ func (m *Manager) setQuestions(response ...daisy.UserResponse) {
 	if err != nil {
 		msg := fmt.Sprintf("GetQuestions: %s", err)
 		log.Printf(msg)
-		gui.MessageBox("Ошибка", msg, gui.MsgBoxOK|gui.MsgBoxIconWarning)
+		gui.MessageBox("Ошибка", msg, gui.MsgBoxOK|gui.MsgBoxIconError)
 		return
 	}
 
@@ -244,7 +244,7 @@ func (m *Manager) setContent(contentID string) {
 	if err != nil {
 		msg := fmt.Sprintf("GetContentList: %s", err)
 		log.Printf(msg)
-		gui.MessageBox("Ошибка", msg, gui.MsgBoxOK|gui.MsgBoxIconWarning)
+		gui.MessageBox("Ошибка", msg, gui.MsgBoxOK|gui.MsgBoxIconError)
 		return
 	}
 
@@ -273,7 +273,7 @@ func (m *Manager) playBook(index int) {
 	if err != nil {
 		msg := fmt.Sprintf("GetContentResources: %s", err)
 		log.Printf(msg)
-		gui.MessageBox("Ошибка", msg, gui.MsgBoxOK|gui.MsgBoxIconWarning)
+		gui.MessageBox("Ошибка", msg, gui.MsgBoxOK|gui.MsgBoxIconError)
 		return
 	}
 
@@ -288,7 +288,7 @@ func (m *Manager) downloadBook(index int) {
 	if err != nil {
 		msg := fmt.Sprintf("GetContentResources: %s", err)
 		log.Printf(msg)
-		gui.MessageBox("Ошибка", msg, gui.MsgBoxOK|gui.MsgBoxIconWarning)
+		gui.MessageBox("Ошибка", msg, gui.MsgBoxOK|gui.MsgBoxIconError)
 		return
 	}
 
@@ -301,7 +301,7 @@ func (m *Manager) removeBook(index int) {
 	if err != nil {
 		msg := fmt.Sprintf("ReturnContent: %s", err)
 		log.Printf(msg)
-		gui.MessageBox("Ошибка", msg, gui.MsgBoxOK|gui.MsgBoxIconWarning)
+		gui.MessageBox("Ошибка", msg, gui.MsgBoxOK|gui.MsgBoxIconError)
 		return
 	}
 	gui.MessageBox("Уведомление", fmt.Sprintf("%s удалена с книжной полки", book.Label.Text), gui.MsgBoxOK|gui.MsgBoxIconWarning)
@@ -313,7 +313,7 @@ func (m *Manager) issueBook(index int) {
 	if err != nil {
 		msg := fmt.Sprintf("IssueContent: %s", err)
 		log.Printf(msg)
-		gui.MessageBox("Ошибка", msg, gui.MsgBoxOK|gui.MsgBoxIconWarning)
+		gui.MessageBox("Ошибка", msg, gui.MsgBoxOK|gui.MsgBoxIconError)
 		return
 	}
 	gui.MessageBox("Уведомление", fmt.Sprintf("%s добавлена на книжную полку", book.Label.Text), gui.MsgBoxOK|gui.MsgBoxIconWarning)
