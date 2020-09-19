@@ -108,7 +108,10 @@ func (m *Manager) Start(eventCH chan events.Event) {
 			m.bookplayer.ChangeTrack(-1)
 
 		case events.DOWNLOAD_BOOK:
-			m.downloadBook(gui.CurrentListBoxIndex())
+			if m.books != nil {
+				index := gui.CurrentListBoxIndex()
+				m.downloadBook(index)
+			}
 
 		case events.PLAYER_VOLUME_UP:
 			m.bookplayer.ChangeVolume(+1)
