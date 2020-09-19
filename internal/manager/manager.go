@@ -247,6 +247,8 @@ func (m *Manager) setContent(contentID string) {
 		msg := fmt.Sprintf("GetContentList: %s", err)
 		log.Printf(msg)
 		gui.MessageBox("Ошибка", msg, gui.MsgBoxOK|gui.MsgBoxIconError)
+		m.questions = nil
+		gui.SetListBoxItems([]string{}, "")
 		return
 	}
 
