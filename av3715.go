@@ -57,7 +57,7 @@ func main() {
 	}
 
 	mng := manager.NewManager(daisy.NewClient(config.Conf.ServiceURL), &readingSystemAttributes)
-	go mng.Listen(eventCH)
+	go mng.Start(eventCH)
 
 	eventCH <- events.LIBRARY_LOGON
 	gui.RunMainWindow()

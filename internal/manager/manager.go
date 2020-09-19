@@ -2,18 +2,15 @@ package manager
 
 import (
 	"fmt"
-	"io"
 	"log"
-	"os"
-	"path/filepath"
 	"sync"
 	"time"
 
 	"github.com/kvark128/av3715/internal/config"
-	"github.com/kvark128/av3715/internal/connect"
 	"github.com/kvark128/av3715/internal/events"
 	"github.com/kvark128/av3715/internal/gui"
 	"github.com/kvark128/av3715/internal/player"
+	"github.com/kvark128/av3715/internal/util"
 	daisy "github.com/kvark128/daisyonline"
 )
 
@@ -34,7 +31,7 @@ func NewManager(client *daisy.Client, readingSystemAttributes *daisy.ReadingSyst
 	}
 }
 
-func (m *Manager) Listen(eventCH chan events.Event) {
+func (m *Manager) Start(eventCH chan events.Event) {
 	m.Add(1)
 	defer m.Done()
 
@@ -44,7 +41,7 @@ func (m *Manager) Listen(eventCH chan events.Event) {
 		case events.ACTIVATE_MENU:
 			index := gui.CurrentListBoxIndex()
 			if m.books != nil {
-				m.PlayBook(index)
+				m.playBook(index)
 			} else if m.questions != nil {
 				questionIndex := len(m.userResponses)
 				questionID := m.questions.MultipleChoiceQuestion[questionIndex].ID
@@ -52,23 +49,23 @@ func (m *Manager) Listen(eventCH chan events.Event) {
 				m.userResponses = append(m.userResponses, daisy.UserResponse{QuestionID: questionID, Value: value})
 				questionIndex++
 				if questionIndex < len(m.questions.MultipleChoiceQuestion) {
-					m.SetMultipleChoiceQuestion(questionIndex)
+					m.setMultipleChoiceQuestion(questionIndex)
 					break
 				}
-				m.SetInputQuestion()
+				m.setInputQuestion()
 			}
 
 		case events.OPEN_BOOKSHELF:
-			m.SetContent(daisy.Issued)
+			m.setContent(daisy.Issued)
 
 		case events.MAIN_MENU:
-			m.SetQuestions(daisy.UserResponse{QuestionID: daisy.Default})
+			m.setQuestions(daisy.UserResponse{QuestionID: daisy.Default})
 
 		case events.SEARCH_BOOK:
-			m.SetQuestions(daisy.UserResponse{QuestionID: daisy.Search})
+			m.setQuestions(daisy.UserResponse{QuestionID: daisy.Search})
 
 		case events.MENU_BACK:
-			m.SetQuestions(daisy.UserResponse{QuestionID: daisy.Back})
+			m.setQuestions(daisy.UserResponse{QuestionID: daisy.Back})
 
 		case events.LIBRARY_LOGON:
 			for {
@@ -89,13 +86,13 @@ func (m *Manager) Listen(eventCH chan events.Event) {
 		case events.ISSUE_BOOK:
 			if m.books != nil {
 				index := gui.CurrentListBoxIndex()
-				m.IssueBook(index)
+				m.issueBook(index)
 			}
 
 		case events.REMOVE_BOOK:
 			if m.books != nil {
 				index := gui.CurrentListBoxIndex()
-				m.RemoveBook(index)
+				m.removeBook(index)
 			}
 
 		case events.PLAYER_PAUSE:
@@ -111,7 +108,7 @@ func (m *Manager) Listen(eventCH chan events.Event) {
 			m.bookplayer.ChangeTrack(-1)
 
 		case events.DOWNLOAD_BOOK:
-			m.DownloadBook(gui.CurrentListBoxIndex())
+			m.downloadBook(gui.CurrentListBoxIndex())
 
 		case events.PLAYER_VOLUME_UP:
 			m.bookplayer.ChangeVolume(+1)
@@ -170,11 +167,11 @@ func (m *Manager) logon() error {
 		config.Conf.Credentials.Password = password
 	}
 
-	m.SetQuestions(daisy.UserResponse{QuestionID: daisy.Default})
+	m.setQuestions(daisy.UserResponse{QuestionID: daisy.Default})
 	return nil
 }
 
-func (m *Manager) SetQuestions(response ...daisy.UserResponse) {
+func (m *Manager) setQuestions(response ...daisy.UserResponse) {
 	if len(response) == 0 {
 		log.Printf("Error: len(response) == 0")
 		m.questions = nil
@@ -194,12 +191,12 @@ func (m *Manager) SetQuestions(response ...daisy.UserResponse) {
 	if questions.Label.Text != "" {
 		gui.MessageBox("Предупреждение", questions.Label.Text, gui.MsgBoxOK|gui.MsgBoxIconWarning)
 		// Return to the main menu of the library
-		m.SetQuestions(daisy.UserResponse{QuestionID: daisy.Default})
+		m.setQuestions(daisy.UserResponse{QuestionID: daisy.Default})
 		return
 	}
 
 	if questions.ContentListRef != "" {
-		m.SetContent(questions.ContentListRef)
+		m.setContent(questions.ContentListRef)
 		return
 	}
 
@@ -207,14 +204,14 @@ func (m *Manager) SetQuestions(response ...daisy.UserResponse) {
 	m.userResponses = make([]daisy.UserResponse, 0)
 
 	if len(m.questions.MultipleChoiceQuestion) > 0 {
-		m.SetMultipleChoiceQuestion(0)
+		m.setMultipleChoiceQuestion(0)
 		return
 	}
 
-	m.SetInputQuestion()
+	m.setInputQuestion()
 }
 
-func (m *Manager) SetMultipleChoiceQuestion(index int) {
+func (m *Manager) setMultipleChoiceQuestion(index int) {
 	choiceQuestion := m.questions.MultipleChoiceQuestion[index]
 	m.books = nil
 
@@ -226,22 +223,22 @@ func (m *Manager) SetMultipleChoiceQuestion(index int) {
 	gui.SetListBoxItems(items, choiceQuestion.Label.Text)
 }
 
-func (m *Manager) SetInputQuestion() {
+func (m *Manager) setInputQuestion() {
 	for _, inputQuestion := range m.questions.InputQuestion {
 		text, err := gui.TextEntryDialog("Ввод текста", inputQuestion.Label.Text)
 		if err != nil {
 			log.Printf("userText: %s", err)
 			// Return to the main menu of the library
-			m.SetQuestions(daisy.UserResponse{QuestionID: daisy.Default})
+			m.setQuestions(daisy.UserResponse{QuestionID: daisy.Default})
 			return
 		}
 		m.userResponses = append(m.userResponses, daisy.UserResponse{QuestionID: inputQuestion.ID, Value: text})
 	}
 
-	m.SetQuestions(m.userResponses...)
+	m.setQuestions(m.userResponses...)
 }
 
-func (m *Manager) SetContent(contentID string) {
+func (m *Manager) setContent(contentID string) {
 	log.Printf("Content set: %s", contentID)
 	contentList, err := m.client.GetContentList(contentID, 0, -1)
 	if err != nil {
@@ -254,7 +251,7 @@ func (m *Manager) SetContent(contentID string) {
 	if len(contentList.ContentItems) == 0 {
 		gui.MessageBox("Предупреждение", "Список книг пуст", gui.MsgBoxOK|gui.MsgBoxIconWarning)
 		// Return to the main menu of the library
-		m.SetQuestions(daisy.UserResponse{QuestionID: daisy.Default})
+		m.setQuestions(daisy.UserResponse{QuestionID: daisy.Default})
 		return
 	}
 
@@ -268,7 +265,7 @@ func (m *Manager) SetContent(contentID string) {
 	gui.SetListBoxItems(booksName, m.books.Label.Text)
 }
 
-func (m *Manager) PlayBook(index int) {
+func (m *Manager) playBook(index int) {
 	m.bookplayer.Stop()
 	book := m.books.ContentItems[index]
 
@@ -284,7 +281,7 @@ func (m *Manager) PlayBook(index int) {
 	m.bookplayer.Play(0)
 }
 
-func (m *Manager) DownloadBook(index int) {
+func (m *Manager) downloadBook(index int) {
 	book := m.books.ContentItems[index]
 
 	r, err := m.client.GetContentResources(book.ID)
@@ -295,10 +292,10 @@ func (m *Manager) DownloadBook(index int) {
 		return
 	}
 
-	go DownloadResources(book.Label.Text, r)
+	go util.DownloadBook(config.Conf.UserData, book.Label.Text, r)
 }
 
-func (m *Manager) RemoveBook(index int) {
+func (m *Manager) removeBook(index int) {
 	book := m.books.ContentItems[index]
 	_, err := m.client.ReturnContent(book.ID)
 	if err != nil {
@@ -310,7 +307,7 @@ func (m *Manager) RemoveBook(index int) {
 	gui.MessageBox("Уведомление", fmt.Sprintf("%s удалена с книжной полки", book.Label.Text), gui.MsgBoxOK|gui.MsgBoxIconWarning)
 }
 
-func (m *Manager) IssueBook(index int) {
+func (m *Manager) issueBook(index int) {
 	book := m.books.ContentItems[index]
 	_, err := m.client.IssueContent(book.ID)
 	if err != nil {
@@ -320,77 +317,4 @@ func (m *Manager) IssueBook(index int) {
 		return
 	}
 	gui.MessageBox("Уведомление", fmt.Sprintf("%s добавлена на книжную полку", book.Label.Text), gui.MsgBoxOK|gui.MsgBoxIconWarning)
-}
-
-func DownloadResources(book string, r *daisy.Resources) {
-	me := &sync.Mutex{}
-	var dst io.WriteCloser
-	var conn, src io.ReadCloser
-	var stop bool
-	var err error
-
-	cancelFN := func() {
-		me.Lock()
-		if src != nil {
-			src.Close()
-		}
-		stop = true
-		me.Unlock()
-	}
-
-	dlg := gui.NewProgressDialog("Загрузка книги", fmt.Sprintf("Загрузка %s", book), len(r.Resources), cancelFN)
-	dlg.Show()
-
-	for _, v := range r.Resources {
-		path := filepath.Join(config.Conf.UserData, book, v.LocalURI)
-		if info, e := os.Stat(path); e == nil {
-			if !info.IsDir() && info.Size() == int64(v.Size) {
-				// v.LocalURI already exist
-				dlg.IncreaseValue(1)
-				continue
-			}
-		}
-
-		conn, err = connect.NewConnection(v.URI)
-		if err != nil {
-			break
-		}
-
-		os.MkdirAll(filepath.Dir(path), os.ModeDir)
-		dst, err = os.Create(path)
-		if err != nil {
-			conn.Close()
-			break
-		}
-
-		me.Lock()
-		src = conn
-		if stop {
-			src.Close()
-		}
-		me.Unlock()
-
-		_, err = io.CopyBuffer(dst, src, make([]byte, 512*1024))
-		dst.Close()
-		src.Close()
-		if err != nil {
-			// Removing an unwritten file
-			os.Remove(path)
-			break
-		}
-
-		dlg.IncreaseValue(1)
-	}
-
-	dlg.Cancel()
-	if stop {
-		gui.MessageBox("Предупреждение", "Загрузка отменена пользователем", gui.MsgBoxOK|gui.MsgBoxIconWarning)
-		return
-	}
-
-	if err != nil {
-		gui.MessageBox("Ошибка", err.Error(), gui.MsgBoxOK|gui.MsgBoxIconWarning)
-		return
-	}
-	gui.MessageBox("Уведомление", "Книга успешно загружена", gui.MsgBoxOK|gui.MsgBoxIconWarning)
 }
