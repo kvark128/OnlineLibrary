@@ -34,7 +34,7 @@ func DownloadBook(dir, book string, r *daisy.Resources) {
 	for _, v := range r.Resources {
 		path := filepath.Join(dir, book, v.LocalURI)
 		if info, e := os.Stat(path); e == nil {
-			if !info.IsDir() && info.Size() == int64(v.Size) {
+			if !info.IsDir() && info.Size() == v.Size {
 				// v.LocalURI already exist
 				dlg.IncreaseValue(1)
 				continue

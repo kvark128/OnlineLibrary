@@ -153,7 +153,7 @@ func (p *Player) start(trackIndex int) {
 
 		uri = filepath.Join(config.Conf.UserData, p.book, track.LocalURI)
 		if info, e := os.Stat(uri); e == nil {
-			if !info.IsDir() && info.Size() == int64(track.Size) {
+			if !info.IsDir() && info.Size() == track.Size {
 				// track already exist
 				src, _ = os.Open(uri)
 			}
