@@ -299,6 +299,7 @@ func (m *Manager) downloadBook(index int) {
 		return
 	}
 
+	// Downloading book should not block handling of other events
 	go util.DownloadBook(config.Conf.UserData, book.Label.Text, r)
 }
 
