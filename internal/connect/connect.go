@@ -10,7 +10,10 @@ import (
 	"time"
 )
 
-const timeout = time.Second * 3
+const (
+	buf_size = 1024 * 64
+	timeout  = time.Second * 3
+)
 
 type Connection struct {
 	sync.Mutex
@@ -29,7 +32,7 @@ type Connection struct {
 func NewConnection(url string) (io.ReadCloser, error) {
 	c := &Connection{
 		url: url,
-		buf: make([]byte, 1024*512),
+		buf: make([]byte, buf_size),
 	}
 
 	if err := c.setNewResponse(); err != nil {
@@ -77,7 +80,7 @@ func (c *Connection) setNewResponse() error {
 }
 
 func (c *Connection) Read(p []byte) (int, error) {
-	var n, n2, n3 int
+	var n, n2 int
 
 	for {
 		n2 = copy(p[n:], c.buf[c.bufStart:c.bufFinish])
@@ -93,27 +96,25 @@ func (c *Connection) Read(p []byte) (int, error) {
 		}
 
 		// The c.buf is empty here. We can fill it
-		c.bufStart = 0
+		c.fillBuf()
+	}
+}
+
+func (c *Connection) fillBuf() {
+	var n int
+	c.bufStart = 0
+	c.bufFinish = 0
+
+	for c.bufFinish < len(c.buf) {
 		c.timer.Reset(timeout)
-		c.bufFinish, c.lastErr = c.resp.Body.Read(c.buf)
+		n, c.lastErr = c.resp.Body.Read(c.buf[c.bufFinish:])
 		c.timer.Stop()
-		c.reads += int64(c.bufFinish)
+		c.bufFinish += n
+		c.reads += int64(n)
 
-		if c.lastErr != nil && c.reads < c.contentLength {
-			log.Printf("connection: %v", c.lastErr)
-			for attempt := 1; attempt <= 3; attempt++ {
-				log.Printf("Connection recovery: attempt %d/3: reads %d/%d bytes", attempt, c.reads, c.contentLength)
-				if c.setNewResponse() == nil {
-					c.timer.Reset(timeout)
-					n3, c.lastErr = c.resp.Body.Read(c.buf[c.bufFinish:])
-					c.timer.Stop()
-					c.bufFinish += n3
-					c.reads += int64(n3)
-					break
-				}
-			}
+		if c.lastErr != nil {
+			break
 		}
-
 	}
 }
 
