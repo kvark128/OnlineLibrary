@@ -4,6 +4,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/kvark128/av3715/internal/config"
 	"github.com/kvark128/av3715/internal/events"
@@ -56,7 +57,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	mng := manager.NewManager(daisy.NewClient(config.Conf.ServiceURL), &readingSystemAttributes)
+	mng := manager.NewManager(daisy.NewClient(config.Conf.ServiceURL, time.Second*3), &readingSystemAttributes)
 	go mng.Start(eventCH)
 
 	eventCH <- events.LIBRARY_LOGON
