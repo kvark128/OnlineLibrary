@@ -119,39 +119,40 @@ func (c *Connection) fillBuf() {
 }
 
 func (c *Connection) Seek(offset int64, whence int) (int64, error) {
-	var newOffset int64
+	var position int64
 
 	switch whence {
 	case io.SeekStart:
-		newOffset = offset
+		position = offset
 	case io.SeekCurrent:
-		newOffset = c.reads - int64(c.bufFinish-c.bufStart) + offset
+		position = c.reads - int64(c.bufFinish-c.bufStart) + offset
 	case io.SeekEnd:
-		newOffset = c.contentLength + offset
+		position = c.contentLength + offset
 	default:
 		panic(fmt.Sprintf("Invalid whence: %v", whence))
 	}
 
-	if newOffset < 0 || newOffset > c.contentLength {
+	if position < 0 || position > c.contentLength {
 		return 0, fmt.Errorf("connection: invalid offset")
 	}
 
 	leftEdge := c.reads - int64(c.bufFinish)
 	rightEdge := c.reads
 
-	log.Printf("Seek: newOffset: %v, left: %v, right: %v, start: %v, finish: %v", newOffset, leftEdge, rightEdge, c.bufStart, c.bufFinish)
-	if newOffset < leftEdge || newOffset > rightEdge {
-		c.reads = newOffset
-		c.bufStart = 0
-		c.bufFinish = 0
-		if err := c.setNewResponse(); err != nil {
-			return 0, err
-		}
-		return c.reads, nil
+	log.Printf("Seek: position: %v, left: %v, right: %v, start: %v, finish: %v", position, leftEdge, rightEdge, c.bufStart, c.bufFinish)
+	if position >= leftEdge && position <= rightEdge {
+		// New position inside the buffer
+		c.bufStart = int(position - leftEdge)
+		return position, nil
 	}
 
-	c.bufStart = int(newOffset - leftEdge)
-	return newOffset, nil
+	c.reads = position
+	c.bufStart = 0
+	c.bufFinish = 0
+	if err := c.setNewResponse(); err != nil {
+		return 0, err
+	}
+	return position, nil
 }
 
 func (c *Connection) Close() error {
