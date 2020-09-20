@@ -157,9 +157,13 @@ func (m *Manager) logon() error {
 		}
 	}
 
-	_, err = m.client.LogOn(username, password)
+	ok, err := m.client.LogOn(username, password)
 	if err != nil {
 		return err
+	}
+
+	if !ok {
+		return fmt.Errorf("The LogOn operation returned false")
 	}
 
 	m.serviceAttributes, err = m.client.GetServiceAttributes()
