@@ -65,6 +65,12 @@ func RunMainWindow() {
 	mainWindow.Run()
 }
 
+func SetMainWindowTitle(title string) {
+	mainWindow.Synchronize(func() {
+		mainWindow.SetTitle(title)
+	})
+}
+
 func SetListBoxItems(items []string, label string) {
 	mainWindow.Synchronize(func() {
 		textLabel.SetText(label)

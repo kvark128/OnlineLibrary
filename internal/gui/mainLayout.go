@@ -10,7 +10,7 @@ func CreateWND(actionQueue chan events.Event) (*walk.MainWindow, error) {
 	var wnd *walk.MainWindow
 
 	var layout = MainWindow{
-		Title:    "AV3715 Library",
+		Title:    "DAISY Online Client",
 		Layout:   VBox{},
 		AssignTo: &wnd,
 
