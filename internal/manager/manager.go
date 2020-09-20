@@ -18,6 +18,7 @@ type Manager struct {
 	sync.WaitGroup
 	client                  *daisy.Client
 	readingSystemAttributes *daisy.ReadingSystemAttributes
+	serviceAttributes       *daisy.ServiceAttributes
 	bookplayer              *player.Player
 	books                   *daisy.ContentList
 	questions               *daisy.Questions
@@ -157,7 +158,18 @@ func (m *Manager) logon() error {
 		}
 	}
 
-	_, err = daisy.Authentication(m.client, m.readingSystemAttributes, username, password)
+	_, err = m.client.LogOn(username, password)
+	if err != nil {
+		return err
+	}
+
+	m.serviceAttributes, err = m.client.GetServiceAttributes()
+	if err != nil {
+		return err
+	}
+
+	_, err = m.client.SetReadingSystemAttributes(m.readingSystemAttributes)
+
 	if err != nil {
 		msg := fmt.Sprintf("Authorization: %s", err)
 		log.Printf(msg)
