@@ -69,10 +69,9 @@ func (m *Manager) Start(eventCH chan events.Event) {
 			m.setQuestions(daisy.UserResponse{QuestionID: daisy.Back})
 
 		case events.LIBRARY_LOGON:
-			for {
-				if m.logon() == nil {
-					break
-				}
+			if err := m.logon(); err != nil {
+				log.Printf("logon: %v", err)
+				gui.MessageBox("Ошибка", fmt.Sprintf("logon: %v", err), gui.MsgBoxOK|gui.MsgBoxIconError)
 			}
 
 		case events.LIBRARY_LOGOFF:
@@ -169,11 +168,7 @@ func (m *Manager) logon() error {
 	}
 
 	_, err = m.client.SetReadingSystemAttributes(m.readingSystemAttributes)
-
 	if err != nil {
-		msg := fmt.Sprintf("Authorization: %s", err)
-		log.Printf(msg)
-		gui.MessageBox("Ошибка", msg, gui.MsgBoxOK|gui.MsgBoxIconError)
 		return err
 	}
 
