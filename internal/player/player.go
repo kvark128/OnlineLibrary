@@ -12,6 +12,7 @@ import (
 	"github.com/kvark128/av3715/internal/connect"
 	"github.com/kvark128/av3715/internal/flag"
 	"github.com/kvark128/av3715/internal/lkf"
+	"github.com/kvark128/av3715/internal/util"
 	daisy "github.com/kvark128/daisyonline"
 )
 
@@ -151,7 +152,7 @@ func (p *Player) start(trackIndex int) {
 		var uri string
 		var err error
 
-		uri = filepath.Join(config.Conf.UserData, p.book, track.LocalURI)
+		uri = filepath.Join(config.Conf.UserData, util.ReplaceProhibitCharacters(p.book), track.LocalURI)
 		if info, e := os.Stat(uri); e == nil {
 			if !info.IsDir() && info.Size() == track.Size {
 				// track already exist

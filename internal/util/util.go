@@ -5,12 +5,22 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 
 	"github.com/kvark128/av3715/internal/connect"
 	"github.com/kvark128/av3715/internal/gui"
 	daisy "github.com/kvark128/daisyonline"
 )
+
+// Replaces all prohibit characters with a sign "_"
+func ReplaceProhibitCharacters(s string) string {
+	chars := []string{"/", "\\", "?", "%", "*", ":", "|", "\"", "<", ">"}
+	for _, ch := range chars {
+		s = strings.ReplaceAll(s, ch, "_")
+	}
+	return s
+}
 
 func DownloadBook(dir, book string, r *daisy.Resources) {
 	me := &sync.Mutex{}
@@ -32,7 +42,7 @@ func DownloadBook(dir, book string, r *daisy.Resources) {
 	dlg.Show()
 
 	for _, v := range r.Resources {
-		path := filepath.Join(dir, book, v.LocalURI)
+		path := filepath.Join(dir, ReplaceProhibitCharacters(book), v.LocalURI)
 		if info, e := os.Stat(path); e == nil {
 			if !info.IsDir() && info.Size() == v.Size {
 				// v.LocalURI already exist
