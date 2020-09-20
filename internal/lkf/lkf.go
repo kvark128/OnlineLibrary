@@ -1,6 +1,7 @@
 package lkf
 
 import (
+	"fmt"
 	"io"
 
 	"github.com/kvark128/lkf"
@@ -17,7 +18,7 @@ type LKFReader struct {
 func NewLKFReader(src io.Reader) *LKFReader {
 	r := &LKFReader{
 		src: src,
-		buf: make([]byte, lkf.BlockSize*128),
+		buf: make([]byte, lkf.BlockSize*64),
 		c:   new(lkf.Cryptor),
 	}
 	return r
@@ -49,28 +50,23 @@ func (r *LKFReader) Seek(offset int64, whence int) (int64, error) {
 		panic("LKFReader: r.src is not seeker")
 	}
 
-	if whence == io.SeekCurrent {
-		offset -= int64(r.bufLength)
+	if whence != io.SeekStart {
+		return 0, fmt.Errorf("LKFReader: Seek: only io.SeekStart is supported")
 	}
 
 	r.bufLength = 0
 	r.lastErr = nil
 
-	pos, err := seeker.Seek(offset, whence)
+	blockOffset := offset % lkf.BlockSize
+	pos, err := seeker.Seek(offset-blockOffset, whence)
 	if err != nil {
 		return 0, err
 	}
 
-	newOffset := pos % lkf.BlockSize
-	if newOffset == 0 {
+	if blockOffset == 0 {
 		return pos, nil
 	}
 
-	pos, err = seeker.Seek(-newOffset, io.SeekCurrent)
-	if err != nil {
-		return 0, err
-	}
-
-	n, err := r.Read(make([]byte, newOffset))
+	n, err := r.Read(make([]byte, blockOffset))
 	return pos + int64(n), err
 }
