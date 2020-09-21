@@ -81,6 +81,7 @@ func (m *Manager) Start(eventCH chan events.Event) {
 			m.logoff()
 			config.Conf.Credentials.Username = ""
 			config.Conf.Credentials.Password = ""
+			config.Conf.ServiceURL = ""
 			m.logon()
 
 		case events.ISSUE_BOOK:
@@ -146,17 +147,19 @@ func (m *Manager) logoff() {
 func (m *Manager) logon() error {
 	username := config.Conf.Credentials.Username
 	password := config.Conf.Credentials.Password
+	serviceURL := config.Conf.ServiceURL
 	var err error
 	var save bool
 
-	if username == "" || password == "" {
-		username, password, save, err = gui.Credentials()
+	if username == "" || password == "" || serviceURL == "" {
+		username, password, serviceURL, save, err = gui.Credentials()
 		if err != nil {
 			log.Printf("Credentials: %s", err)
 			return nil
 		}
 	}
 
+	m.client = daisy.NewClient(serviceURL, time.Second*3)
 	ok, err := m.client.LogOn(username, password)
 	if err != nil {
 		return err
@@ -179,6 +182,7 @@ func (m *Manager) logon() error {
 	if save {
 		config.Conf.Credentials.Username = username
 		config.Conf.Credentials.Password = password
+		config.Conf.ServiceURL = serviceURL
 	}
 
 	m.setQuestions(daisy.UserResponse{QuestionID: daisy.Default})
