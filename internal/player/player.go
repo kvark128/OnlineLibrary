@@ -147,6 +147,8 @@ func (p *Player) Stop() {
 func (p *Player) start(trackIndex int) {
 	defer p.wg.Done()
 	defer p.playing.Clear()
+	p.playing.Set()
+
 	for i, track := range p.playList[trackIndex:] {
 		var src io.ReadCloser
 		var uri string
@@ -161,6 +163,7 @@ func (p *Player) start(trackIndex int) {
 		}
 
 		if src == nil {
+			// There is no track on the disc. Trying to get it from the network
 			uri = track.URI
 			src, err = connect.NewConnection(uri)
 			if err != nil {
@@ -181,11 +184,15 @@ func (p *Player) start(trackIndex int) {
 		}
 
 		p.Lock()
+		if !p.playing.IsSet() {
+			src.Close()
+			p.Unlock()
+			break
+		}
 		p.trk = newTrack(mp3)
 		p.currentTrackIndex = trackIndex + i
 		p.Unlock()
 
-		p.playing.Set()
 		log.Printf("playing %s: %s", uri, track.MimeType)
 		p.trk.play()
 		src.Close()
