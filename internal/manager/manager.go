@@ -3,6 +3,7 @@ package manager
 import (
 	"fmt"
 	"log"
+	"strings"
 	"sync"
 	"time"
 
@@ -125,6 +126,12 @@ func (m *Manager) Start(eventCH chan events.Event) {
 
 		case events.PLAYER_BACK:
 			m.bookplayer.Rewind(time.Second * -5)
+
+		case events.BOOK_PROPERTIES:
+			if m.books != nil {
+				index := gui.CurrentListBoxIndex()
+				m.showBookProperties(index)
+			}
 
 		default:
 			log.Printf("Unknown event: %v", evt)
@@ -340,4 +347,33 @@ func (m *Manager) issueBook(index int) {
 		return
 	}
 	gui.MessageBox("Уведомление", fmt.Sprintf("%s добавлена на книжную полку", book.Label.Text), gui.MsgBoxOK|gui.MsgBoxIconWarning)
+}
+
+func (m *Manager) showBookProperties(index int) {
+	book := m.books.ContentItems[index]
+	md, err := m.client.GetContentMetadata(book.ID)
+	if err != nil {
+		msg := fmt.Sprintf("GetContentMetadata: %v", err)
+		log.Printf(msg)
+		gui.MessageBox("Ошибка", msg, gui.MsgBoxOK|gui.MsgBoxIconError)
+		return
+	}
+
+	var textList []string
+	if md.Metadata.Title != "" {
+		text := fmt.Sprintf("Название: %v", md.Metadata.Title)
+		textList = append(textList, text)
+	}
+
+	if md.Metadata.Publisher != "" {
+		text := fmt.Sprintf("Издательство: %v", md.Metadata.Publisher)
+		textList = append(textList, text)
+	}
+
+	if len(md.Metadata.Description) != 0 {
+		text := fmt.Sprintf("Описание: %v", strings.Join(md.Metadata.Description, " "))
+		textList = append(textList, text)
+	}
+
+	gui.MessageBox("Информация о книге", strings.Join(textList, "\r\n"), gui.MsgBoxOK|gui.MsgBoxIconWarning)
 }
