@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	buf_size = 1024 * 64
+	buf_size = 1024 * 32
 	timeout  = time.Second * 3
 )
 
@@ -132,8 +132,12 @@ func (c *Connection) Seek(offset int64, whence int) (int64, error) {
 		panic(fmt.Sprintf("Invalid whence: %v", whence))
 	}
 
-	if position < 0 || position > c.contentLength {
-		return 0, fmt.Errorf("connection: invalid offset")
+	if position > c.contentLength {
+		return 0, fmt.Errorf("connection: offset greater than the end of the body")
+	}
+
+	if position < 0 {
+		position = 0
 	}
 
 	leftEdge := c.reads - int64(c.bufFinish)
