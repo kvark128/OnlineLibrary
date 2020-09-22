@@ -20,7 +20,6 @@ import (
 const (
 	MP3_FORMAT = "audio/mpeg"
 	LKF_FORMAT = "audio/x-lkf"
-	LGK_FORMAT = "application/lgk"
 )
 
 type Player struct {
@@ -34,11 +33,11 @@ type Player struct {
 	trk               *track
 }
 
-func NewPlayer(book string, r *daisy.Resources) *Player {
+func NewPlayer(book string, playlist []daisy.Resource) *Player {
 	p := &Player{
 		playing:  new(flag.Flag),
 		wg:       new(sync.WaitGroup),
-		playList: r.Resources,
+		playList: playlist,
 		book:     book,
 	}
 	return p
