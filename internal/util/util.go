@@ -8,8 +8,8 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/kvark128/av3715/internal/connect"
-	"github.com/kvark128/av3715/internal/gui"
+	"github.com/kvark128/OnlineLibrary/internal/connect"
+	"github.com/kvark128/OnlineLibrary/internal/gui"
 	daisy "github.com/kvark128/daisyonline"
 )
 

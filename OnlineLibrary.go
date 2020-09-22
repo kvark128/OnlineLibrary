@@ -6,10 +6,10 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/kvark128/av3715/internal/config"
-	"github.com/kvark128/av3715/internal/events"
-	"github.com/kvark128/av3715/internal/gui"
-	"github.com/kvark128/av3715/internal/manager"
+	"github.com/kvark128/OnlineLibrary/internal/config"
+	"github.com/kvark128/OnlineLibrary/internal/events"
+	"github.com/kvark128/OnlineLibrary/internal/gui"
+	"github.com/kvark128/OnlineLibrary/internal/manager"
 	daisy "github.com/kvark128/daisyonline"
 )
 

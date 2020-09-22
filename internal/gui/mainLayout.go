@@ -1,7 +1,7 @@
 package gui
 
 import (
-	"github.com/kvark128/av3715/internal/events"
+	"github.com/kvark128/OnlineLibrary/internal/events"
 	"github.com/lxn/walk"
 	. "github.com/lxn/walk/declarative"
 )

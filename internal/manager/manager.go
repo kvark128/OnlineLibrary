@@ -7,11 +7,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/kvark128/av3715/internal/config"
-	"github.com/kvark128/av3715/internal/events"
-	"github.com/kvark128/av3715/internal/gui"
-	"github.com/kvark128/av3715/internal/player"
-	"github.com/kvark128/av3715/internal/util"
+	"github.com/kvark128/OnlineLibrary/internal/config"
+	"github.com/kvark128/OnlineLibrary/internal/events"
+	"github.com/kvark128/OnlineLibrary/internal/gui"
+	"github.com/kvark128/OnlineLibrary/internal/player"
+	"github.com/kvark128/OnlineLibrary/internal/util"
 	daisy "github.com/kvark128/daisyonline"
 )
 

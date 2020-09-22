@@ -5,7 +5,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/kvark128/av3715/internal/winmm"
+	"github.com/kvark128/OnlineLibrary/internal/winmm"
 	"github.com/kvark128/minimp3"
 )
 

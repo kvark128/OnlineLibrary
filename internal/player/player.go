@@ -8,11 +8,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/kvark128/av3715/internal/config"
-	"github.com/kvark128/av3715/internal/connect"
-	"github.com/kvark128/av3715/internal/flag"
-	"github.com/kvark128/av3715/internal/lkf"
-	"github.com/kvark128/av3715/internal/util"
+	"github.com/kvark128/OnlineLibrary/internal/config"
+	"github.com/kvark128/OnlineLibrary/internal/connect"
+	"github.com/kvark128/OnlineLibrary/internal/flag"
+	"github.com/kvark128/OnlineLibrary/internal/lkf"
+	"github.com/kvark128/OnlineLibrary/internal/util"
 	daisy "github.com/kvark128/daisyonline"
 )
 
