@@ -7,12 +7,18 @@ import (
 	"path/filepath"
 )
 
-const configfile = "config.json"
+const config_file = "config.json"
+const program_name = "OnlineLibrary"
 
 var (
 	Conf      *Config
-	configdir string
+	config_dir string
 )
+
+type Service struct {
+	Credentials Credentials `json:"credentials"`
+	URL string `json:"url"`
+}
 
 type Credentials struct {
 	Username string `json:"username"`
@@ -20,9 +26,8 @@ type Credentials struct {
 }
 
 type Config struct {
-	Credentials Credentials `json:"credentials"`
 	UserData    string      `json:"user_data"`
-	ServiceURL  string      `json:"service_url"`
+	Services  []Service      `json:"services"`
 }
 
 func Initialize(configDir string) {
@@ -30,39 +35,38 @@ func Initialize(configDir string) {
 		panic("Config already initialized")
 	}
 
-	configdir = configDir
+	config_dir = configDir
 	Conf = &Config{
-		UserData:   filepath.Join(os.Getenv("USERPROFILE"), "AV3715"),
-		ServiceURL: "https://do.av3715.ru",
+		UserData:   filepath.Join(os.Getenv("USERPROFILE"), program_name),
 	}
 
-	path := filepath.Join(configdir, configfile)
+	path := filepath.Join(config_dir, config_file)
 	f, err := os.Open(path)
 	if err != nil {
-		log.Printf("Opening config file: %s\n", err)
+		log.Printf("Opening config file: %v", err)
 		return
 	}
 	defer f.Close()
 
 	d := json.NewDecoder(f)
 	if err := d.Decode(Conf); err != nil {
-		log.Printf("Loading config: %s\n", err)
+		log.Printf("Loading config: %v", err)
 	}
 }
 
 func Save() {
-	os.MkdirAll(configdir, os.ModeDir)
-	path := filepath.Join(configdir, configfile)
+	os.MkdirAll(config_dir, os.ModeDir)
+	path := filepath.Join(config_dir, config_file)
 	f, err := os.Create(path)
 	if err != nil {
-		log.Printf("Creating config file: %s\n", err)
+		log.Printf("Creating config file: %v", err)
 		return
 	}
 	defer f.Close()
 
 	e := json.NewEncoder(f)
-	e.SetIndent("", "\t")
+	e.SetIndent("", "\t") // for readability
 	if err := e.Encode(Conf); err != nil {
-		log.Printf("Saving config: %s\n", err)
+		log.Printf("Saving config: %v", err)
 	}
 }

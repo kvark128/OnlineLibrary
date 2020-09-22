@@ -4,7 +4,6 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	"time"
 
 	"github.com/kvark128/OnlineLibrary/internal/config"
 	"github.com/kvark128/OnlineLibrary/internal/events"
@@ -20,7 +19,7 @@ const (
 	LGK_FORMAT = "application/lgk"
 )
 
-const ProgramVersion = "2020.09.15"
+const ProgramVersion = "2020.09.22"
 
 // General client configuration of DAISY-online
 var readingSystemAttributes = daisy.ReadingSystemAttributes{
@@ -39,25 +38,25 @@ var readingSystemAttributes = daisy.ReadingSystemAttributes{
 }
 
 func main() {
-	appData := filepath.Join(os.Getenv("APPDATA"), "AV3715")
+	appData := filepath.Join(os.Getenv("APPDATA"), "OnlineLibrary")
 	config.Initialize(appData)
 
 	os.MkdirAll(config.Conf.UserData, os.ModeDir)
-	if fl, err := os.Create(filepath.Join(config.Conf.UserData, "av3715.log")); err == nil {
+	if fl, err := os.Create(filepath.Join(config.Conf.UserData, "session.log")); err == nil {
 		log.SetOutput(fl)
 		defer fl.Close()
 	}
 	log.SetPrefix("\n")
 	log.SetFlags(log.Lmsgprefix | log.Ltime | log.Lshortfile)
 
-	log.Printf("Starting av3715 version %s", ProgramVersion)
+	log.Printf("Starting OnlineLibrary version %s", ProgramVersion)
 	eventCH := make(chan events.Event, 16)
 
 	if err := gui.Initialize(eventCH); err != nil {
 		log.Fatal(err)
 	}
 
-	mng := manager.NewManager(daisy.NewClient(config.Conf.ServiceURL, time.Second*3), &readingSystemAttributes)
+	mng := manager.NewManager(&readingSystemAttributes)
 	go mng.Start(eventCH)
 
 	eventCH <- events.LIBRARY_LOGON

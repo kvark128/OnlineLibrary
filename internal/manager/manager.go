@@ -26,9 +26,9 @@ type Manager struct {
 	userResponses           []daisy.UserResponse
 }
 
-func NewManager(client *daisy.Client, readingSystemAttributes *daisy.ReadingSystemAttributes) *Manager {
+func NewManager(readingSystemAttributes *daisy.ReadingSystemAttributes) *Manager {
 	return &Manager{
-		client:                  client,
+		client:                  daisy.NewClient("", time.Duration(0)), // Empty client
 		readingSystemAttributes: readingSystemAttributes,
 	}
 }
@@ -80,9 +80,7 @@ func (m *Manager) Start(eventCH chan events.Event) {
 
 		case events.LIBRARY_RELOGON:
 			m.logoff()
-			config.Conf.Credentials.Username = ""
-			config.Conf.Credentials.Password = ""
-			config.Conf.ServiceURL = ""
+			config.Conf.Services = config.Conf.Services[:len(config.Conf.Services)-1]
 			m.logon()
 
 		case events.ISSUE_BOOK:
@@ -152,11 +150,17 @@ func (m *Manager) logoff() {
 }
 
 func (m *Manager) logon() error {
-	username := config.Conf.Credentials.Username
-	password := config.Conf.Credentials.Password
-	serviceURL := config.Conf.ServiceURL
+	var username, password, serviceURL string
 	var err error
 	var save bool
+
+	if len(config.Conf.Services) != 0 {
+		// We always use the last service in the list to log in
+		service := config.Conf.Services[len(config.Conf.Services)-1]
+		username = service.Credentials.Username
+		password = service.Credentials.Password
+		serviceURL = service.URL
+	}
 
 	if username == "" || password == "" || serviceURL == "" {
 		username, password, serviceURL, save, err = gui.Credentials()
@@ -166,7 +170,7 @@ func (m *Manager) logon() error {
 		}
 	}
 
-	m.client = daisy.NewClient(serviceURL, time.Second*3)
+	m.client = daisy.NewClient(serviceURL, time.Second*5)
 	ok, err := m.client.LogOn(username, password)
 	if err != nil {
 		return err
@@ -187,9 +191,13 @@ func (m *Manager) logon() error {
 	}
 
 	if save {
-		config.Conf.Credentials.Username = username
-		config.Conf.Credentials.Password = password
-		config.Conf.ServiceURL = serviceURL
+		if len(config.Conf.Services) == 0 {
+			config.Conf.Services = append(config.Conf.Services, config.Service{})
+		}
+		index := len(config.Conf.Services) - 1
+		config.Conf.Services[index].Credentials.Username = username
+		config.Conf.Services[index].Credentials.Password = password
+		config.Conf.Services[index].URL = serviceURL
 	}
 
 	m.setQuestions(daisy.UserResponse{QuestionID: daisy.Default})
