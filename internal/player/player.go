@@ -178,8 +178,7 @@ func (p *Player) start(trackIndex int) {
 		case MP3_FORMAT:
 			mp3 = src
 		default:
-			log.Printf("Pass %s: %s", uri, track.MimeType)
-			continue
+			panic("Unsupported MimeType")
 		}
 
 		p.Lock()
