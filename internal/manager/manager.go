@@ -295,10 +295,15 @@ func (m *Manager) setContent(contentID string) {
 }
 
 func (m *Manager) playBook(index int) {
-	m.bookplayer.Stop()
 	book := m.books.ContentItems[index]
+	playedBook := m.bookplayer.Book()
+	if playedBook != nil && playedBook.ID == book.ID {
+		m.bookplayer.Pause()
+		return
+	}
+	m.bookplayer.Stop()
 
-	resources, err := m.client.GetContentResources(book.ID)
+	r, err := m.client.GetContentResources(book.ID)
 	if err != nil {
 		msg := fmt.Sprintf("GetContentResources: %s", err)
 		log.Printf(msg)
@@ -306,15 +311,7 @@ func (m *Manager) playBook(index int) {
 		return
 	}
 
-	// The player supports only LKF and MP3 formats. Unsupported resources must not be uploaded to the player
-	var playlist []daisy.Resource
-	for _, r := range resources.Resources {
-		if r.MimeType == player.LKF_FORMAT || r.MimeType == player.MP3_FORMAT {
-			playlist = append(playlist, r)
-		}
-	}
-
-	m.bookplayer = player.NewPlayer(book.Label.Text, playlist)
+	m.bookplayer = player.NewPlayer(book, r.Resources)
 	m.bookplayer.Play(0)
 }
 

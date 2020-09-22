@@ -25,7 +25,7 @@ const (
 type Player struct {
 	sync.Mutex
 	playList          []daisy.Resource
-	book              string
+	book              daisy.ContentItem
 	playing           *flag.Flag
 	wg                *sync.WaitGroup
 	pause             bool
@@ -33,14 +33,28 @@ type Player struct {
 	trk               *track
 }
 
-func NewPlayer(book string, playlist []daisy.Resource) *Player {
+func NewPlayer(book daisy.ContentItem, resources []daisy.Resource) *Player {
 	p := &Player{
-		playing:  new(flag.Flag),
-		wg:       new(sync.WaitGroup),
-		playList: playlist,
-		book:     book,
+		playing: new(flag.Flag),
+		wg:      new(sync.WaitGroup),
+		book:    book,
 	}
+
+	// The player supports only LKF and MP3 formats. Unsupported resources must not be uploaded to the player
+	for _, r := range resources {
+		if r.MimeType == LKF_FORMAT || r.MimeType == MP3_FORMAT {
+			p.playList = append(p.playList, r)
+		}
+	}
+
 	return p
+}
+
+func (p *Player) Book() *daisy.ContentItem {
+	if p == nil {
+		return nil
+	}
+	return &p.book
 }
 
 func (p *Player) ChangeTrack(offset int) {
@@ -153,7 +167,7 @@ func (p *Player) start(trackIndex int) {
 		var uri string
 		var err error
 
-		uri = filepath.Join(config.Conf.UserData, util.ReplaceProhibitCharacters(p.book), track.LocalURI)
+		uri = filepath.Join(config.Conf.UserData, util.ReplaceProhibitCharacters(p.book.Label.Text), track.LocalURI)
 		if info, e := os.Stat(uri); e == nil {
 			if !info.IsDir() && info.Size() == track.Size {
 				// track already exist
