@@ -12,7 +12,7 @@ import (
 
 const (
 	buf_size = 1024 * 32
-	timeout  = time.Second * 3
+	timeout  = time.Second * 5
 )
 
 type Connection struct {
@@ -105,6 +105,7 @@ func (c *Connection) fillBuf() {
 	c.bufStart = 0
 	c.bufFinish = 0
 
+fillLoop:
 	for c.bufFinish < len(c.buf) {
 		c.timer.Reset(timeout)
 		n, c.lastErr = c.resp.Body.Read(c.buf[c.bufFinish:])
@@ -113,7 +114,16 @@ func (c *Connection) fillBuf() {
 		c.reads += int64(n)
 
 		if c.lastErr != nil {
-			break
+			if c.reads < c.contentLength {
+				for attempt := 1; attempt <= 3; attempt++ {
+					log.Printf("connection recovery: attempt %v/3. Reason: %v", attempt, c.lastErr)
+					if c.setNewResponse() == nil {
+						c.lastErr = nil
+						continue fillLoop
+					}
+				}
+			}
+			break fillLoop
 		}
 	}
 }
