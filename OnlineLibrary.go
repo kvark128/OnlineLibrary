@@ -25,7 +25,7 @@ const ProgramVersion = "2020.09.15"
 // General client configuration of DAISY-online
 var readingSystemAttributes = daisy.ReadingSystemAttributes{
 	Manufacturer: "Kvark <kvark128@yandex.ru>",
-	Model:        "WindowsClient",
+	Model:        "OnlineLibrary",
 	Version:      ProgramVersion,
 	Config: daisy.Config{
 		SupportsMultipleSelections:        false,
