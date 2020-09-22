@@ -360,19 +360,14 @@ func (m *Manager) showBookProperties(index int) {
 	}
 
 	var textList []string
-	if md.Metadata.Title != "" {
-		text := fmt.Sprintf("Название: %v", md.Metadata.Title)
-		textList = append(textList, text)
-	}
-
-	if md.Metadata.Publisher != "" {
-		text := fmt.Sprintf("Издательство: %v", md.Metadata.Publisher)
-		textList = append(textList, text)
-	}
-
 	if len(md.Metadata.Description) != 0 {
-		text := fmt.Sprintf("Описание: %v", strings.Join(md.Metadata.Description, " "))
+		text := fmt.Sprintf("%v", strings.Join(md.Metadata.Description, " "))
 		textList = append(textList, text)
+	}
+
+	if len(textList) == 0 {
+		gui.MessageBox("Ошибка", "Нет доступной информации о книге", gui.MsgBoxOK|gui.MsgBoxIconError)
+		return
 	}
 
 	gui.MessageBox("Информация о книге", strings.Join(textList, "\r\n"), gui.MsgBoxOK|gui.MsgBoxIconWarning)
