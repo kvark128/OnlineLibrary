@@ -80,7 +80,7 @@ func (m *Manager) Start(eventCH chan events.Event) {
 
 		case events.LIBRARY_RELOGON:
 			m.logoff()
-			config.Conf.Services = config.Conf.Services[:len(config.Conf.Services)-1]
+			config.Conf.Services = config.Conf.Services[1:] // Removing first service
 			m.logon()
 
 		case events.ISSUE_BOOK:
@@ -152,26 +152,25 @@ func (m *Manager) logoff() {
 func (m *Manager) logon() error {
 	var username, password, serviceURL string
 	var err error
-	var save bool
 
 	if len(config.Conf.Services) != 0 {
-		// We always use the last service in the list to log in
-		service := config.Conf.Services[len(config.Conf.Services)-1]
+		// We always use the first service in the list to log in
+		service := config.Conf.Services[0]
 		username = service.Credentials.Username
 		password = service.Credentials.Password
 		serviceURL = service.URL
 	}
 
 	if username == "" || password == "" || serviceURL == "" {
-		username, password, serviceURL, save, err = gui.Credentials()
+		username, password, serviceURL, _, err = gui.Credentials()
 		if err != nil {
 			log.Printf("Credentials: %s", err)
 			return nil
 		}
 	}
 
-	m.client = daisy.NewClient(serviceURL, time.Second*5)
-	ok, err := m.client.LogOn(username, password)
+	client := daisy.NewClient(serviceURL, time.Second*5)
+	ok, err := client.LogOn(username, password)
 	if err != nil {
 		return err
 	}
@@ -180,26 +179,25 @@ func (m *Manager) logon() error {
 		return fmt.Errorf("The LogOn operation returned false")
 	}
 
-	m.serviceAttributes, err = m.client.GetServiceAttributes()
+	serviceAttributes, err := client.GetServiceAttributes()
 	if err != nil {
 		return err
 	}
 
-	_, err = m.client.SetReadingSystemAttributes(m.readingSystemAttributes)
+	_, err = client.SetReadingSystemAttributes(m.readingSystemAttributes)
 	if err != nil {
 		return err
 	}
 
-	if save {
-		if len(config.Conf.Services) == 0 {
-			config.Conf.Services = append(config.Conf.Services, config.Service{})
-		}
-		index := len(config.Conf.Services) - 1
-		config.Conf.Services[index].Credentials.Username = username
-		config.Conf.Services[index].Credentials.Password = password
-		config.Conf.Services[index].URL = serviceURL
+	if len(config.Conf.Services) == 0 {
+		config.Conf.Services = append(config.Conf.Services, config.Service{})
 	}
+	config.Conf.Services[0].Credentials.Username = username
+	config.Conf.Services[0].Credentials.Password = password
+	config.Conf.Services[0].URL = serviceURL
 
+	m.client = client
+	m.serviceAttributes = serviceAttributes
 	m.setQuestions(daisy.UserResponse{QuestionID: daisy.Default})
 	return nil
 }
@@ -320,7 +318,7 @@ func (m *Manager) playBook(index int) {
 	}
 
 	m.bookplayer = player.NewPlayer(book, r.Resources)
-	fragment, elapsedTime := config.Conf.Services[len(config.Conf.Services)-1].RecentBooks.GetPosition(book.ID)
+	fragment, elapsedTime := config.Conf.Services[0].RecentBooks.GetPosition(book.ID)
 	m.bookplayer.Play(fragment, elapsedTime)
 }
 
