@@ -335,7 +335,7 @@ func (m *Manager) downloadBook(index int) {
 	}
 
 	// Downloading book should not block handling of other events
-	go util.DownloadBook(config.Conf.UserData, book.Label.Text, r)
+	go util.DownloadBook(config.UserData(), book.Label.Text, r)
 }
 
 func (m *Manager) removeBook(index int) {

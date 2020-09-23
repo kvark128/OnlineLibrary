@@ -38,11 +38,8 @@ var readingSystemAttributes = daisy.ReadingSystemAttributes{
 }
 
 func main() {
-	appData := filepath.Join(os.Getenv("APPDATA"), "OnlineLibrary")
-	config.Initialize(appData)
-
-	os.MkdirAll(config.Conf.UserData, os.ModeDir)
-	if fl, err := os.Create(filepath.Join(config.Conf.UserData, "session.log")); err == nil {
+	config.Initialize()
+	if fl, err := os.Create(filepath.Join(config.UserData(), config.LogFile)); err == nil {
 		log.SetOutput(fl)
 		defer fl.Close()
 	}

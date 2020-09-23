@@ -8,13 +8,13 @@ import (
 	"time"
 )
 
-const config_file = "config.json"
-const program_name = "OnlineLibrary"
-
-var (
-	Conf       *Config
-	config_dir string
+const (
+	ConfigFile  = "config.json"
+	ProgramName = "OnlineLibrary"
+	LogFile     = "session.log"
 )
+
+var Conf Config
 
 type Book struct {
 	ID          string        `json:"id"`
@@ -23,9 +23,10 @@ type Book struct {
 }
 
 type Service struct {
-	Credentials Credentials `json:"credentials"`
+	Name        string      `json:"name"`
 	URL         string      `json:"url"`
-	RecentBooks RecentBooks `json:"recent_books"`
+	Credentials Credentials `json:"credentials"`
+	RecentBooks RecentBooks `json:"recent_books,omitempty"`
 }
 
 type Credentials struct {
@@ -34,21 +35,17 @@ type Credentials struct {
 }
 
 type Config struct {
-	UserData string    `json:"user_data"`
 	Services []Service `json:"services"`
 }
 
-func Initialize(configDir string) {
-	if Conf != nil {
-		panic("Config already initialized")
-	}
+func UserData() string {
+	return filepath.Join(os.Getenv("USERPROFILE"), ProgramName)
+}
 
-	config_dir = configDir
-	Conf = &Config{
-		UserData: filepath.Join(os.Getenv("USERPROFILE"), program_name),
-	}
+func Initialize() {
+	os.MkdirAll(UserData(), os.ModeDir)
 
-	path := filepath.Join(config_dir, config_file)
+	path := filepath.Join(UserData(), ConfigFile)
 	f, err := os.Open(path)
 	if err != nil {
 		log.Printf("Opening config file: %v", err)
@@ -57,14 +54,13 @@ func Initialize(configDir string) {
 	defer f.Close()
 
 	d := json.NewDecoder(f)
-	if err := d.Decode(Conf); err != nil {
+	if err := d.Decode(&Conf); err != nil {
 		log.Printf("Loading config: %v", err)
 	}
 }
 
 func Save() {
-	os.MkdirAll(config_dir, os.ModeDir)
-	path := filepath.Join(config_dir, config_file)
+	path := filepath.Join(UserData(), ConfigFile)
 	f, err := os.Create(path)
 	if err != nil {
 		log.Printf("Creating config file: %v", err)
@@ -74,7 +70,7 @@ func Save() {
 
 	e := json.NewEncoder(f)
 	e.SetIndent("", "\t") // for readability
-	if err := e.Encode(Conf); err != nil {
+	if err := e.Encode(&Conf); err != nil {
 		log.Printf("Saving config: %v", err)
 	}
 }

@@ -170,7 +170,7 @@ func (p *Player) start(trackIndex int, offset time.Duration) {
 		var uri string
 		var err error
 
-		uri = filepath.Join(config.Conf.UserData, util.ReplaceProhibitCharacters(p.book.Label.Text), track.LocalURI)
+		uri = filepath.Join(config.UserData(), util.ReplaceProhibitCharacters(p.book.Label.Text), track.LocalURI)
 		if info, e := os.Stat(uri); e == nil {
 			if !info.IsDir() && info.Size() == track.Size {
 				// track already exist
