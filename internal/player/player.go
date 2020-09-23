@@ -50,6 +50,19 @@ func NewPlayer(book daisy.ContentItem, resources []daisy.Resource) *Player {
 	return p
 }
 
+func (p *Player) Position() (int, time.Duration) {
+	if p == nil {
+		return 0, 0
+	}
+
+	p.Lock()
+	defer p.Unlock()
+	if p.trk != nil {
+		return p.currentTrackIndex, p.trk.elapsedTime()
+	}
+	return p.currentTrackIndex, 0
+}
+
 func (p *Player) Book() *daisy.ContentItem {
 	if p == nil {
 		return nil

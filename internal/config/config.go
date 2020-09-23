@@ -11,13 +11,20 @@ const config_file = "config.json"
 const program_name = "OnlineLibrary"
 
 var (
-	Conf      *Config
+	Conf       *Config
 	config_dir string
 )
 
+type Book struct {
+	ID          string `json:"id"`
+	Fragment    int    `json:"fragment"`
+	ElapsedTime int    `json:"elapsed_time"`
+}
+
 type Service struct {
 	Credentials Credentials `json:"credentials"`
-	URL string `json:"url"`
+	URL         string      `json:"url"`
+	RecentBooks RecentBooks `json:"recent_books"`
 }
 
 type Credentials struct {
@@ -26,8 +33,8 @@ type Credentials struct {
 }
 
 type Config struct {
-	UserData    string      `json:"user_data"`
-	Services  []Service      `json:"services"`
+	UserData string    `json:"user_data"`
+	Services []Service `json:"services"`
 }
 
 func Initialize(configDir string) {
@@ -37,7 +44,7 @@ func Initialize(configDir string) {
 
 	config_dir = configDir
 	Conf = &Config{
-		UserData:   filepath.Join(os.Getenv("USERPROFILE"), program_name),
+		UserData: filepath.Join(os.Getenv("USERPROFILE"), program_name),
 	}
 
 	path := filepath.Join(config_dir, config_file)

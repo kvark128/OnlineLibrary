@@ -311,6 +311,11 @@ func (m *Manager) playBook(index int) {
 	}
 	m.bookplayer.Stop()
 
+	if playedBook != nil {
+		fragment, t := m.bookplayer.Position()
+		config.Conf.Services[len(config.Conf.Services)-1].RecentBooks.Update(playedBook.ID, fragment, int(t.Seconds()))
+	}
+
 	r, err := m.client.GetContentResources(book.ID)
 	if err != nil {
 		msg := fmt.Sprintf("GetContentResources: %s", err)

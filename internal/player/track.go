@@ -54,6 +54,13 @@ func (trk *track) play() {
 	trk.wp.Close()
 }
 
+func (trk *track) elapsedTime() time.Duration {
+	if trk.paused {
+		return trk.lost
+	}
+	return trk.lost + time.Since(trk.start)
+}
+
 func (trk *track) pause(pause bool) bool {
 	if trk.paused == pause {
 		return false
