@@ -64,6 +64,9 @@ func (trk *track) getElapsedTime() time.Duration {
 }
 
 func (trk *track) pause(pause bool) bool {
+	trk.Lock()
+	defer trk.Unlock()
+
 	if trk.paused == pause {
 		return false
 	}
@@ -104,9 +107,9 @@ func (trk *track) rewind(offset time.Duration) error {
 	if elapsedTime < 0 {
 		elapsedTime = time.Duration(0)
 	}
-	lostInBytes := int64(float64(trk.sampleRate*trk.channels*2) * elapsedTime.Seconds())
+	offsetInBytes := int64(float64(trk.sampleRate*trk.channels*2) * elapsedTime.Seconds())
 
-	if _, err := trk.dec.Seek(lostInBytes, io.SeekStart); err != nil {
+	if _, err := trk.dec.Seek(offsetInBytes, io.SeekStart); err != nil {
 		return err
 	}
 
