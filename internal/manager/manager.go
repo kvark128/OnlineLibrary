@@ -311,11 +311,6 @@ func (m *Manager) playBook(index int) {
 	}
 	m.bookplayer.Stop()
 
-	if playedBook != nil {
-		fragment, t := m.bookplayer.Position()
-		config.Conf.Services[len(config.Conf.Services)-1].RecentBooks.Update(playedBook.ID, fragment, int(t.Seconds()))
-	}
-
 	r, err := m.client.GetContentResources(book.ID)
 	if err != nil {
 		msg := fmt.Sprintf("GetContentResources: %s", err)
@@ -325,7 +320,8 @@ func (m *Manager) playBook(index int) {
 	}
 
 	m.bookplayer = player.NewPlayer(book, r.Resources)
-	m.bookplayer.Play(0)
+	fragment, elapsedTime := config.Conf.Services[len(config.Conf.Services)-1].RecentBooks.GetPosition(book.ID)
+	m.bookplayer.Play(fragment, elapsedTime)
 }
 
 func (m *Manager) downloadBook(index int) {

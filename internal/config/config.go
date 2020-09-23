@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"time"
 )
 
 const config_file = "config.json"
@@ -16,9 +17,9 @@ var (
 )
 
 type Book struct {
-	ID          string `json:"id"`
-	Fragment    int    `json:"fragment"`
-	ElapsedTime int    `json:"elapsed_time"`
+	ID          string        `json:"id"`
+	Fragment    int           `json:"fragment"`
+	ElapsedTime time.Duration `json:"elapsed_time"`
 }
 
 type Service struct {

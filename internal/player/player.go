@@ -50,19 +50,6 @@ func NewPlayer(book daisy.ContentItem, resources []daisy.Resource) *Player {
 	return p
 }
 
-func (p *Player) Position() (int, time.Duration) {
-	if p == nil {
-		return 0, 0
-	}
-
-	p.Lock()
-	defer p.Unlock()
-	if p.trk != nil {
-		return p.currentTrackIndex, p.trk.elapsedTime()
-	}
-	return p.currentTrackIndex, 0
-}
-
 func (p *Player) Book() *daisy.ContentItem {
 	if p == nil {
 		return nil
@@ -78,7 +65,7 @@ func (p *Player) ChangeTrack(offset int) {
 	p.Lock()
 	newTrackIndex := p.currentTrackIndex + offset
 	p.Unlock()
-	p.Play(newTrackIndex)
+	p.Play(newTrackIndex, 0)
 }
 
 func (p *Player) ChangeVolume(offset int) {
@@ -129,7 +116,7 @@ func (p *Player) Rewind(offset time.Duration) {
 	p.Unlock()
 }
 
-func (p *Player) Play(trackIndex int) {
+func (p *Player) Play(trackIndex int, offset time.Duration) {
 	if p == nil {
 		return
 	}
@@ -140,7 +127,7 @@ func (p *Player) Play(trackIndex int) {
 	p.Stop()
 	p.pause = false
 	p.wg.Add(1)
-	go p.start(trackIndex)
+	go p.start(trackIndex, offset)
 }
 
 func (p *Player) Pause() {
@@ -163,14 +150,17 @@ func (p *Player) Stop() {
 
 	p.playing.Clear()
 	p.Lock()
+	var elapsedTime time.Duration
 	if p.trk != nil {
+		elapsedTime = p.trk.getElapsedTime()
 		p.trk.stop()
 	}
+	config.Conf.Services[len(config.Conf.Services)-1].RecentBooks.Update(p.book.ID, p.currentTrackIndex, elapsedTime)
 	p.Unlock()
 	p.wg.Wait()
 }
 
-func (p *Player) start(trackIndex int) {
+func (p *Player) start(trackIndex int, offset time.Duration) {
 	defer p.wg.Done()
 	defer p.playing.Clear()
 	p.playing.Set()
@@ -215,6 +205,10 @@ func (p *Player) start(trackIndex int) {
 			break
 		}
 		p.trk = newTrack(mp3)
+		if offset > 0 {
+			p.trk.rewind(offset)
+			offset = 0
+		}
 		p.currentTrackIndex = trackIndex + i
 		p.Unlock()
 

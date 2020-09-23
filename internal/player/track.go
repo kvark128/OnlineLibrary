@@ -11,16 +11,16 @@ import (
 
 type track struct {
 	sync.Mutex
-	stopped    bool
-	paused     bool
-	beRewind   bool
-	lost       time.Duration
-	start      time.Time
-	dec        *minimp3.Decoder
-	sampleRate int
-	channels   int
-	samples    []byte
-	wp         *winmm.WavePlayer
+	stopped     bool
+	paused      bool
+	beRewind    bool
+	elapsedTime time.Duration
+	start       time.Time
+	dec         *minimp3.Decoder
+	sampleRate  int
+	channels    int
+	samples     []byte
+	wp          *winmm.WavePlayer
 }
 
 func newTrack(mp3 io.Reader) *track {
@@ -54,11 +54,13 @@ func (trk *track) play() {
 	trk.wp.Close()
 }
 
-func (trk *track) elapsedTime() time.Duration {
+func (trk *track) getElapsedTime() time.Duration {
+	trk.Lock()
+	defer trk.Unlock()
 	if trk.paused {
-		return trk.lost
+		return trk.elapsedTime
 	}
-	return trk.lost + time.Since(trk.start)
+	return trk.elapsedTime + time.Since(trk.start)
 }
 
 func (trk *track) pause(pause bool) bool {
@@ -69,7 +71,7 @@ func (trk *track) pause(pause bool) bool {
 
 	if trk.paused {
 		if !trk.start.IsZero() {
-			trk.lost += time.Since(trk.start)
+			trk.elapsedTime += time.Since(trk.start)
 		}
 	} else {
 		trk.start = time.Now()
@@ -98,17 +100,17 @@ func (trk *track) rewind(offset time.Duration) error {
 	trk.Lock()
 	defer trk.Unlock()
 
-	lost := trk.lost + offset
-	if lost < 0 {
-		lost = time.Duration(0)
+	elapsedTime := trk.elapsedTime + offset
+	if elapsedTime < 0 {
+		elapsedTime = time.Duration(0)
 	}
-	lostInBytes := int64(float64(trk.sampleRate*trk.channels*2) * lost.Seconds())
+	lostInBytes := int64(float64(trk.sampleRate*trk.channels*2) * elapsedTime.Seconds())
 
 	if _, err := trk.dec.Seek(lostInBytes, io.SeekStart); err != nil {
 		return err
 	}
 
-	trk.lost = lost
+	trk.elapsedTime = elapsedTime
 	trk.beRewind = true
 	return nil
 }

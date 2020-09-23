@@ -62,11 +62,11 @@ func main() {
 	eventCH <- events.LIBRARY_LOGON
 	gui.RunMainWindow()
 
-	config.Save()
 	eventCH <- events.PLAYER_STOP
 	eventCH <- events.LIBRARY_LOGOFF
 	close(eventCH)
 
 	mng.Wait()
+	config.Save()
 	log.Printf("Exiting")
 }
