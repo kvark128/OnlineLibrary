@@ -27,10 +27,7 @@ type Manager struct {
 }
 
 func NewManager(readingSystemAttributes *daisy.ReadingSystemAttributes) *Manager {
-	return &Manager{
-		client:                  daisy.NewClient("", time.Duration(0)), // Empty client
-		readingSystemAttributes: readingSystemAttributes,
-	}
+	return &Manager{readingSystemAttributes: readingSystemAttributes}
 }
 
 func (m *Manager) Start(eventCH chan events.Event) {
@@ -38,8 +35,12 @@ func (m *Manager) Start(eventCH chan events.Event) {
 	defer m.Done()
 
 	for evt := range eventCH {
-		switch evt {
+		if m.client == nil && evt != events.LIBRARY_LOGON {
+			// We don't have to do anything until we are logged in
+			continue
+		}
 
+		switch evt {
 		case events.ACTIVATE_MENU:
 			index := gui.CurrentListBoxIndex()
 			if m.books != nil {
