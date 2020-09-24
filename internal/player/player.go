@@ -31,6 +31,7 @@ type Player struct {
 	pause             bool
 	currentTrackIndex int
 	trk               *track
+	speed             float64
 }
 
 func NewPlayer(book daisy.ContentItem, resources []daisy.Resource) *Player {
@@ -38,6 +39,7 @@ func NewPlayer(book daisy.ContentItem, resources []daisy.Resource) *Player {
 		playing: new(flag.Flag),
 		wg:      new(sync.WaitGroup),
 		book:    book,
+		speed:   1.0,
 	}
 
 	// The player supports only LKF and MP3 formats. Unsupported resources must not be uploaded to the player
@@ -62,8 +64,15 @@ func (p *Player) ChangeSpeed(offset int) {
 		return
 	}
 	p.Lock()
+	p.speed = p.speed + (float64(offset) * 0.1)
+	if p.speed < 0.5 {
+		p.speed = 0.5
+	}
+	if p.speed > 2.0 {
+		p.speed = 2.0
+	}
 	if p.trk != nil {
-		p.trk.changeSpeed(offset)
+		p.trk.setSpeed(p.speed)
 	}
 	p.Unlock()
 }
@@ -215,7 +224,7 @@ func (p *Player) start(trackIndex int, offset time.Duration) {
 			p.Unlock()
 			break
 		}
-		p.trk = newTrack(mp3)
+		p.trk = newTrack(mp3, p.speed)
 		if offset > 0 {
 			p.trk.rewind(offset)
 			offset = 0
