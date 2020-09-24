@@ -57,6 +57,17 @@ func (p *Player) Book() *daisy.ContentItem {
 	return &p.book
 }
 
+func (p *Player) ChangeSpeed(offset int) {
+	if p == nil {
+		return
+	}
+	p.Lock()
+	if p.trk != nil {
+		p.trk.changeSpeed(offset)
+	}
+	p.Unlock()
+}
+
 func (p *Player) ChangeTrack(offset int) {
 	if p == nil {
 		return

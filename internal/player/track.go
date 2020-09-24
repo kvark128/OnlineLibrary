@@ -1,9 +1,13 @@
 package player
 
+//#include <sonic.h>
+import "C"
+
 import (
 	"io"
 	"sync"
 	"time"
+	"unsafe"
 
 	"github.com/kvark128/OnlineLibrary/internal/winmm"
 	"github.com/kvark128/minimp3"
@@ -16,6 +20,7 @@ type track struct {
 	beRewind    bool
 	elapsedTime time.Duration
 	start       time.Time
+	stream      C.sonicStream
 	dec         *minimp3.Decoder
 	sampleRate  int
 	channels    int
@@ -28,6 +33,7 @@ func newTrack(mp3 io.Reader) *track {
 	trk.dec = minimp3.NewDecoder(mp3)
 	trk.dec.Read([]byte{}) // Reads first frame
 	trk.sampleRate, trk.channels, _, _ = trk.dec.Info()
+	trk.stream = C.sonicCreateStream(C.int(trk.sampleRate), C.int(trk.channels))
 	trk.samples = make([]byte, trk.sampleRate*trk.channels*2) // buffer for 1 second
 	trk.wp = winmm.NewWavePlayer(trk.channels, trk.sampleRate, 16, len(trk.samples), winmm.WAVE_MAPPER)
 	return trk
@@ -42,16 +48,32 @@ func (trk *track) play() {
 			break
 		}
 		n, err := trk.dec.Read(trk.samples)
+		C.sonicWriteShortToStream(trk.stream, (*C.short)(unsafe.Pointer(&trk.samples[0])), C.int(n/2))
+		nSamples := C.sonicReadShortFromStream(trk.stream, (*C.short)(unsafe.Pointer(&trk.samples[0])), C.int(len(trk.samples)/2))
 		trk.Unlock()
 		if n > 0 {
-			trk.wp.Write(trk.samples[:n])
+			trk.wp.Write(trk.samples[:nSamples*2])
 		}
 		if err != nil {
 			break
 		}
 	}
 	trk.wp.Sync()
+	C.sonicDestroyStream(trk.stream)
 	trk.wp.Close()
+}
+
+func (trk *track) changeSpeed(offset int) {
+	trk.Lock()
+	v := C.float(offset)*0.1 + C.sonicGetSpeed(trk.stream)
+	if v < 0.2 {
+		v = 0.2
+	}
+	if v > 2.0 {
+		v = 2.0
+	}
+	C.sonicSetSpeed(trk.stream, v)
+	trk.Unlock()
 }
 
 func (trk *track) getElapsedTime() time.Duration {

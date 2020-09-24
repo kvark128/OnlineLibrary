@@ -114,6 +114,12 @@ func (m *Manager) Start(eventCH chan events.Event) {
 				m.downloadBook(index)
 			}
 
+		case events.PLAYER_SPEED_UP:
+			m.bookplayer.ChangeSpeed(+1)
+
+		case events.PLAYER_SPEED_DOWN:
+			m.bookplayer.ChangeSpeed(-1)
+
 		case events.PLAYER_VOLUME_UP:
 			m.bookplayer.ChangeVolume(+1)
 
