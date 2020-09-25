@@ -88,11 +88,10 @@ func CurrentListBoxIndex() int {
 	return <-ic
 }
 
-func Credentials() (username, password, serviceURL string, save bool, err error) {
+func Credentials() (username, password, serviceURL string, err error) {
 	var (
 		dlg                               *walk.Dialog
 		usernameLE, passwordLE, serviceLE *walk.LineEdit
-		RememberCB                        *walk.CheckBox
 		OkPB, CancelPB                    *walk.PushButton
 	)
 
@@ -120,12 +119,7 @@ func Credentials() (username, password, serviceURL string, save bool, err error)
 			LineEdit{
 				Accessibility: Accessibility{Name: "Адрес сервера:"},
 				AssignTo:      &serviceLE,
-			},
-
-			CheckBox{
-				AssignTo: &RememberCB,
-				Text:     "Запомнить меня",
-				Checked:  false,
+				Text:          "https://",
 			},
 
 			PushButton{
@@ -138,9 +132,6 @@ func Credentials() (username, password, serviceURL string, save bool, err error)
 					if username == "" || password == "" || serviceURL == "" {
 						err = errors.New("Username or password or serviceURL is empty")
 						return
-					}
-					if RememberCB.CheckState() == walk.CheckChecked {
-						save = true
 					}
 					dlg.Cancel()
 				},

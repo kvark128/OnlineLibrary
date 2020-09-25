@@ -169,7 +169,7 @@ func (m *Manager) logon() error {
 	}
 
 	if username == "" || password == "" || serviceURL == "" {
-		username, password, serviceURL, _, err = gui.Credentials()
+		username, password, serviceURL, err = gui.Credentials()
 		if err != nil {
 			log.Printf("Credentials: %s", err)
 			return nil
