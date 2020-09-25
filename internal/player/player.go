@@ -175,7 +175,7 @@ func (p *Player) Stop() {
 		elapsedTime = p.trk.getElapsedTime()
 		p.trk.stop()
 	}
-	config.Conf.Services[len(config.Conf.Services)-1].RecentBooks.Update(p.book.ID, p.currentTrackIndex, elapsedTime)
+	config.Conf.Services[0].RecentBooks.Update(p.book.ID, p.currentTrackIndex, elapsedTime)
 	p.Unlock()
 	p.wg.Wait()
 }

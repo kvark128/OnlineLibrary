@@ -9,8 +9,12 @@ type RecentBooks []Book
 func (rb RecentBooks) Update(id string, fragment int, elapsedTime time.Duration) {
 	for i, b := range rb {
 		if b.ID == id {
-			rb[i].Fragment = fragment
-			rb[i].ElapsedTime = elapsedTime
+			b.Fragment = fragment
+			b.ElapsedTime = elapsedTime
+			if i != 0 {
+				copy(rb[1:1+i], rb[:i])
+			}
+			rb[0] = b
 			return
 		}
 	}
@@ -21,18 +25,19 @@ func (rb RecentBooks) Update(id string, fragment int, elapsedTime time.Duration)
 		ElapsedTime: elapsedTime,
 	}
 	rb = append(rb, book)
+	copy(rb[1:len(rb)], rb[:len(rb)-1])
+	rb[0] = book
 
-	if len(rb) > 8 {
-		rb = rb[len(rb)-8:]
+	if len(rb) > 256 {
+		rb = rb[:256]
 	}
 
-	Conf.Services[len(Conf.Services)-1].RecentBooks = rb
+	Conf.Services[0].RecentBooks = rb
 }
 
 func (rb RecentBooks) GetPosition(id string) (int, time.Duration) {
-	for i, b := range rb {
+	for _, b := range rb {
 		if b.ID == id {
-			rb[i], rb[len(rb)-1] = rb[len(rb)-1], rb[i]
 			return b.Fragment, b.ElapsedTime
 		}
 	}
