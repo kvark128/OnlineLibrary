@@ -77,6 +77,19 @@ func (p *Player) ChangeSpeed(offset int) {
 	p.Unlock()
 }
 
+func (p *Player) SetSpeed(speed float64) {
+	if p == nil {
+		return
+	}
+
+	p.Lock()
+	p.speed = speed
+	if p.trk != nil {
+		p.trk.setSpeed(p.speed)
+	}
+	p.Unlock()
+}
+
 func (p *Player) ChangeTrack(offset int) {
 	if p == nil {
 		return
