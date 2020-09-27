@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	buf_size = 1024 * 32
+	buf_size = 1024 * 16
 	timeout  = time.Second * 5
 )
 
