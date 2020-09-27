@@ -79,8 +79,8 @@ func UpdateLibraryMenu(eventCH chan events.Event) {
 			}
 			a.SetText(service.Name)
 			a.Triggered().Attach(func() {
-				config.SetMainLibrary(index)
 				eventCH <- events.LIBRARY_LOGOFF
+				config.SetMainLibrary(index)
 				eventCH <- events.LIBRARY_LOGON
 			})
 			actions.Insert(i, a)

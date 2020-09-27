@@ -175,11 +175,11 @@ func (m *Manager) Start(eventCH chan events.Event) {
 }
 
 func (m *Manager) logoff() {
-	_, err := m.client.LogOff()
-	if err != nil {
+	m.bookplayer.Stop()
+	if _, err := m.client.LogOff(); err != nil {
 		log.Printf("logoff: %v", err)
 	}
-
+	m.bookplayer = nil
 	m.books = nil
 	m.questions = nil
 	m.client = nil

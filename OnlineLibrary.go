@@ -57,7 +57,6 @@ func main() {
 	eventCH <- events.LIBRARY_LOGON
 	gui.RunMainWindow()
 
-	eventCH <- events.PLAYER_STOP
 	eventCH <- events.LIBRARY_LOGOFF
 	close(eventCH)
 
