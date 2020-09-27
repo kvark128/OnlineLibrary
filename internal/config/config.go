@@ -9,9 +9,10 @@ import (
 )
 
 const (
-	ConfigFile  = "config.json"
-	ProgramName = "OnlineLibrary"
-	LogFile     = "session.log"
+	ConfigFile     = "config.json"
+	ProgramName    = "OnlineLibrary"
+	ProgramVersion = "2020.09.27"
+	LogFile        = "session.log"
 )
 
 var Conf Config
@@ -42,7 +43,7 @@ func UserData() string {
 	return filepath.Join(os.Getenv("USERPROFILE"), ProgramName)
 }
 
-func Initialize() {
+func (c *Config) Load() {
 	os.MkdirAll(UserData(), os.ModeDir)
 
 	path := filepath.Join(UserData(), ConfigFile)
@@ -54,12 +55,12 @@ func Initialize() {
 	defer f.Close()
 
 	d := json.NewDecoder(f)
-	if err := d.Decode(&Conf); err != nil {
+	if err := d.Decode(c); err != nil {
 		log.Printf("Loading config: %v", err)
 	}
 }
 
-func Save() {
+func (c *Config) Save() {
 	path := filepath.Join(UserData(), ConfigFile)
 	f, err := os.Create(path)
 	if err != nil {
@@ -70,7 +71,7 @@ func Save() {
 
 	e := json.NewEncoder(f)
 	e.SetIndent("", "\t") // for readability
-	if err := e.Encode(&Conf); err != nil {
+	if err := e.Encode(c); err != nil {
 		log.Printf("Saving config: %v", err)
 	}
 }

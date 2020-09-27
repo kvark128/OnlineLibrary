@@ -19,13 +19,11 @@ const (
 	LGK_FORMAT = "application/lgk"
 )
 
-const ProgramVersion = "2020.09.22"
-
 // General client configuration of DAISY-online
 var readingSystemAttributes = daisy.ReadingSystemAttributes{
 	Manufacturer: "Kvark <kvark128@yandex.ru>",
 	Model:        "OnlineLibrary",
-	Version:      ProgramVersion,
+	Version:      config.ProgramVersion,
 	Config: daisy.Config{
 		SupportsMultipleSelections:        false,
 		PreferredUILanguage:               "ru-RU",
@@ -38,7 +36,7 @@ var readingSystemAttributes = daisy.ReadingSystemAttributes{
 }
 
 func main() {
-	config.Initialize()
+	config.Conf.Load()
 	if fl, err := os.Create(filepath.Join(config.UserData(), config.LogFile)); err == nil {
 		log.SetOutput(fl)
 		defer fl.Close()
@@ -46,7 +44,7 @@ func main() {
 	log.SetPrefix("\n")
 	log.SetFlags(log.Lmsgprefix | log.Ltime | log.Lshortfile)
 
-	log.Printf("Starting OnlineLibrary version %s", ProgramVersion)
+	log.Printf("Starting OnlineLibrary version %s", config.ProgramVersion)
 	eventCH := make(chan events.Event, 16)
 
 	if err := gui.Initialize(eventCH); err != nil {
@@ -64,6 +62,6 @@ func main() {
 	close(eventCH)
 
 	mng.Wait()
-	config.Save()
+	config.Conf.Save()
 	log.Printf("Exiting")
 }
