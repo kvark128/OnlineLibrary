@@ -10,14 +10,29 @@ func CreateWND(actionQueue chan events.Event) (*walk.MainWindow, error) {
 	var wnd *walk.MainWindow
 
 	var layout = MainWindow{
-		Title:    "DAISY Online Client",
+		Title:    "DAISY Online Library",
 		Layout:   VBox{},
 		AssignTo: &wnd,
-
 		MenuItems: []MenuItem{
 
 			Menu{
 				Text: "&Библиотека",
+				Items: []MenuItem{
+					Action{
+						Text:        "Выйти из учётной записи",
+						Shortcut:    Shortcut{walk.ModControl, walk.KeyQ},
+						OnTriggered: func() { actionQueue <- events.LIBRARY_RELOGON },
+					},
+					Action{
+						Text:        "Выйти из программы",
+						Shortcut:    Shortcut{walk.ModAlt, walk.KeyF4},
+						OnTriggered: func() { wnd.Close() },
+					},
+				},
+			},
+
+			Menu{
+				Text: "&Книги",
 				Items: []MenuItem{
 					Action{
 						Text:        "Загрузить книгу",
@@ -58,11 +73,6 @@ func CreateWND(actionQueue chan events.Event) (*walk.MainWindow, error) {
 						Text:        "Назад по меню",
 						Shortcut:    Shortcut{0, walk.KeyBack},
 						OnTriggered: func() { actionQueue <- events.MENU_BACK },
-					},
-					Action{
-						Text:        "Выйти из учётной записи",
-						Shortcut:    Shortcut{walk.ModControl, walk.KeyQ},
-						OnTriggered: func() { actionQueue <- events.LIBRARY_RELOGON },
 					},
 				},
 			},
