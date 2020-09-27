@@ -75,3 +75,7 @@ func (c *Config) Save() {
 		log.Printf("Saving config: %v", err)
 	}
 }
+
+func SetMainLibrary(index int) {
+	Conf.Services[0], Conf.Services[index] = Conf.Services[index], Conf.Services[0]
+}

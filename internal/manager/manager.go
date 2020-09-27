@@ -35,8 +35,9 @@ func (m *Manager) Start(eventCH chan events.Event) {
 	defer m.Done()
 
 	for evt := range eventCH {
-		if m.client == nil && evt != events.LIBRARY_LOGON {
-			// We don't have to do anything until we are logged in
+		if m.client == nil && evt != events.LIBRARY_LOGON && evt != events.LIBRARY_ADD {
+			// If the client is nil, we can only log in or add a new account
+			log.Printf("event: %v: client is nil", evt)
 			continue
 		}
 
@@ -70,8 +71,33 @@ func (m *Manager) Start(eventCH chan events.Event) {
 		case events.MENU_BACK:
 			m.setQuestions(daisy.UserResponse{QuestionID: daisy.Back})
 
+		case events.LIBRARY_ADD:
+			name, url, username, password, err := gui.Credentials()
+			if err != nil {
+				break
+			}
+			var service config.Service
+			service.Name = name
+			service.URL = url
+			service.Credentials.Username = username
+			service.Credentials.Password = password
+			if err := m.logon(service); err != nil {
+				log.Printf("logon: %v", err)
+				gui.MessageBox("Ошибка", fmt.Sprintf("logon: %v", err), gui.MsgBoxOK|gui.MsgBoxIconError)
+				break
+			}
+			config.Conf.Services = append(config.Conf.Services, service)
+			config.SetMainLibrary(len(config.Conf.Services) - 1)
+			gui.UpdateLibraryMenu(eventCH)
+
 		case events.LIBRARY_LOGON:
-			if err := m.logon(); err != nil {
+			gui.UpdateLibraryMenu(eventCH)
+			if len(config.Conf.Services) == 0 {
+				break
+			}
+			// We always use the first service in the list to log in
+			service := config.Conf.Services[0]
+			if err := m.logon(service); err != nil {
 				log.Printf("logon: %v", err)
 				gui.MessageBox("Ошибка", fmt.Sprintf("logon: %v", err), gui.MsgBoxOK|gui.MsgBoxIconError)
 			}
@@ -79,10 +105,10 @@ func (m *Manager) Start(eventCH chan events.Event) {
 		case events.LIBRARY_LOGOFF:
 			m.logoff()
 
-		case events.LIBRARY_RELOGON:
+		case events.LIBRARY_REMOVE:
 			m.logoff()
 			config.Conf.Services = config.Conf.Services[1:] // Removing first service
-			m.logon()
+			gui.UpdateLibraryMenu(eventCH)
 
 		case events.ISSUE_BOOK:
 			if m.books != nil {
@@ -156,31 +182,13 @@ func (m *Manager) logoff() {
 
 	m.books = nil
 	m.questions = nil
+	m.client = nil
 	gui.SetListBoxItems([]string{}, "")
 }
 
-func (m *Manager) logon() error {
-	var username, password, serviceURL string
-	var err error
-
-	if len(config.Conf.Services) != 0 {
-		// We always use the first service in the list to log in
-		service := config.Conf.Services[0]
-		username = service.Credentials.Username
-		password = service.Credentials.Password
-		serviceURL = service.URL
-	}
-
-	if username == "" || password == "" || serviceURL == "" {
-		username, password, serviceURL, err = gui.Credentials()
-		if err != nil {
-			log.Printf("Credentials: %s", err)
-			return nil
-		}
-	}
-
-	client := daisy.NewClient(serviceURL, time.Second*5)
-	ok, err := client.LogOn(username, password)
+func (m *Manager) logon(service config.Service) error {
+	client := daisy.NewClient(service.URL, time.Second*5)
+	ok, err := client.LogOn(service.Credentials.Username, service.Credentials.Password)
 	if err != nil {
 		return err
 	}
@@ -198,13 +206,6 @@ func (m *Manager) logon() error {
 	if err != nil {
 		return err
 	}
-
-	if len(config.Conf.Services) == 0 {
-		config.Conf.Services = append(config.Conf.Services, config.Service{})
-	}
-	config.Conf.Services[0].Credentials.Username = username
-	config.Conf.Services[0].Credentials.Password = password
-	config.Conf.Services[0].URL = serviceURL
 
 	m.client = client
 	m.serviceAttributes = serviceAttributes

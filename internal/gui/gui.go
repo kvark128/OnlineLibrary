@@ -3,6 +3,7 @@ package gui
 import (
 	"errors"
 
+	"github.com/kvark128/OnlineLibrary/internal/config"
 	"github.com/kvark128/OnlineLibrary/internal/events"
 	"github.com/lxn/walk"
 	. "github.com/lxn/walk/declarative"
@@ -19,10 +20,11 @@ const (
 )
 
 var (
-	mainWindow *walk.MainWindow
-	statusBar  *walk.StatusBar
-	textLabel  *walk.TextLabel
-	listBox    *walk.ListBox
+	mainWindow  *walk.MainWindow
+	statusBar   *walk.StatusBar
+	textLabel   *walk.TextLabel
+	listBox     *walk.ListBox
+	libraryMenu *walk.Menu
 )
 
 func Initialize(eventCH chan events.Event) (err error) {
@@ -57,8 +59,33 @@ func Initialize(eventCH chan events.Event) (err error) {
 			eventCH <- events.ACTIVATE_MENU
 		}
 	})
-
 	return nil
+}
+
+func UpdateLibraryMenu(eventCH chan events.Event) {
+	mainWindow.Synchronize(func() {
+		actions := libraryMenu.Actions()
+		// Delete all elements except the last one
+		for i := actions.Len(); i > 1; i-- {
+			actions.RemoveAt(0)
+		}
+
+		// Filling the menu with services from the config
+		for i, service := range config.Conf.Services {
+			index := i
+			a := walk.NewAction()
+			if i == 0 {
+				a.SetChecked(true)
+			}
+			a.SetText(service.Name)
+			a.Triggered().Attach(func() {
+				config.SetMainLibrary(index)
+				eventCH <- events.LIBRARY_LOGOFF
+				eventCH <- events.LIBRARY_LOGON
+			})
+			actions.Insert(i, a)
+		}
+	})
 }
 
 func RunMainWindow() {
@@ -88,20 +115,33 @@ func CurrentListBoxIndex() int {
 	return <-ic
 }
 
-func Credentials() (username, password, serviceURL string, err error) {
+func Credentials() (name, url, username, password string, err error) {
 	var (
-		dlg                               *walk.Dialog
-		usernameLE, passwordLE, serviceLE *walk.LineEdit
-		OkPB, CancelPB                    *walk.PushButton
+		dlg                                   *walk.Dialog
+		nameLE, urlLE, usernameLE, passwordLE *walk.LineEdit
+		OkPB, CancelPB                        *walk.PushButton
 	)
 
 	Dialog{
-		Title:         "Авторизация",
+		Title:         "Добавление новой учётной записи",
 		AssignTo:      &dlg,
 		Layout:        VBox{},
 		CancelButton:  &CancelPB,
 		DefaultButton: &OkPB,
 		Children: []Widget{
+			TextLabel{Text: "Отображаемое имя:"},
+			LineEdit{
+				Accessibility: Accessibility{Name: "Отображаемое имя:"},
+				AssignTo:      &nameLE,
+			},
+
+			TextLabel{Text: "Адрес сервера:"},
+			LineEdit{
+				Accessibility: Accessibility{Name: "Адрес сервера:"},
+				AssignTo:      &urlLE,
+				Text:          "https://",
+			},
+
 			TextLabel{Text: "Имя пользователя:"},
 			LineEdit{
 				Accessibility: Accessibility{Name: "Имя пользователя:"},
@@ -115,22 +155,16 @@ func Credentials() (username, password, serviceURL string, err error) {
 				PasswordMode:  true,
 			},
 
-			TextLabel{Text: "Адрес сервера:"},
-			LineEdit{
-				Accessibility: Accessibility{Name: "Адрес сервера:"},
-				AssignTo:      &serviceLE,
-				Text:          "https://",
-			},
-
 			PushButton{
 				AssignTo: &OkPB,
 				Text:     "OK",
 				OnClicked: func() {
+					name = nameLE.Text()
+					url = urlLE.Text()
 					username = usernameLE.Text()
 					password = passwordLE.Text()
-					serviceURL = serviceLE.Text()
-					if username == "" || password == "" || serviceURL == "" {
-						err = errors.New("Username or password or serviceURL is empty")
+					if name == "" || url == "" || username == "" || password == "" {
+						err = errors.New("There is an empty field")
 						return
 					}
 					dlg.Cancel()

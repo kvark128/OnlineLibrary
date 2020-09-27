@@ -18,10 +18,21 @@ func CreateWND(actionQueue chan events.Event) (*walk.MainWindow, error) {
 			Menu{
 				Text: "&Библиотека",
 				Items: []MenuItem{
+					Menu{
+						Text:     "Учётные записи",
+						AssignTo: &libraryMenu,
+						Items: []MenuItem{
+							Action{
+								Text:        "Добавить учётную запись",
+								Shortcut:    Shortcut{walk.ModControl, walk.KeyN},
+								OnTriggered: func() { actionQueue <- events.LIBRARY_ADD },
+							},
+						},
+					},
 					Action{
 						Text:        "Выйти из учётной записи",
 						Shortcut:    Shortcut{walk.ModControl, walk.KeyQ},
-						OnTriggered: func() { actionQueue <- events.LIBRARY_RELOGON },
+						OnTriggered: func() { actionQueue <- events.LIBRARY_REMOVE },
 					},
 					Action{
 						Text:        "Выйти из программы",
