@@ -134,6 +134,18 @@ func (m *Manager) Start(eventCH chan events.Event) {
 				m.removeBook(index)
 			}
 
+		case events.DOWNLOAD_BOOK:
+			if m.books != nil {
+				index := gui.CurrentListBoxIndex()
+				m.downloadBook(index)
+			}
+
+		case events.BOOK_PROPERTIES:
+			if m.books != nil {
+				index := gui.CurrentListBoxIndex()
+				m.showBookProperties(index)
+			}
+
 		case events.PLAYER_PAUSE:
 			m.bookplayer.Pause()
 
@@ -145,12 +157,6 @@ func (m *Manager) Start(eventCH chan events.Event) {
 
 		case events.PLAYER_PREVIOUS_TRACK:
 			m.bookplayer.ChangeTrack(-1)
-
-		case events.DOWNLOAD_BOOK:
-			if m.books != nil {
-				index := gui.CurrentListBoxIndex()
-				m.downloadBook(index)
-			}
 
 		case events.PLAYER_SPEED_RESET:
 			m.bookplayer.SetSpeed(1.0)
@@ -173,12 +179,6 @@ func (m *Manager) Start(eventCH chan events.Event) {
 		case events.PLAYER_BACK:
 			m.bookplayer.Rewind(time.Second * -5)
 
-		case events.BOOK_PROPERTIES:
-			if m.books != nil {
-				index := gui.CurrentListBoxIndex()
-				m.showBookProperties(index)
-			}
-
 		default:
 			log.Printf("Unknown event: %v", evt)
 
@@ -195,17 +195,15 @@ func (m *Manager) logoff() {
 	m.books = nil
 	m.questions = nil
 	m.client = nil
+	m.serviceAttributes = nil
 	gui.SetListBoxItems([]string{}, "")
 }
 
 func (m *Manager) logon(service config.Service) error {
 	client := daisy.NewClient(service.URL, time.Second*5)
-	ok, err := client.LogOn(service.Credentials.Username, service.Credentials.Password)
-	if err != nil {
+	if ok, err := client.LogOn(service.Credentials.Username, service.Credentials.Password); err != nil {
 		return err
-	}
-
-	if !ok {
+	} else if !ok {
 		return fmt.Errorf("The LogOn operation returned false")
 	}
 
