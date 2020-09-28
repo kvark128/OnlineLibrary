@@ -72,20 +72,36 @@ func UpdateLibraryMenu(eventCH chan events.Event) {
 
 		// Filling the menu with services from the config
 		for i, service := range config.Conf.Services {
-			index := i
 			a := walk.NewAction()
 			if i == 0 {
 				a.SetChecked(true)
 			}
 			a.SetText(service.Name)
 			a.Triggered().Attach(func() {
-				eventCH <- events.LIBRARY_LOGOFF
-				config.SetMainLibrary(index)
-				eventCH <- events.LIBRARY_LOGON
+				for index := 0; index < actions.Len(); index++ {
+					actions.At(index).SetChecked(false)
+				}
+				a.SetChecked(true)
+				eventCH <- events.LIBRARY_SWITCH
 			})
 			actions.Insert(i, a)
 		}
 	})
+}
+
+func GetCurrentLibrary() int {
+	result := make(chan int)
+	mainWindow.Synchronize(func() {
+		actions := libraryMenu.Actions()
+		for i := 0; i < actions.Len(); i++ {
+			if actions.At(i).Checked() {
+				result <- i
+				return
+			}
+		}
+		panic("no checked library")
+	})
+	return <-result
 }
 
 func RunMainWindow() {

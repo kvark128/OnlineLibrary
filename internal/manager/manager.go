@@ -35,7 +35,7 @@ func (m *Manager) Start(eventCH chan events.Event) {
 	defer m.Done()
 
 	for evt := range eventCH {
-		if m.client == nil && evt != events.LIBRARY_LOGON && evt != events.LIBRARY_ADD {
+		if m.client == nil && evt != events.LIBRARY_LOGON && evt != events.LIBRARY_ADD && evt != events.LIBRARY_SWITCH {
 			// If the client is nil, we can only log in or add a new account
 			log.Printf("event: %v: client is nil", evt)
 			continue
@@ -70,6 +70,18 @@ func (m *Manager) Start(eventCH chan events.Event) {
 
 		case events.MENU_BACK:
 			m.setQuestions(daisy.UserResponse{QuestionID: daisy.Back})
+
+		case events.LIBRARY_SWITCH:
+			if m.client != nil {
+				m.logoff()
+			}
+			config.SetMainLibrary(gui.GetCurrentLibrary())
+			gui.UpdateLibraryMenu(eventCH)
+			service := config.Conf.Services[0]
+			if err := m.logon(service); err != nil {
+				log.Printf("logon: %v", err)
+				gui.MessageBox("Ошибка", fmt.Sprintf("logon: %v", err), gui.MsgBoxOK|gui.MsgBoxIconError)
+			}
 
 		case events.LIBRARY_ADD:
 			name, url, username, password, err := gui.Credentials()
