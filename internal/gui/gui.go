@@ -62,7 +62,7 @@ func Initialize(eventCH chan events.Event) (err error) {
 	return nil
 }
 
-func UpdateLibraryMenu(eventCH chan events.Event) {
+func SetLibraryMenu(eventCH chan events.Event, services []config.Service, current int) {
 	mainWindow.Synchronize(func() {
 		actions := libraryMenu.Actions()
 		// Delete all elements except the last one
@@ -70,10 +70,10 @@ func UpdateLibraryMenu(eventCH chan events.Event) {
 			actions.RemoveAt(0)
 		}
 
-		// Filling the menu with services from the config
-		for i, service := range config.Conf.Services {
+		// Filling the menu with services
+		for i, service := range services {
 			a := walk.NewAction()
-			if i == 0 {
+			if i == current {
 				a.SetChecked(true)
 			}
 			a.SetText(service.Name)

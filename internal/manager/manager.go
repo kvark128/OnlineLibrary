@@ -76,7 +76,7 @@ func (m *Manager) Start(eventCH chan events.Event) {
 				m.logoff()
 			}
 			config.SetMainLibrary(gui.GetCurrentLibrary())
-			gui.UpdateLibraryMenu(eventCH)
+			gui.SetLibraryMenu(eventCH, config.Conf.Services, 0)
 			service := config.Conf.Services[0]
 			if err := m.logon(service); err != nil {
 				log.Printf("logon: %v", err)
@@ -100,10 +100,10 @@ func (m *Manager) Start(eventCH chan events.Event) {
 			}
 			config.Conf.Services = append(config.Conf.Services, service)
 			config.SetMainLibrary(len(config.Conf.Services) - 1)
-			gui.UpdateLibraryMenu(eventCH)
+			gui.SetLibraryMenu(eventCH, config.Conf.Services, 0)
 
 		case events.LIBRARY_LOGON:
-			gui.UpdateLibraryMenu(eventCH)
+			gui.SetLibraryMenu(eventCH, config.Conf.Services, 0)
 			if len(config.Conf.Services) == 0 {
 				break
 			}
@@ -120,7 +120,7 @@ func (m *Manager) Start(eventCH chan events.Event) {
 		case events.LIBRARY_REMOVE:
 			m.logoff()
 			config.Conf.Services = config.Conf.Services[1:] // Removing first service
-			gui.UpdateLibraryMenu(eventCH)
+			gui.SetLibraryMenu(eventCH, config.Conf.Services, 0)
 
 		case events.ISSUE_BOOK:
 			if m.books != nil {
