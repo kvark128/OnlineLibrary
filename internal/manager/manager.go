@@ -221,11 +221,11 @@ func (m *Manager) logon(service config.Service) error {
 	m.serviceAttributes = serviceAttributes
 	m.setQuestions(daisy.UserResponse{QuestionID: daisy.Default})
 
-	if len(service.RecentBooks) == 0 {
+	book := service.RecentBooks.CurrentBook()
+	if book.ID == "" {
 		return nil
 	}
 
-	book := service.RecentBooks.CurrentBook()
 	r, err := m.client.GetContentResources(book.ID)
 	if err != nil {
 		log.Printf("GetContentResources: %v", err)
@@ -351,9 +351,9 @@ func (m *Manager) playBook(index int) {
 		return
 	}
 
-	fragment, elapsedTime := config.Conf.Services[0].RecentBooks.GetPosition(book.ID)
+	b := config.Conf.Services[0].RecentBooks.Book(book.ID)
 	gui.SetMainWindowTitle(book.Label.Text)
-	m.bookplayer = player.NewPlayer(book.ID, book.Label.Text, r.Resources, fragment, elapsedTime)
+	m.bookplayer = player.NewPlayer(book.ID, book.Label.Text, r.Resources, b.Fragment, b.ElapsedTime)
 	m.bookplayer.PlayPause()
 }
 

@@ -202,7 +202,7 @@ func (p *Player) Stop() {
 		elapsedTime = p.trk.getElapsedTime()
 		p.trk.stop()
 	}
-	config.Conf.Services[0].RecentBooks.Update(p.bookID, p.bookName, p.fragment, elapsedTime)
+	config.Conf.Services[0].RecentBooks.SetBook(p.bookID, p.bookName, p.fragment, elapsedTime)
 	p.Unlock()
 	p.wg.Wait()
 }
