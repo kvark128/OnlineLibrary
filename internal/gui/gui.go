@@ -2,6 +2,7 @@ package gui
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/kvark128/OnlineLibrary/internal/config"
 	"github.com/kvark128/OnlineLibrary/internal/events"
@@ -110,6 +111,7 @@ func RunMainWindow() {
 
 func SetMainWindowTitle(title string) {
 	mainWindow.Synchronize(func() {
+		title := fmt.Sprintf("%s — %s", title, config.ProgramName)
 		mainWindow.SetTitle(title)
 	})
 }

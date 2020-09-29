@@ -1,6 +1,7 @@
 package gui
 
 import (
+	"github.com/kvark128/OnlineLibrary/internal/config"
 	"github.com/kvark128/OnlineLibrary/internal/events"
 	"github.com/lxn/walk"
 	. "github.com/lxn/walk/declarative"
@@ -10,7 +11,7 @@ func CreateWND(actionQueue chan events.Event) (*walk.MainWindow, error) {
 	var wnd *walk.MainWindow
 
 	var layout = MainWindow{
-		Title:    "DAISY Online Library",
+		Title:    config.ProgramName,
 		Layout:   VBox{},
 		AssignTo: &wnd,
 		MenuItems: []MenuItem{

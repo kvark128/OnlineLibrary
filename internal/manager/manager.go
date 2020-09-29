@@ -232,6 +232,7 @@ func (m *Manager) logon(service config.Service) error {
 		return nil
 	}
 
+	gui.SetMainWindowTitle(book.Name)
 	m.bookplayer = player.NewPlayer(book.ID, book.Name, r.Resources, book.Fragment, book.ElapsedTime)
 	return nil
 }
@@ -351,6 +352,7 @@ func (m *Manager) playBook(index int) {
 	}
 
 	fragment, elapsedTime := config.Conf.Services[0].RecentBooks.GetPosition(book.ID)
+	gui.SetMainWindowTitle(book.Label.Text)
 	m.bookplayer = player.NewPlayer(book.ID, book.Label.Text, r.Resources, fragment, elapsedTime)
 	m.bookplayer.PlayPause()
 }
