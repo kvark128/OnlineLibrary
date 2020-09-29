@@ -24,22 +24,27 @@ const (
 
 type Player struct {
 	sync.Mutex
-	playList          []daisy.Resource
-	book              daisy.ContentItem
-	playing           *flag.Flag
-	wg                *sync.WaitGroup
-	pause             bool
-	currentTrackIndex int
-	trk               *track
-	speed             float64
+	playList    []daisy.Resource
+	bookID      string
+	bookName    string
+	playing     *flag.Flag
+	wg          *sync.WaitGroup
+	pause       bool
+	fragment    int
+	trk         *track
+	speed       float64
+	startOffset time.Duration
 }
 
-func NewPlayer(book daisy.ContentItem, resources []daisy.Resource) *Player {
+func NewPlayer(bookID, bookName string, resources []daisy.Resource, fragment int, offset time.Duration) *Player {
 	p := &Player{
-		playing: new(flag.Flag),
-		wg:      new(sync.WaitGroup),
-		book:    book,
-		speed:   1.0,
+		playing:     new(flag.Flag),
+		wg:          new(sync.WaitGroup),
+		bookID:      bookID,
+		bookName:    bookName,
+		speed:       1.0,
+		fragment:    fragment,
+		startOffset: offset,
 	}
 
 	// The player supports only LKF and MP3 formats. Unsupported resources must not be uploaded to the player
@@ -52,11 +57,11 @@ func NewPlayer(book daisy.ContentItem, resources []daisy.Resource) *Player {
 	return p
 }
 
-func (p *Player) Book() *daisy.ContentItem {
+func (p *Player) Book() string {
 	if p == nil {
-		return nil
+		return ""
 	}
-	return &p.book
+	return p.bookID
 }
 
 func (p *Player) ChangeSpeed(offset int) {
@@ -96,9 +101,9 @@ func (p *Player) ChangeTrack(offset int) {
 	}
 
 	p.Lock()
-	newTrackIndex := p.currentTrackIndex + offset
+	newFragment := p.fragment + offset
 	p.Unlock()
-	p.Play(newTrackIndex, 0)
+	p.play(newFragment, 0)
 }
 
 func (p *Player) ChangeVolume(offset int) {
@@ -149,22 +154,31 @@ func (p *Player) Rewind(offset time.Duration) {
 	p.Unlock()
 }
 
-func (p *Player) Play(trackIndex int, offset time.Duration) {
+func (p *Player) play(fragment int, offset time.Duration) {
 	if p == nil {
 		return
 	}
 
-	if trackIndex < 0 || trackIndex >= len(p.playList) {
+	if fragment < 0 || fragment >= len(p.playList) {
 		return
 	}
 	p.Stop()
 	p.pause = false
 	p.wg.Add(1)
-	go p.start(trackIndex, offset)
+	go p.start(fragment, offset)
 }
 
-func (p *Player) Pause() {
+func (p *Player) PlayPause() {
 	if p == nil {
+		return
+	}
+
+	if !p.playing.IsSet() {
+		p.Lock()
+		fragment := p.fragment
+		startOffset := p.startOffset
+		p.Unlock()
+		p.play(fragment, startOffset)
 		return
 	}
 
@@ -188,7 +202,7 @@ func (p *Player) Stop() {
 		elapsedTime = p.trk.getElapsedTime()
 		p.trk.stop()
 	}
-	config.Conf.Services[0].RecentBooks.Update(p.book.ID, p.currentTrackIndex, elapsedTime)
+	config.Conf.Services[0].RecentBooks.Update(p.bookID, p.bookName, p.fragment, elapsedTime)
 	p.Unlock()
 	p.wg.Wait()
 }
@@ -203,7 +217,7 @@ func (p *Player) start(trackIndex int, offset time.Duration) {
 		var uri string
 		var err error
 
-		uri = filepath.Join(config.UserData(), util.ReplaceProhibitCharacters(p.book.Label.Text), track.LocalURI)
+		uri = filepath.Join(config.UserData(), util.ReplaceProhibitCharacters(p.bookName), track.LocalURI)
 		if info, e := os.Stat(uri); e == nil {
 			if !info.IsDir() && info.Size() == track.Size {
 				// track already exist
@@ -242,7 +256,7 @@ func (p *Player) start(trackIndex int, offset time.Duration) {
 			p.trk.rewind(offset)
 			offset = 0
 		}
-		p.currentTrackIndex = trackIndex + i
+		p.fragment = trackIndex + i
 		p.Unlock()
 
 		log.Printf("playing %s: %s", uri, track.MimeType)

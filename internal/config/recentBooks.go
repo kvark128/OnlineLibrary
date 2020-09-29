@@ -6,9 +6,10 @@ import (
 
 type RecentBooks []Book
 
-func (rb RecentBooks) Update(id string, fragment int, elapsedTime time.Duration) {
+func (rb RecentBooks) Update(id, name string, fragment int, elapsedTime time.Duration) {
 	for i, b := range rb {
 		if b.ID == id {
+			b.Name = name
 			b.Fragment = fragment
 			b.ElapsedTime = elapsedTime
 			if i != 0 {
@@ -42,4 +43,8 @@ func (rb RecentBooks) GetPosition(id string) (int, time.Duration) {
 		}
 	}
 	return 0, 0
+}
+
+func (rb RecentBooks) CurrentBook() Book {
+	return rb[0]
 }

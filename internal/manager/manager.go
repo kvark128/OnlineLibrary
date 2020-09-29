@@ -147,7 +147,7 @@ func (m *Manager) Start(eventCH chan events.Event) {
 			}
 
 		case events.PLAYER_PAUSE:
-			m.bookplayer.Pause()
+			m.bookplayer.PlayPause()
 
 		case events.PLAYER_STOP:
 			m.bookplayer.Stop()
@@ -220,6 +220,19 @@ func (m *Manager) logon(service config.Service) error {
 	m.client = client
 	m.serviceAttributes = serviceAttributes
 	m.setQuestions(daisy.UserResponse{QuestionID: daisy.Default})
+
+	if len(service.RecentBooks) == 0 {
+		return nil
+	}
+
+	book := service.RecentBooks.CurrentBook()
+	r, err := m.client.GetContentResources(book.ID)
+	if err != nil {
+		log.Printf("GetContentResources: %v", err)
+		return nil
+	}
+
+	m.bookplayer = player.NewPlayer(book.ID, book.Name, r.Resources, book.Fragment, book.ElapsedTime)
 	return nil
 }
 
@@ -323,9 +336,8 @@ func (m *Manager) setContent(contentID string) {
 
 func (m *Manager) playBook(index int) {
 	book := m.books.ContentItems[index]
-	playedBook := m.bookplayer.Book()
-	if playedBook != nil && playedBook.ID == book.ID {
-		m.bookplayer.Pause()
+	if m.bookplayer != nil && m.bookplayer.Book() == book.ID {
+		m.bookplayer.PlayPause()
 		return
 	}
 	m.bookplayer.Stop()
@@ -338,9 +350,9 @@ func (m *Manager) playBook(index int) {
 		return
 	}
 
-	m.bookplayer = player.NewPlayer(book, r.Resources)
 	fragment, elapsedTime := config.Conf.Services[0].RecentBooks.GetPosition(book.ID)
-	m.bookplayer.Play(fragment, elapsedTime)
+	m.bookplayer = player.NewPlayer(book.ID, book.Label.Text, r.Resources, fragment, elapsedTime)
+	m.bookplayer.PlayPause()
 }
 
 func (m *Manager) downloadBook(index int) {

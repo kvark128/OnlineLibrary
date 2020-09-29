@@ -18,6 +18,7 @@ const (
 var Conf Config
 
 type Book struct {
+	Name        string        `json:"name"`
 	ID          string        `json:"id"`
 	Fragment    int           `json:"fragment"`
 	ElapsedTime time.Duration `json:"elapsed_time"`
