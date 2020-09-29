@@ -72,16 +72,15 @@ func (m *Manager) Start(eventCH chan events.Event) {
 			m.setQuestions(daisy.UserResponse{QuestionID: daisy.Back})
 
 		case events.LIBRARY_SWITCH:
-			if m.client != nil {
-				m.logoff()
-			}
-			config.SetMainLibrary(gui.GetCurrentLibrary())
-			gui.SetLibraryMenu(eventCH, config.Conf.Services, 0)
-			service := config.Conf.Services[0]
+			index := gui.GetCurrentLibrary()
+			service := config.Conf.Services[index]
 			if err := m.logon(service); err != nil {
 				log.Printf("logon: %v", err)
 				gui.MessageBox("Ошибка", fmt.Sprintf("logon: %v", err), gui.MsgBoxOK|gui.MsgBoxIconError)
+				break
 			}
+			config.SetMainLibrary(index)
+			gui.SetLibraryMenu(eventCH, config.Conf.Services, 0)
 
 		case events.LIBRARY_ADD:
 			name, url, username, password, err := gui.Credentials()
