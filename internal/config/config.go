@@ -41,6 +41,13 @@ type Config struct {
 }
 
 func UserData() string {
+	if path, err := filepath.Abs(ProgramName); err == nil {
+		if info, err := os.Stat(path); err == nil {
+			if info.IsDir() {
+				return path
+			}
+		}
+	}
 	return filepath.Join(os.Getenv("USERPROFILE"), ProgramName)
 }
 
