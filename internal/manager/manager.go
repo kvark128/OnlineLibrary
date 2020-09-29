@@ -196,6 +196,7 @@ func (m *Manager) logoff() {
 	m.questions = nil
 	m.client = nil
 	m.serviceAttributes = nil
+	m.userResponses = nil
 	gui.SetListBoxItems([]string{}, "")
 }
 
@@ -215,6 +216,10 @@ func (m *Manager) logon(service config.Service) error {
 	_, err = client.SetReadingSystemAttributes(m.readingSystemAttributes)
 	if err != nil {
 		return err
+	}
+
+	if m.client != nil {
+		m.logoff()
 	}
 
 	m.client = client
