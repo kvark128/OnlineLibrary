@@ -139,10 +139,10 @@ func (m *Manager) Start(eventCH chan events.Event) {
 				m.downloadBook(index)
 			}
 
-		case events.BOOK_PROPERTIES:
+		case events.BOOK_DESCRIPTION:
 			if m.books != nil {
 				index := gui.CurrentListBoxIndex()
-				m.showBookProperties(index)
+				m.showBookDescription(index)
 			}
 
 		case events.PLAYER_PAUSE:
@@ -400,7 +400,7 @@ func (m *Manager) issueBook(index int) {
 	gui.MessageBox("Уведомление", fmt.Sprintf("%s добавлена на книжную полку", book.Label.Text), gui.MsgBoxOK|gui.MsgBoxIconWarning)
 }
 
-func (m *Manager) showBookProperties(index int) {
+func (m *Manager) showBookDescription(index int) {
 	book := m.books.ContentItems[index]
 	md, err := m.client.GetContentMetadata(book.ID)
 	if err != nil {
@@ -410,16 +410,11 @@ func (m *Manager) showBookProperties(index int) {
 		return
 	}
 
-	var textList []string
-	if len(md.Metadata.Description) != 0 {
-		text := fmt.Sprintf("%v", strings.Join(md.Metadata.Description, " "))
-		textList = append(textList, text)
-	}
-
-	if len(textList) == 0 {
+	text := fmt.Sprintf("%v", strings.Join(md.Metadata.Description, "\r\n"))
+	if text == "" {
 		gui.MessageBox("Ошибка", "Нет доступной информации о книге", gui.MsgBoxOK|gui.MsgBoxIconError)
 		return
 	}
 
-	gui.MessageBox("Информация о книге", strings.Join(textList, "\r\n"), gui.MsgBoxOK|gui.MsgBoxIconWarning)
+	gui.MessageBox("Информация о книге", text, gui.MsgBoxOK|gui.MsgBoxIconWarning)
 }

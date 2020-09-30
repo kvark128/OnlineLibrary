@@ -64,7 +64,7 @@ func CreateWND(actionQueue chan events.Event) (*walk.MainWindow, error) {
 					Action{
 						Text:        "Информация о книге",
 						Shortcut:    Shortcut{walk.ModControl, walk.KeyI},
-						OnTriggered: func() { actionQueue <- events.BOOK_PROPERTIES },
+						OnTriggered: func() { actionQueue <- events.BOOK_DESCRIPTION },
 					},
 					Action{
 						Text:        "Поиск",
