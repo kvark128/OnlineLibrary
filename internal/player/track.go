@@ -53,7 +53,8 @@ func (trk *track) play() {
 		n, err := trk.dec.Read(trk.samples)
 		if n > 0 {
 			C.sonicWriteShortToStream(trk.stream, (*C.short)(unsafe.Pointer(&trk.samples[0])), C.int(n/(trk.channels*2)))
-		} else {
+		}
+		if err != nil {
 			C.sonicFlushStream(trk.stream)
 		}
 		trk.Unlock()
