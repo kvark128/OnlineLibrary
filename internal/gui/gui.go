@@ -28,39 +28,163 @@ var (
 	libraryMenu *walk.Menu
 )
 
-func Initialize(eventCH chan events.Event) (err error) {
+func Initialize(eventCH chan events.Event) error {
 	if mainWindow != nil {
 		panic("GUI already initialized")
 	}
 
-	mainWindow, err = CreateWND(eventCH)
-	if err != nil {
-		return err
-	}
+	return MainWindow{
+		Title:    config.ProgramName,
+		Layout:   VBox{},
+		AssignTo: &mainWindow,
+		MenuItems: []MenuItem{
 
-	statusBar, err = walk.NewStatusBar(mainWindow)
-	if err != nil {
-		return err
-	}
-	statusBar.SetVisible(true)
+			Menu{
+				Text: "&Библиотека",
+				Items: []MenuItem{
+					Menu{
+						Text:     "Учётные записи",
+						AssignTo: &libraryMenu,
+						Items: []MenuItem{
+							Action{
+								Text:        "Добавить учётную запись",
+								Shortcut:    Shortcut{walk.ModControl, walk.KeyN},
+								OnTriggered: func() { eventCH <- events.LIBRARY_ADD },
+							},
+						},
+					},
+					Action{
+						Text:        "Выйти из учётной записи",
+						Shortcut:    Shortcut{walk.ModControl, walk.KeyQ},
+						OnTriggered: func() { eventCH <- events.LIBRARY_REMOVE },
+					},
+					Action{
+						Text:        "Выйти из программы",
+						Shortcut:    Shortcut{walk.ModAlt, walk.KeyF4},
+						OnTriggered: func() { mainWindow.Close() },
+					},
+				},
+			},
 
-	textLabel, err = walk.NewTextLabel(mainWindow)
-	if err != nil {
-		return err
-	}
+			Menu{
+				Text: "&Книги",
+				Items: []MenuItem{
+					Action{
+						Text:        "Загрузить книгу",
+						Shortcut:    Shortcut{walk.ModControl, walk.KeyD},
+						OnTriggered: func() { eventCH <- events.DOWNLOAD_BOOK },
+					},
+					Action{
+						Text:        "Убрать книгу с полки",
+						Shortcut:    Shortcut{walk.ModShift, walk.KeyDelete},
+						OnTriggered: func() { eventCH <- events.REMOVE_BOOK },
+					},
+					Action{
+						Text:        "Поставить книгу на полку",
+						Shortcut:    Shortcut{walk.ModControl, walk.KeyA},
+						OnTriggered: func() { eventCH <- events.ISSUE_BOOK },
+					},
+					Action{
+						Text:        "Информация о книге",
+						Shortcut:    Shortcut{walk.ModControl, walk.KeyI},
+						OnTriggered: func() { eventCH <- events.BOOK_DESCRIPTION },
+					},
+					Action{
+						Text:        "Поиск",
+						Shortcut:    Shortcut{walk.ModControl, walk.KeyF},
+						OnTriggered: func() { eventCH <- events.SEARCH_BOOK },
+					},
+					Action{
+						Text:        "Главное меню библиотеки",
+						Shortcut:    Shortcut{walk.ModControl, walk.KeyM},
+						OnTriggered: func() { eventCH <- events.MAIN_MENU },
+					},
+					Action{
+						Text:        "Книжная полка",
+						Shortcut:    Shortcut{walk.ModControl, walk.KeyE},
+						OnTriggered: func() { eventCH <- events.OPEN_BOOKSHELF },
+					},
+					Action{
+						Text:        "Назад по меню",
+						Shortcut:    Shortcut{0, walk.KeyBack},
+						OnTriggered: func() { eventCH <- events.MENU_BACK },
+					},
+				},
+			},
 
-	listBox, err = walk.NewListBox(mainWindow)
-	if err != nil {
-		return err
-	}
+			Menu{
+				Text: "&Воспроизведение",
+				Items: []MenuItem{
+					Action{
+						Text:        "Сбросить скорость",
+						Shortcut:    Shortcut{walk.ModControl, walk.KeyZ},
+						OnTriggered: func() { eventCH <- events.PLAYER_SPEED_RESET },
+					},
+					Action{
+						Text:        "Увеличить скорость",
+						Shortcut:    Shortcut{walk.ModControl, walk.KeyC},
+						OnTriggered: func() { eventCH <- events.PLAYER_SPEED_UP },
+					},
+					Action{
+						Text:        "Уменьшить скорость",
+						Shortcut:    Shortcut{walk.ModControl, walk.KeyX},
+						OnTriggered: func() { eventCH <- events.PLAYER_SPEED_DOWN },
+					},
+					Action{
+						Text:        "Перемотка вперёд",
+						Shortcut:    Shortcut{walk.ModControl, walk.KeyOEMPeriod},
+						OnTriggered: func() { eventCH <- events.PLAYER_FORWARD },
+					},
+					Action{
+						Text:        "Перемотка назад",
+						Shortcut:    Shortcut{walk.ModControl, walk.KeyOEMComma},
+						OnTriggered: func() { eventCH <- events.PLAYER_BACK },
+					},
+					Action{
+						Text:        "У&величить громкость",
+						Shortcut:    Shortcut{walk.ModControl, walk.KeyB},
+						OnTriggered: func() { eventCH <- events.PLAYER_VOLUME_UP },
+					},
+					Action{
+						Text:        "У&меньшить громкость",
+						Shortcut:    Shortcut{walk.ModControl, walk.KeyV},
+						OnTriggered: func() { eventCH <- events.PLAYER_VOLUME_DOWN },
+					},
+					Action{
+						Text:        "Следующий фрагмент",
+						Shortcut:    Shortcut{walk.ModControl, walk.KeyL},
+						OnTriggered: func() { eventCH <- events.PLAYER_NEXT_TRACK },
+					},
+					Action{
+						Text:        "Предыдущий фрагмент",
+						Shortcut:    Shortcut{walk.ModControl, walk.KeyJ},
+						OnTriggered: func() { eventCH <- events.PLAYER_PREVIOUS_TRACK },
+					},
+					Action{
+						Text:        "Пауза",
+						Shortcut:    Shortcut{walk.ModControl, walk.KeyK},
+						OnTriggered: func() { eventCH <- events.PLAYER_PAUSE },
+					},
+				},
+			},
+		},
 
-	listBox.ItemActivated().Attach(func() { eventCH <- events.ACTIVATE_MENU })
-	listBox.KeyPress().Attach(func(key walk.Key) {
-		if key == walk.KeySpace {
-			eventCH <- events.ACTIVATE_MENU
-		}
-	})
-	return nil
+		Children: []Widget{
+			TextLabel{
+				AssignTo: &textLabel,
+			},
+			ListBox{
+				AssignTo:        &listBox,
+				OnItemActivated: func() { eventCH <- events.ACTIVATE_MENU },
+				OnKeyPress: func(key walk.Key) {
+					if key == walk.KeySpace {
+						eventCH <- events.ACTIVATE_MENU
+					}
+				},
+			},
+		},
+	}.Create()
+
 }
 
 func SetLibraryMenu(eventCH chan events.Event, services []config.Service, current int) {
