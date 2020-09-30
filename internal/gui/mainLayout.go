@@ -63,7 +63,7 @@ func CreateWND(actionQueue chan events.Event) (*walk.MainWindow, error) {
 					},
 					Action{
 						Text:        "Информация о книге",
-						Shortcut:    Shortcut{walk.ModControl, walk.KeyG},
+						Shortcut:    Shortcut{walk.ModControl, walk.KeyI},
 						OnTriggered: func() { actionQueue <- events.BOOK_PROPERTIES },
 					},
 					Action{
@@ -109,12 +109,12 @@ func CreateWND(actionQueue chan events.Event) (*walk.MainWindow, error) {
 					},
 					Action{
 						Text:        "Перемотка вперёд",
-						Shortcut:    Shortcut{walk.ModControl, walk.KeyO},
+						Shortcut:    Shortcut{walk.ModControl, walk.KeyOEMPeriod},
 						OnTriggered: func() { actionQueue <- events.PLAYER_FORWARD },
 					},
 					Action{
 						Text:        "Перемотка назад",
-						Shortcut:    Shortcut{walk.ModControl, walk.KeyI},
+						Shortcut:    Shortcut{walk.ModControl, walk.KeyOEMComma},
 						OnTriggered: func() { actionQueue <- events.PLAYER_BACK },
 					},
 					Action{
