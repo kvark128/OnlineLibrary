@@ -37,7 +37,7 @@ type Credentials struct {
 }
 
 type Config struct {
-	Services []Service `json:"services"`
+	Services Services `json:"services,omitempty"`
 }
 
 func UserData() string {
@@ -82,8 +82,4 @@ func (c *Config) Save() {
 	if err := e.Encode(c); err != nil {
 		log.Printf("Saving config: %v", err)
 	}
-}
-
-func SetMainLibrary(index int) {
-	Conf.Services[0], Conf.Services[index] = Conf.Services[index], Conf.Services[0]
 }

@@ -73,14 +73,15 @@ func (m *Manager) Start(eventCH chan events.Event) {
 
 		case events.LIBRARY_SWITCH:
 			index := gui.GetCurrentLibrary()
-			service := config.Conf.Services[index]
+			service := config.Conf.Services.Service(index)
 			if err := m.logon(service); err != nil {
 				log.Printf("logon: %v", err)
 				gui.MessageBox("Ошибка", fmt.Sprintf("logon: %v", err), gui.MsgBoxOK|gui.MsgBoxIconError)
 				break
 			}
-			config.SetMainLibrary(index)
-			gui.SetLibraryMenu(eventCH, config.Conf.Services, 0)
+			config.Conf.Services.SetCurrentService(index)
+			_, index, _ = config.Conf.Services.CurrentService()
+			gui.SetLibraryMenu(eventCH, config.Conf.Services, index)
 
 		case events.LIBRARY_ADD:
 			name, url, username, password, err := gui.Credentials()
@@ -97,17 +98,16 @@ func (m *Manager) Start(eventCH chan events.Event) {
 				gui.MessageBox("Ошибка", fmt.Sprintf("logon: %v", err), gui.MsgBoxOK|gui.MsgBoxIconError)
 				break
 			}
-			config.Conf.Services = append(config.Conf.Services, service)
-			config.SetMainLibrary(len(config.Conf.Services) - 1)
-			gui.SetLibraryMenu(eventCH, config.Conf.Services, 0)
+			config.Conf.Services.SetService(service)
+			_, index, _ := config.Conf.Services.CurrentService()
+			gui.SetLibraryMenu(eventCH, config.Conf.Services, index)
 
 		case events.LIBRARY_LOGON:
-			gui.SetLibraryMenu(eventCH, config.Conf.Services, 0)
-			if len(config.Conf.Services) == 0 {
+			service, index, err := config.Conf.Services.CurrentService()
+			if err != nil {
 				break
 			}
-			// We always use the first service in the list to log in
-			service := config.Conf.Services[0]
+			gui.SetLibraryMenu(eventCH, config.Conf.Services, index)
 			if err := m.logon(service); err != nil {
 				log.Printf("logon: %v", err)
 				gui.MessageBox("Ошибка", fmt.Sprintf("logon: %v", err), gui.MsgBoxOK|gui.MsgBoxIconError)
@@ -118,8 +118,10 @@ func (m *Manager) Start(eventCH chan events.Event) {
 
 		case events.LIBRARY_REMOVE:
 			m.logoff()
-			config.Conf.Services = config.Conf.Services[1:] // Removing first service
-			gui.SetLibraryMenu(eventCH, config.Conf.Services, 0)
+			_, index, _ := config.Conf.Services.CurrentService()
+			config.Conf.Services.RemoveService(index)
+			_, index, _ = config.Conf.Services.CurrentService()
+			gui.SetLibraryMenu(eventCH, config.Conf.Services, index)
 
 		case events.ISSUE_BOOK:
 			if m.books != nil {
@@ -351,7 +353,8 @@ func (m *Manager) playBook(index int) {
 		return
 	}
 
-	b := config.Conf.Services[0].RecentBooks.Book(book.ID)
+	service, _, _ := config.Conf.Services.CurrentService()
+	b := service.RecentBooks.Book(book.ID)
 	gui.SetMainWindowTitle(book.Label.Text)
 	m.bookplayer = player.NewPlayer(book.ID, book.Label.Text, r.Resources, b.Fragment, b.ElapsedTime)
 	m.bookplayer.PlayPause()
