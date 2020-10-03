@@ -178,7 +178,7 @@ func Initialize(eventCH chan events.Event) error {
 				OnItemActivated: func() { eventCH <- events.ACTIVATE_MENU },
 				OnKeyPress: func(key walk.Key) {
 					if key == walk.KeySpace {
-						eventCH <- events.ACTIVATE_MENU
+						eventCH <- events.PLAYER_PAUSE
 					}
 				},
 			},
