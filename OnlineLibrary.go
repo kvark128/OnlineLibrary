@@ -36,7 +36,6 @@ var readingSystemAttributes = daisy.ReadingSystemAttributes{
 }
 
 func main() {
-	config.Conf.Load()
 	if fl, err := os.Create(filepath.Join(config.UserData(), config.LogFile)); err == nil {
 		log.SetOutput(fl)
 		defer fl.Close()
@@ -45,6 +44,7 @@ func main() {
 	log.SetFlags(log.Lmsgprefix | log.Ltime | log.Lshortfile)
 
 	log.Printf("Starting OnlineLibrary version %s", config.ProgramVersion)
+	config.Conf.Load()
 	eventCH := make(chan events.Event, 16)
 
 	if err := gui.Initialize(eventCH); err != nil {
