@@ -116,7 +116,7 @@ fillLoop:
 		if c.lastErr != nil {
 			if c.reads < c.contentLength {
 				for attempt := 1; attempt <= 3; attempt++ {
-					log.Printf("connection recovery: attempt %v/3. Reason: %v", attempt, c.lastErr)
+					log.Printf("connection recovery: attempt %v/3: reason: %v", attempt, c.lastErr)
 					if c.setNewResponse() == nil {
 						c.lastErr = nil
 						continue fillLoop
@@ -153,7 +153,6 @@ func (c *Connection) Seek(offset int64, whence int) (int64, error) {
 	leftEdge := c.reads - int64(c.bufFinish)
 	rightEdge := c.reads
 
-	log.Printf("Seek: position: %v, left: %v, right: %v, start: %v, finish: %v", position, leftEdge, rightEdge, c.bufStart, c.bufFinish)
 	if position >= leftEdge && position <= rightEdge {
 		// New position inside the buffer
 		c.bufStart = int(position - leftEdge)

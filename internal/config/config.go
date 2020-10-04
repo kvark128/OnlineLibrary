@@ -65,7 +65,9 @@ func (c *Config) Load() {
 	d := json.NewDecoder(f)
 	if err := d.Decode(c); err != nil {
 		log.Printf("Loading config: %v", err)
+		return
 	}
+	log.Printf("Loading config from %v", path)
 }
 
 func (c *Config) Save() {
@@ -81,5 +83,7 @@ func (c *Config) Save() {
 	e.SetIndent("", "\t") // for readability
 	if err := e.Encode(c); err != nil {
 		log.Printf("Saving config: %v", err)
+		return
 	}
+	log.Printf("Saving config to %v", path)
 }
