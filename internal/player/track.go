@@ -22,7 +22,6 @@ type track struct {
 	sampleRate  int
 	channels    int
 	samples     []byte
-	speed       float64
 	wp          *winmm.WavePlayer
 }
 
@@ -33,7 +32,6 @@ func newTrack(mp3 io.Reader, speed float64) *track {
 	trk.sampleRate, trk.channels, _, _ = trk.dec.Info()
 	trk.stream = sonic.NewStream(trk.sampleRate, trk.channels)
 	trk.stream.SetSpeed(speed)
-	trk.speed = speed
 	trk.samples = make([]byte, trk.sampleRate*trk.channels*2) // buffer for 1 second
 	trk.wp = winmm.NewWavePlayer(trk.channels, trk.sampleRate, 16, len(trk.samples), winmm.WAVE_MAPPER)
 	return trk
@@ -78,10 +76,11 @@ func (trk *track) play() {
 
 func (trk *track) setSpeed(speed float64) {
 	trk.Lock()
+	if !trk.paused {
+		trk.elapsedTime += time.Duration(float64(time.Since(trk.start)) * trk.stream.Speed())
+		trk.start = time.Now()
+	}
 	trk.stream.SetSpeed(speed)
-	trk.elapsedTime += time.Duration(float64(time.Since(trk.start)) * trk.speed)
-	trk.start = time.Now()
-	trk.speed = speed
 	trk.Unlock()
 }
 
@@ -91,7 +90,7 @@ func (trk *track) getElapsedTime() time.Duration {
 	if trk.paused {
 		return trk.elapsedTime
 	}
-	return trk.elapsedTime + time.Duration(float64(time.Since(trk.start))*trk.speed)
+	return trk.elapsedTime + time.Duration(float64(time.Since(trk.start))*trk.stream.Speed())
 }
 
 func (trk *track) pause(pause bool) bool {
@@ -105,7 +104,7 @@ func (trk *track) pause(pause bool) bool {
 
 	if trk.paused {
 		if !trk.start.IsZero() {
-			trk.elapsedTime += time.Duration(float64(time.Since(trk.start)) * trk.speed)
+			trk.elapsedTime += time.Duration(float64(time.Since(trk.start)) * trk.stream.Speed())
 		}
 	} else {
 		trk.start = time.Now()
