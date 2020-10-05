@@ -1,16 +1,13 @@
 package player
 
-//#include <sonic.h>
-import "C"
-
 import (
 	"io"
 	"sync"
 	"time"
-	"unsafe"
 
 	"github.com/kvark128/OnlineLibrary/internal/winmm"
 	"github.com/kvark128/minimp3"
+	"github.com/kvark128/sonic"
 )
 
 type track struct {
@@ -20,7 +17,7 @@ type track struct {
 	beRewind    bool
 	elapsedTime time.Duration
 	start       time.Time
-	stream      C.sonicStream
+	stream      *sonic.Stream
 	dec         *minimp3.Decoder
 	sampleRate  int
 	channels    int
@@ -34,8 +31,8 @@ func newTrack(mp3 io.Reader, speed float64) *track {
 	trk.dec = minimp3.NewDecoder(mp3)
 	trk.dec.Read([]byte{}) // Reads first frame
 	trk.sampleRate, trk.channels, _, _ = trk.dec.Info()
-	trk.stream = C.sonicCreateStream(C.int(trk.sampleRate), C.int(trk.channels))
-	C.sonicSetSpeed(trk.stream, C.float(speed))
+	trk.stream = sonic.NewStream(trk.sampleRate, trk.channels)
+	trk.stream.SetSpeed(speed)
 	trk.speed = speed
 	trk.samples = make([]byte, trk.sampleRate*trk.channels*2) // buffer for 1 second
 	trk.wp = winmm.NewWavePlayer(trk.channels, trk.sampleRate, 16, len(trk.samples), winmm.WAVE_MAPPER)
@@ -51,11 +48,9 @@ func (trk *track) play() {
 			break
 		}
 		n, err := trk.dec.Read(trk.samples)
-		if n > 0 {
-			C.sonicWriteShortToStream(trk.stream, (*C.short)(unsafe.Pointer(&trk.samples[0])), C.int(n/(trk.channels*2)))
-		}
+		trk.stream.Write(trk.samples[:n])
 		if err != nil {
-			C.sonicFlushStream(trk.stream)
+			trk.stream.Flush()
 		}
 		trk.Unlock()
 		for {
@@ -64,12 +59,12 @@ func (trk *track) play() {
 				trk.Unlock()
 				break
 			}
-			nSamples := C.sonicReadShortFromStream(trk.stream, (*C.short)(unsafe.Pointer(&trk.samples[0])), C.int(4096/(trk.channels*2)))
+			n, _ := trk.stream.Read(trk.samples)
 			trk.Unlock()
-			if nSamples == 0 {
+			if n == 0 {
 				break
 			}
-			trk.wp.Write(trk.samples[:nSamples*C.int(trk.channels*2)])
+			trk.wp.Write(trk.samples[:n])
 		}
 		if err != nil {
 			break
@@ -77,13 +72,13 @@ func (trk *track) play() {
 	}
 
 	trk.wp.Sync()
-	C.sonicDestroyStream(trk.stream)
 	trk.wp.Close()
+	trk.stream.Close()
 }
 
 func (trk *track) setSpeed(speed float64) {
 	trk.Lock()
-	C.sonicSetSpeed(trk.stream, C.float(speed))
+	trk.stream.SetSpeed(speed)
 	trk.elapsedTime += time.Duration(float64(time.Since(trk.start)) * trk.speed)
 	trk.start = time.Now()
 	trk.speed = speed
@@ -150,7 +145,7 @@ func (trk *track) rewind(offset time.Duration) error {
 	}
 
 	for {
-		nSamples := C.sonicReadShortFromStream(trk.stream, (*C.short)(unsafe.Pointer(&trk.samples[0])), C.int(len(trk.samples)/(trk.channels*2)))
+		nSamples, _ := trk.stream.Read(trk.samples)
 		if nSamples == 0 {
 			break
 		}
