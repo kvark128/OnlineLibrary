@@ -163,10 +163,10 @@ func (m *Manager) Start(eventCH chan events.Event) {
 			m.bookplayer.SetSpeed(1.0)
 
 		case events.PLAYER_SPEED_UP:
-			m.bookplayer.ChangeSpeed(+1)
+			m.bookplayer.ChangeSpeed(+0.1)
 
 		case events.PLAYER_SPEED_DOWN:
-			m.bookplayer.ChangeSpeed(-1)
+			m.bookplayer.ChangeSpeed(-0.1)
 
 		case events.PLAYER_VOLUME_UP:
 			m.bookplayer.ChangeVolume(+1)

@@ -64,17 +64,17 @@ func (p *Player) Book() string {
 	return p.bookID
 }
 
-func (p *Player) ChangeSpeed(offset int) {
+func (p *Player) ChangeSpeed(offset float64) {
 	if p == nil {
 		return
 	}
 	p.Lock()
-	p.speed = p.speed + (float64(offset) * 0.1)
-	if p.speed < 0.5 {
+	p.speed += offset
+	switch {
+	case p.speed < 0.5:
 		p.speed = 0.5
-	}
-	if p.speed > 2.0 {
-		p.speed = 2.0
+	case p.speed > 3.0:
+		p.speed = 3.0
 	}
 	if p.trk != nil {
 		p.trk.setSpeed(p.speed)
