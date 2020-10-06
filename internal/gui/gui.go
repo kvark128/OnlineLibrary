@@ -204,7 +204,9 @@ func Initialize(eventCH chan events.Event) error {
 	}
 
 	elapseTime = walk.NewStatusBarItem()
+	elapseTime.SetText("00:00:00")
 	totalTime = walk.NewStatusBarItem()
+	totalTime.SetText("00:00:00")
 	separator := walk.NewStatusBarItem()
 	separator.SetText("/")
 

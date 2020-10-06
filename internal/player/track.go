@@ -24,22 +24,29 @@ type track struct {
 	channels    int
 	samples     []byte
 	wp          *winmm.WavePlayer
+	trackSize   int64
 }
 
-func newTrack(mp3 io.Reader, speed float64) *track {
+func newTrack(mp3 io.Reader, speed float64, size int64) *track {
 	trk := &track{}
 	trk.dec = minimp3.NewDecoder(mp3)
 	trk.dec.Read([]byte{}) // Reads first frame
-	trk.sampleRate, trk.channels, _, _ = trk.dec.Info()
+	trk.sampleRate, trk.channels, _, _, _, _ = trk.dec.LastFrameInfo()
 	trk.stream = sonic.NewStream(trk.sampleRate, trk.channels)
 	trk.stream.SetSpeed(speed)
 	trk.samples = make([]byte, trk.sampleRate*trk.channels*2) // buffer for 1 second
 	trk.wp = winmm.NewWavePlayer(trk.channels, trk.sampleRate, 16, len(trk.samples), winmm.WAVE_MAPPER)
+	trk.trackSize = size
 	return trk
 }
 
 func (trk *track) play() {
-	gui.SetTotalTime(0)
+	sampleRate, _, _, _, frameSize, samples := trk.dec.LastFrameInfo()
+	if sampleRate > 0 && frameSize > 0 {
+		seconds := time.Duration(trk.trackSize) / time.Duration(frameSize) * time.Duration(samples) / time.Duration(sampleRate)
+		gui.SetTotalTime(time.Second * seconds)
+	}
+
 	trk.start = time.Now()
 	for {
 		trk.Lock()
@@ -154,6 +161,7 @@ func (trk *track) rewind(offset time.Duration) error {
 	}
 
 	trk.elapsedTime = elapsedTime
+	gui.SetElapsedTime(elapsedTime)
 	trk.beRewind = true
 	return nil
 }
