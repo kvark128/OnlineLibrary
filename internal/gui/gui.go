@@ -3,6 +3,7 @@ package gui
 import (
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/kvark128/OnlineLibrary/internal/config"
 	"github.com/kvark128/OnlineLibrary/internal/events"
@@ -204,10 +205,34 @@ func Initialize(eventCH chan events.Event) error {
 
 	elapseTime = walk.NewStatusBarItem()
 	totalTime = walk.NewStatusBarItem()
+	separator := walk.NewStatusBarItem()
+	separator.SetText("/")
+
 	statusBar.Items().Add(elapseTime)
+	statusBar.Items().Add(separator)
 	statusBar.Items().Add(totalTime)
 	statusBar.SetVisible(true)
 	return nil
+}
+
+func SetElapsedTime(elapse time.Duration) {
+	mainWindow.Synchronize(func() {
+		h := (elapse / time.Hour).Hours()
+		m := (elapse % time.Hour).Minutes()
+		s := (elapse % time.Minute).Seconds()
+		text := fmt.Sprintf("%02d:%02d:%02d", int(h), int(m), int(s))
+		elapseTime.SetText(text)
+	})
+}
+
+func SetTotalTime(total time.Duration) {
+	mainWindow.Synchronize(func() {
+		h := (total / time.Hour).Hours()
+		m := (total % time.Hour).Minutes()
+		s := (total % time.Minute).Seconds()
+		text := fmt.Sprintf("%02d:%02d:%02d", int(h), int(m), int(s))
+		totalTime.SetText(text)
+	})
 }
 
 func SetLibraryMenu(eventCH chan events.Event, services []config.Service, current int) {

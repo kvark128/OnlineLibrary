@@ -5,6 +5,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/kvark128/OnlineLibrary/internal/gui"
 	"github.com/kvark128/OnlineLibrary/internal/winmm"
 	"github.com/kvark128/minimp3"
 	"github.com/kvark128/sonic"
@@ -38,6 +39,7 @@ func newTrack(mp3 io.Reader, speed float64) *track {
 }
 
 func (trk *track) play() {
+	gui.SetTotalTime(0)
 	trk.start = time.Now()
 	for {
 		trk.Lock()
@@ -52,6 +54,7 @@ func (trk *track) play() {
 		}
 		trk.Unlock()
 		for {
+			gui.SetElapsedTime(trk.getElapsedTime())
 			trk.Lock()
 			if trk.stopped {
 				trk.Unlock()
