@@ -81,7 +81,6 @@ func (trk *track) play() {
 
 	trk.wp.Sync()
 	trk.wp.Close()
-	trk.stream.Close()
 }
 
 func (trk *track) setSpeed(speed float64) {
