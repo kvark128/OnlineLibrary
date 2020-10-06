@@ -21,11 +21,11 @@ const (
 )
 
 var (
-	mainWindow  *walk.MainWindow
-	statusBar   *walk.StatusBar
-	textLabel   *walk.TextLabel
-	listBox     *walk.ListBox
-	libraryMenu *walk.Menu
+	mainWindow            *walk.MainWindow
+	textLabel             *walk.TextLabel
+	listBox               *walk.ListBox
+	libraryMenu           *walk.Menu
+	elapseTime, totalTime *walk.StatusBarItem
 )
 
 func Initialize(eventCH chan events.Event) error {
@@ -33,7 +33,7 @@ func Initialize(eventCH chan events.Event) error {
 		panic("GUI already initialized")
 	}
 
-	return MainWindow{
+	if err := (MainWindow{
 		Title:    config.ProgramName,
 		Layout:   VBox{},
 		AssignTo: &mainWindow,
@@ -193,8 +193,21 @@ func Initialize(eventCH chan events.Event) error {
 				},
 			},
 		},
-	}.Create()
+	}.Create()); err != nil {
+		return err
+	}
 
+	statusBar, err := walk.NewStatusBar(mainWindow)
+	if err != nil {
+		return err
+	}
+
+	elapseTime = walk.NewStatusBarItem()
+	totalTime = walk.NewStatusBarItem()
+	statusBar.Items().Add(elapseTime)
+	statusBar.Items().Add(totalTime)
+	statusBar.SetVisible(true)
+	return nil
 }
 
 func SetLibraryMenu(eventCH chan events.Event, services []config.Service, current int) {
