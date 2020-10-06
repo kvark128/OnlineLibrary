@@ -116,19 +116,9 @@ func Initialize(eventCH chan events.Event) error {
 				Text: "&Воспроизведение",
 				Items: []MenuItem{
 					Action{
-						Text:        "Сбросить скорость",
-						Shortcut:    Shortcut{walk.ModControl, walk.KeyZ},
-						OnTriggered: func() { eventCH <- events.PLAYER_SPEED_RESET },
-					},
-					Action{
-						Text:        "Увеличить скорость",
-						Shortcut:    Shortcut{walk.ModControl, walk.KeyC},
-						OnTriggered: func() { eventCH <- events.PLAYER_SPEED_UP },
-					},
-					Action{
-						Text:        "Уменьшить скорость",
-						Shortcut:    Shortcut{walk.ModControl, walk.KeyX},
-						OnTriggered: func() { eventCH <- events.PLAYER_SPEED_DOWN },
+						Text:        "Первый трек",
+						Shortcut:    Shortcut{walk.ModControl, walk.KeyBack},
+						OnTriggered: func() { eventCH <- events.PLAYER_FIRST },
 					},
 					Action{
 						Text:        "Перемотка вперёд",
@@ -161,9 +151,29 @@ func Initialize(eventCH chan events.Event) error {
 						OnTriggered: func() { eventCH <- events.PLAYER_PREVIOUS_TRACK },
 					},
 					Action{
-						Text:        "Пауза",
+						Text:        "Воспроизвести / Приостановить",
 						Shortcut:    Shortcut{walk.ModControl, walk.KeyK},
-						OnTriggered: func() { eventCH <- events.PLAYER_PAUSE },
+						OnTriggered: func() { eventCH <- events.PLAYER_PLAY_PAUSE },
+					},
+					Menu{
+						Text: "Скорость",
+						Items: []MenuItem{
+							Action{
+								Text:        "Увеличить скорость",
+								Shortcut:    Shortcut{walk.ModControl, walk.KeyC},
+								OnTriggered: func() { eventCH <- events.PLAYER_SPEED_UP },
+							},
+							Action{
+								Text:        "Уменьшить скорость",
+								Shortcut:    Shortcut{walk.ModControl, walk.KeyX},
+								OnTriggered: func() { eventCH <- events.PLAYER_SPEED_DOWN },
+							},
+							Action{
+								Text:        "Сбросить скорость",
+								Shortcut:    Shortcut{walk.ModControl, walk.KeyZ},
+								OnTriggered: func() { eventCH <- events.PLAYER_SPEED_RESET },
+							},
+						},
 					},
 				},
 			},
@@ -178,7 +188,7 @@ func Initialize(eventCH chan events.Event) error {
 				OnItemActivated: func() { eventCH <- events.ACTIVATE_MENU },
 				OnKeyPress: func(key walk.Key) {
 					if key == walk.KeySpace {
-						eventCH <- events.PLAYER_PAUSE
+						eventCH <- events.PLAYER_PLAY_PAUSE
 					}
 				},
 			},

@@ -147,7 +147,7 @@ func (m *Manager) Start(eventCH chan events.Event) {
 				m.showBookDescription(index)
 			}
 
-		case events.PLAYER_PAUSE:
+		case events.PLAYER_PLAY_PAUSE:
 			m.bookplayer.PlayPause()
 
 		case events.PLAYER_STOP:
@@ -179,6 +179,9 @@ func (m *Manager) Start(eventCH chan events.Event) {
 
 		case events.PLAYER_BACK:
 			m.bookplayer.Rewind(time.Second * -5)
+
+		case events.PLAYER_FIRST:
+			m.bookplayer.Play(0, 0)
 
 		default:
 			log.Printf("Unknown event: %v", evt)

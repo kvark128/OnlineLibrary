@@ -103,7 +103,7 @@ func (p *Player) ChangeTrack(offset int) {
 	p.Lock()
 	newFragment := p.fragment + offset
 	p.Unlock()
-	p.play(newFragment, 0)
+	p.Play(newFragment, 0)
 }
 
 func (p *Player) ChangeVolume(offset int) {
@@ -154,14 +154,18 @@ func (p *Player) Rewind(offset time.Duration) {
 	p.Unlock()
 }
 
-func (p *Player) play(fragment int, offset time.Duration) {
+func (p *Player) Play(fragment int, offset time.Duration) {
 	if p == nil {
 		return
 	}
 
-	if fragment < 0 || fragment >= len(p.playList) {
+	switch {
+	case fragment >= len(p.playList):
 		return
+	case fragment < 0:
+		fragment = 0
 	}
+
 	p.Stop()
 	p.pause = false
 	p.wg.Add(1)
@@ -178,7 +182,7 @@ func (p *Player) PlayPause() {
 		fragment := p.fragment
 		startOffset := p.startOffset
 		p.Unlock()
-		p.play(fragment, startOffset)
+		p.Play(fragment, startOffset)
 		return
 	}
 
