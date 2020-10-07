@@ -23,29 +23,33 @@ const (
 	LKF_FORMAT = "audio/x-lkf"
 )
 
+const (
+	DEFAULT_SPEED = 1.0
+	MIN_SPEED     = 0.5
+	MAX_SPEED     = 3.0
+)
+
 type Player struct {
 	sync.Mutex
-	playList    []daisy.Resource
-	bookID      string
-	bookName    string
-	playing     *flag.Flag
-	wg          *sync.WaitGroup
-	pause       bool
-	fragment    int
-	trk         *track
-	speed       float64
-	startOffset time.Duration
+	playList []daisy.Resource
+	bookID   string
+	bookName string
+	playing  *flag.Flag
+	wg       *sync.WaitGroup
+	pause    bool
+	trk      *track
+	speed    float64
+	fragment int
+	offset   time.Duration
 }
 
-func NewPlayer(bookID, bookName string, resources []daisy.Resource, fragment int, offset time.Duration) *Player {
+func NewPlayer(bookID, bookName string, resources []daisy.Resource) *Player {
 	p := &Player{
-		playing:     new(flag.Flag),
-		wg:          new(sync.WaitGroup),
-		bookID:      bookID,
-		bookName:    bookName,
-		speed:       1.0,
-		fragment:    fragment,
-		startOffset: offset,
+		playing:  new(flag.Flag),
+		wg:       new(sync.WaitGroup),
+		bookID:   bookID,
+		bookName: bookName,
+		speed:    DEFAULT_SPEED,
 	}
 
 	// The player supports only LKF and MP3 formats. Unsupported resources must not be uploaded to the player
@@ -70,17 +74,9 @@ func (p *Player) ChangeSpeed(offset float64) {
 		return
 	}
 	p.Lock()
-	p.speed += offset
-	switch {
-	case p.speed < 0.5:
-		p.speed = 0.5
-	case p.speed > 3.0:
-		p.speed = 3.0
-	}
-	if p.trk != nil {
-		p.trk.setSpeed(p.speed)
-	}
+	newSpeed := p.speed + offset
 	p.Unlock()
+	p.SetSpeed(newSpeed)
 }
 
 func (p *Player) SetSpeed(speed float64) {
@@ -89,7 +85,14 @@ func (p *Player) SetSpeed(speed float64) {
 	}
 
 	p.Lock()
-	p.speed = speed
+	switch {
+	case speed < MIN_SPEED:
+		p.speed = MIN_SPEED
+	case speed > MAX_SPEED:
+		p.speed = MAX_SPEED
+	default:
+		p.speed = speed
+	}
 	if p.trk != nil {
 		p.trk.setSpeed(p.speed)
 	}
@@ -100,11 +103,29 @@ func (p *Player) ChangeTrack(offset int) {
 	if p == nil {
 		return
 	}
-
 	p.Lock()
 	newFragment := p.fragment + offset
 	p.Unlock()
-	p.Play(newFragment, 0)
+	p.SetTrack(newFragment)
+}
+
+func (p *Player) SetTrack(fragment int) {
+	if p == nil {
+		return
+	}
+	p.Lock()
+	switch {
+	case fragment < 0:
+		p.fragment = 0
+	case fragment >= len(p.playList):
+		return
+	default:
+		p.fragment = fragment
+	}
+	p.Unlock()
+	if p.playing.IsSet() {
+		p.Play()
+	}
 }
 
 func (p *Player) ChangeVolume(offset int) {
@@ -144,55 +165,45 @@ func (p *Player) Rewind(offset time.Duration) {
 	if p == nil {
 		return
 	}
-
 	p.Lock()
+	defer p.Unlock()
+	if !p.playing.IsSet() {
+		p.offset = offset
+		return
+	}
 	if p.trk != nil {
-		err := p.trk.rewind(offset)
-		if err != nil {
+		if err := p.trk.rewind(offset); err != nil {
 			log.Printf("rewind: %v", err)
 		}
 	}
-	p.Unlock()
 }
 
-func (p *Player) Play(fragment int, offset time.Duration) {
+func (p *Player) Play() {
 	if p == nil {
 		return
 	}
-
-	switch {
-	case fragment >= len(p.playList):
-		return
-	case fragment < 0:
-		fragment = 0
-	}
-
 	p.Stop()
+	p.Lock()
 	p.pause = false
 	p.wg.Add(1)
-	go p.start(fragment, offset)
+	go p.start(p.fragment, p.offset)
+	p.Unlock()
 }
 
 func (p *Player) PlayPause() {
 	if p == nil {
 		return
 	}
-
 	if !p.playing.IsSet() {
+		p.Play()
+	} else {
 		p.Lock()
-		fragment := p.fragment
-		startOffset := p.startOffset
+		if p.trk != nil {
+			p.pause = !p.pause
+			p.trk.pause(p.pause)
+		}
 		p.Unlock()
-		p.Play(fragment, startOffset)
-		return
 	}
-
-	p.Lock()
-	p.pause = !p.pause
-	if p.trk != nil {
-		p.trk.pause(p.pause)
-	}
-	p.Unlock()
 }
 
 func (p *Player) Stop() {
@@ -260,6 +271,7 @@ func (p *Player) start(trackIndex int, offset time.Duration) {
 		if offset > 0 {
 			p.trk.rewind(offset)
 			offset = 0
+			p.offset = 0
 		}
 		p.fragment = trackIndex + i
 		p.Unlock()

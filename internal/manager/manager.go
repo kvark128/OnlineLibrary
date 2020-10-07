@@ -160,7 +160,7 @@ func (m *Manager) Start(eventCH chan events.Event) {
 			m.bookplayer.ChangeTrack(-1)
 
 		case events.PLAYER_SPEED_RESET:
-			m.bookplayer.SetSpeed(1.0)
+			m.bookplayer.SetSpeed(player.DEFAULT_SPEED)
 
 		case events.PLAYER_SPEED_UP:
 			m.bookplayer.ChangeSpeed(+0.1)
@@ -181,7 +181,7 @@ func (m *Manager) Start(eventCH chan events.Event) {
 			m.bookplayer.Rewind(time.Second * -5)
 
 		case events.PLAYER_FIRST:
-			m.bookplayer.Play(0, 0)
+			m.bookplayer.SetTrack(0)
 
 		default:
 			log.Printf("Unknown event: %v", evt)
@@ -242,7 +242,9 @@ func (m *Manager) logon(service config.Service) error {
 	}
 
 	gui.SetMainWindowTitle(book.Name)
-	m.bookplayer = player.NewPlayer(book.ID, book.Name, r.Resources, book.Fragment, book.ElapsedTime)
+	m.bookplayer = player.NewPlayer(book.ID, book.Name, r.Resources)
+	m.bookplayer.SetTrack(book.Fragment)
+	m.bookplayer.Rewind(book.ElapsedTime)
 	return nil
 }
 
@@ -359,7 +361,9 @@ func (m *Manager) playBook(index int) {
 	service, _, _ := config.Conf.Services.CurrentService()
 	b := service.RecentBooks.Book(book.ID)
 	gui.SetMainWindowTitle(book.Label.Text)
-	m.bookplayer = player.NewPlayer(book.ID, book.Label.Text, r.Resources, b.Fragment, b.ElapsedTime)
+	m.bookplayer = player.NewPlayer(book.ID, book.Label.Text, r.Resources)
+	m.bookplayer.SetTrack(b.Fragment)
+	m.bookplayer.Rewind(b.ElapsedTime)
 	m.bookplayer.PlayPause()
 }
 
