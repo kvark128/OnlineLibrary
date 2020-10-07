@@ -11,6 +11,7 @@ import (
 	"github.com/kvark128/OnlineLibrary/internal/config"
 	"github.com/kvark128/OnlineLibrary/internal/connect"
 	"github.com/kvark128/OnlineLibrary/internal/flag"
+	"github.com/kvark128/OnlineLibrary/internal/gui"
 	"github.com/kvark128/OnlineLibrary/internal/lkf"
 	"github.com/kvark128/OnlineLibrary/internal/util"
 	daisy "github.com/kvark128/daisyonline"
@@ -264,6 +265,7 @@ func (p *Player) start(trackIndex int, offset time.Duration) {
 		p.Unlock()
 
 		log.Printf("playing %s: %s", uri, track.MimeType)
+		gui.SetFragments(p.fragment, len(p.playList))
 		p.trk.play()
 		src.Close()
 		log.Printf("stopping %s: %s", uri, track.MimeType)

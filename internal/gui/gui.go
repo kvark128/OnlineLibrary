@@ -22,11 +22,11 @@ const (
 )
 
 var (
-	mainWindow            *walk.MainWindow
-	textLabel             *walk.TextLabel
-	listBox               *walk.ListBox
-	libraryMenu           *walk.Menu
-	elapseTime, totalTime *walk.StatusBarItem
+	mainWindow                       *walk.MainWindow
+	textLabel                        *walk.TextLabel
+	listBox                          *walk.ListBox
+	libraryMenu                      *walk.Menu
+	elapseTime, totalTime, fragments *walk.StatusBarItem
 )
 
 func Initialize(eventCH chan events.Event) error {
@@ -209,10 +209,12 @@ func Initialize(eventCH chan events.Event) error {
 	totalTime.SetText("00:00:00")
 	separator := walk.NewStatusBarItem()
 	separator.SetText("/")
+	fragments = walk.NewStatusBarItem()
 
 	statusBar.Items().Add(elapseTime)
 	statusBar.Items().Add(separator)
 	statusBar.Items().Add(totalTime)
+	statusBar.Items().Add(fragments)
 	statusBar.SetVisible(true)
 	return nil
 }
@@ -234,6 +236,13 @@ func SetTotalTime(total time.Duration) {
 		s := (total % time.Minute).Seconds()
 		text := fmt.Sprintf("%02d:%02d:%02d", int(h), int(m), int(s))
 		totalTime.SetText(text)
+	})
+}
+
+func SetFragments(current, length int) {
+	mainWindow.Synchronize(func() {
+		text := fmt.Sprintf("Фрагмент %d из %d", current+1, length)
+		fragments.SetText(text)
 	})
 }
 
