@@ -118,6 +118,7 @@ func (p *Player) SetTrack(fragment int) {
 	case fragment < 0:
 		p.fragment = 0
 	case fragment >= len(p.playList):
+		p.Unlock()
 		return
 	default:
 		p.fragment = fragment
