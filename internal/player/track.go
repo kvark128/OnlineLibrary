@@ -27,17 +27,21 @@ type track struct {
 	trackSize   int64
 }
 
-func newTrack(mp3 io.Reader, speed float64, size int64) *track {
+func newTrack(mp3 io.Reader, speed float64, size int64) (*track, error) {
 	trk := &track{}
 	trk.dec = minimp3.NewDecoder(mp3)
-	trk.dec.Read([]byte{}) // Reads first frame
+	trk.samples = make([]byte, 1024*16)
+	n, err := trk.dec.Read(trk.samples)
+	if err != nil {
+		return nil, err
+	}
 	trk.sampleRate, trk.channels, _, _, _, _ = trk.dec.LastFrameInfo()
 	trk.stream = sonic.NewStream(trk.sampleRate, trk.channels)
 	trk.stream.SetSpeed(speed)
-	trk.samples = make([]byte, trk.sampleRate*trk.channels*2) // buffer for 1 second
+	trk.stream.Write(trk.samples[:n])
 	trk.wp = winmm.NewWavePlayer(trk.channels, trk.sampleRate, 16, len(trk.samples), winmm.WAVE_MAPPER)
 	trk.trackSize = size
-	return trk
+	return trk, nil
 }
 
 func (trk *track) play() {
@@ -47,17 +51,14 @@ func (trk *track) play() {
 		gui.SetTotalTime(time.Second * seconds)
 	}
 
+	var n int
+	var err error
 	trk.start = time.Now()
 	for {
 		trk.Lock()
 		if trk.stopped {
 			trk.Unlock()
 			break
-		}
-		n, err := trk.dec.Read(trk.samples)
-		trk.stream.Write(trk.samples[:n])
-		if err != nil {
-			trk.stream.Flush()
 		}
 		trk.Unlock()
 		for {
@@ -76,6 +77,11 @@ func (trk *track) play() {
 		}
 		if err != nil {
 			break
+		}
+		n, err = trk.dec.Read(trk.samples)
+		trk.stream.Write(trk.samples[:n])
+		if err != nil {
+			trk.stream.Flush()
 		}
 	}
 

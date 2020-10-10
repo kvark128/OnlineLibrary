@@ -267,7 +267,7 @@ func (p *Player) start(trackIndex int, offset time.Duration) {
 			p.Unlock()
 			break
 		}
-		p.trk = newTrack(mp3, p.speed, track.Size)
+		p.trk, _ = newTrack(mp3, p.speed, track.Size)
 		if offset > 0 {
 			p.trk.rewind(offset)
 			offset = 0
