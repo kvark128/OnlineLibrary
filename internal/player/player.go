@@ -62,13 +62,6 @@ func NewPlayer(bookID, bookName string, resources []daisy.Resource) *Player {
 	return p
 }
 
-func (p *Player) Book() string {
-	if p == nil {
-		return ""
-	}
-	return p.bookID
-}
-
 func (p *Player) ChangeSpeed(offset float64) {
 	if p == nil {
 		return
@@ -214,12 +207,13 @@ func (p *Player) Stop() {
 
 	p.playing.Clear()
 	p.Lock()
-	var elapsedTime time.Duration
+	elapsedTime := p.offset
 	if p.trk != nil {
 		elapsedTime = p.trk.getElapsedTime()
 		p.trk.stop()
 	}
-	config.Conf.Services[0].RecentBooks.SetBook(p.bookID, p.bookName, p.fragment, elapsedTime)
+	service, _, _ := config.Conf.Services.CurrentService()
+	service.RecentBooks.SetBook(p.bookID, p.bookName, p.fragment, elapsedTime)
 	p.Unlock()
 	p.wg.Wait()
 }
