@@ -9,10 +9,17 @@ import (
 )
 
 const (
-	ConfigFile     = "config.json"
 	ProgramName    = "OnlineLibrary"
-	ProgramVersion = "2020.09.27"
+	ProgramVersion = "2020.10.11"
+	ConfigFile     = "config.json"
 	LogFile        = "session.log"
+)
+
+// Supported mime types of content
+const (
+	MP3_FORMAT = "audio/mpeg"
+	LKF_FORMAT = "audio/x-lkf"
+	LGK_FORMAT = "application/lgk"
 )
 
 var Conf Config

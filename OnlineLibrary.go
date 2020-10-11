@@ -12,13 +12,6 @@ import (
 	daisy "github.com/kvark128/daisyonline"
 )
 
-// Supported mime types of content
-const (
-	MP3_FORMAT = "audio/mpeg"
-	LKF_FORMAT = "audio/x-lkf"
-	LGK_FORMAT = "application/lgk"
-)
-
 // General client configuration of DAISY-online
 var readingSystemAttributes = daisy.ReadingSystemAttributes{
 	Manufacturer: "Kvark <kvark128@yandex.ru>",
@@ -29,7 +22,7 @@ var readingSystemAttributes = daisy.ReadingSystemAttributes{
 		PreferredUILanguage:               "ru-RU",
 		SupportedContentFormats:           daisy.SupportedContentFormats{},
 		SupportedContentProtectionFormats: daisy.SupportedContentProtectionFormats{},
-		SupportedMimeTypes:                daisy.SupportedMimeTypes{MimeType: []daisy.MimeType{daisy.MimeType{Type: LKF_FORMAT}, daisy.MimeType{Type: LGK_FORMAT}, daisy.MimeType{Type: MP3_FORMAT}}},
+		SupportedMimeTypes:                daisy.SupportedMimeTypes{MimeType: []daisy.MimeType{daisy.MimeType{Type: config.LKF_FORMAT}, daisy.MimeType{Type: config.LGK_FORMAT}, daisy.MimeType{Type: config.MP3_FORMAT}}},
 		SupportedInputTypes:               daisy.SupportedInputTypes{Input: []daisy.Input{daisy.Input{Type: daisy.TEXT_ALPHANUMERIC}, daisy.Input{Type: daisy.AUDIO}}},
 		RequiresAudioLabels:               false,
 	},

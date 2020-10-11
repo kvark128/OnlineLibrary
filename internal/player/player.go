@@ -17,12 +17,6 @@ import (
 	daisy "github.com/kvark128/daisyonline"
 )
 
-// Supported mime types of content
-const (
-	MP3_FORMAT = "audio/mpeg"
-	LKF_FORMAT = "audio/x-lkf"
-)
-
 const (
 	DEFAULT_SPEED = 1.0
 	MIN_SPEED     = 0.5
@@ -54,7 +48,7 @@ func NewPlayer(bookID, bookName string, resources []daisy.Resource) *Player {
 
 	// The player supports only LKF and MP3 formats. Unsupported resources must not be uploaded to the player
 	for _, r := range resources {
-		if r.MimeType == LKF_FORMAT || r.MimeType == MP3_FORMAT {
+		if r.MimeType == config.LKF_FORMAT || r.MimeType == config.MP3_FORMAT {
 			p.playList = append(p.playList, r)
 		}
 	}
@@ -257,9 +251,9 @@ func (p *Player) start(startFragment int) {
 
 		var mp3 io.Reader
 		switch r.MimeType {
-		case LKF_FORMAT:
+		case config.LKF_FORMAT:
 			mp3 = lkf.NewLKFReader(src)
-		case MP3_FORMAT:
+		case config.MP3_FORMAT:
 			mp3 = src
 		default:
 			panic("Unsupported MimeType")
