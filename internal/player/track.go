@@ -1,6 +1,7 @@
 package player
 
 import (
+	"fmt"
 	"io"
 	"sync"
 	"time"
@@ -36,6 +37,9 @@ func newTrack(mp3 io.Reader, speed float64, size int64) (*track, error) {
 		return nil, err
 	}
 	trk.sampleRate, trk.channels, _, _, _, _ = trk.dec.LastFrameInfo()
+	if trk.sampleRate == 0 || trk.channels == 0 {
+		return nil, fmt.Errorf("invalid mp3: sampleRate=%v, channels=%v", trk.sampleRate, trk.channels)
+	}
 	trk.stream = sonic.NewStream(trk.sampleRate, trk.channels)
 	trk.stream.SetSpeed(speed)
 	trk.stream.Write(trk.samples[:n])
@@ -141,6 +145,10 @@ func (trk *track) stop() {
 }
 
 func (trk *track) rewind(offset time.Duration) error {
+	if offset == 0 {
+		return nil
+	}
+
 	if trk.pause(true) {
 		defer trk.pause(false)
 	}

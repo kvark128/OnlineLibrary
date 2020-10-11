@@ -180,7 +180,7 @@ func (p *Player) Play() {
 	p.Lock()
 	p.pause = false
 	p.wg.Add(1)
-	go p.start(p.fragment, p.offset)
+	go p.start(p.fragment)
 	p.Unlock()
 }
 
@@ -218,19 +218,19 @@ func (p *Player) Stop() {
 	p.wg.Wait()
 }
 
-func (p *Player) start(trackIndex int, offset time.Duration) {
+func (p *Player) start(startFragment int) {
 	defer p.wg.Done()
 	defer p.playing.Clear()
 	p.playing.Set()
 
-	for i, track := range p.playList[trackIndex:] {
+	for i, r := range p.playList[startFragment:] {
 		var src io.ReadCloser
 		var uri string
 		var err error
 
-		uri = filepath.Join(config.UserData(), util.ReplaceProhibitCharacters(p.bookName), track.LocalURI)
+		uri = filepath.Join(config.UserData(), util.ReplaceProhibitCharacters(p.bookName), r.LocalURI)
 		if info, e := os.Stat(uri); e == nil {
-			if !info.IsDir() && info.Size() == track.Size {
+			if !info.IsDir() && info.Size() == r.Size {
 				// track already exist
 				src, _ = os.Open(uri)
 			}
@@ -238,7 +238,7 @@ func (p *Player) start(trackIndex int, offset time.Duration) {
 
 		if src == nil {
 			// There is no track on the disc. Trying to get it from the network
-			uri = track.URI
+			uri = r.URI
 			src, err = connect.NewConnection(uri)
 			if err != nil {
 				log.Printf("Connection creating: %s\n", err)
@@ -247,7 +247,7 @@ func (p *Player) start(trackIndex int, offset time.Duration) {
 		}
 
 		var mp3 io.Reader
-		switch track.MimeType {
+		switch r.MimeType {
 		case LKF_FORMAT:
 			mp3 = lkf.NewLKFReader(src)
 		case MP3_FORMAT:
@@ -257,25 +257,42 @@ func (p *Player) start(trackIndex int, offset time.Duration) {
 		}
 
 		p.Lock()
-		if !p.playing.IsSet() {
-			src.Close()
-			p.Unlock()
-			break
-		}
-		p.trk, _ = newTrack(mp3, p.speed, track.Size)
-		if offset > 0 {
-			p.trk.rewind(offset)
-			offset = 0
-			p.offset = 0
-		}
-		p.fragment = trackIndex + i
+		speed := p.speed
+		offset := p.offset
+		p.offset = 0
 		p.Unlock()
 
-		log.Printf("playing %s: %s", uri, track.MimeType)
-		gui.SetFragments(p.fragment, len(p.playList))
-		p.trk.play()
+		trk, err := newTrack(mp3, speed, r.Size)
+		if err != nil {
+			log.Printf("new track for %v: %v", uri, err)
+			continue
+		}
+
+		if err := trk.rewind(offset); err != nil {
+			log.Printf("track rewind: %v", err)
+			continue
+		}
+
+		if !p.playing.IsSet() {
+			src.Close()
+			break
+		}
+		currentFragment := startFragment + i
+
+		p.Lock()
+		p.trk = trk
+		p.fragment = currentFragment
+		p.Unlock()
+
+		log.Printf("playing %s: %s", uri, r.MimeType)
+		gui.SetFragments(currentFragment, len(p.playList))
+		trk.play()
 		src.Close()
-		log.Printf("stopping %s: %s", uri, track.MimeType)
+		log.Printf("stopping %s: %s", uri, r.MimeType)
+
+		p.Lock()
+		p.trk = nil
+		p.Unlock()
 
 		if !p.playing.IsSet() {
 			break
