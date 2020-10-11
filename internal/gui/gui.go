@@ -55,8 +55,27 @@ func Initialize(eventCH chan events.Event) error {
 						},
 					},
 					Action{
-						Text:        "Выйти из учётной записи",
-						Shortcut:    Shortcut{walk.ModControl, walk.KeyQ},
+						Text:        "Главное меню",
+						Shortcut:    Shortcut{walk.ModControl, walk.KeyM},
+						OnTriggered: func() { eventCH <- events.MAIN_MENU },
+					},
+					Action{
+						Text:        "Книжная полка",
+						Shortcut:    Shortcut{walk.ModControl, walk.KeyE},
+						OnTriggered: func() { eventCH <- events.OPEN_BOOKSHELF },
+					},
+					Action{
+						Text:        "Поиск...",
+						Shortcut:    Shortcut{walk.ModControl, walk.KeyF},
+						OnTriggered: func() { eventCH <- events.SEARCH_BOOK },
+					},
+					Action{
+						Text:        "Предыдущее меню",
+						Shortcut:    Shortcut{0, walk.KeyBack},
+						OnTriggered: func() { eventCH <- events.MENU_BACK },
+					},
+					Action{
+						Text:        "Удалить учётную запись",
 						OnTriggered: func() { eventCH <- events.LIBRARY_REMOVE },
 					},
 					Action{
@@ -89,26 +108,6 @@ func Initialize(eventCH chan events.Event) error {
 						Text:        "Информация о книге",
 						Shortcut:    Shortcut{walk.ModControl, walk.KeyI},
 						OnTriggered: func() { eventCH <- events.BOOK_DESCRIPTION },
-					},
-					Action{
-						Text:        "Поиск",
-						Shortcut:    Shortcut{walk.ModControl, walk.KeyF},
-						OnTriggered: func() { eventCH <- events.SEARCH_BOOK },
-					},
-					Action{
-						Text:        "Главное меню библиотеки",
-						Shortcut:    Shortcut{walk.ModControl, walk.KeyM},
-						OnTriggered: func() { eventCH <- events.MAIN_MENU },
-					},
-					Action{
-						Text:        "Книжная полка",
-						Shortcut:    Shortcut{walk.ModControl, walk.KeyE},
-						OnTriggered: func() { eventCH <- events.OPEN_BOOKSHELF },
-					},
-					Action{
-						Text:        "Назад по меню",
-						Shortcut:    Shortcut{0, walk.KeyBack},
-						OnTriggered: func() { eventCH <- events.MENU_BACK },
 					},
 				},
 			},
