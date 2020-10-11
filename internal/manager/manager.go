@@ -348,6 +348,10 @@ func (m *Manager) setContent(contentID string) {
 
 func (m *Manager) playBook(index int) {
 	book := m.books.ContentItems[index]
+	if _, id, _ := m.bookplayer.BookInfo(); book.ID == id {
+		m.bookplayer.PlayPause()
+		return
+	}
 	m.bookplayer.Stop()
 
 	r, err := m.client.GetContentResources(book.ID)

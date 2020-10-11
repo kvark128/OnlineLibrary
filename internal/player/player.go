@@ -62,6 +62,15 @@ func NewPlayer(bookID, bookName string, resources []daisy.Resource) *Player {
 	return p
 }
 
+func (p *Player) BookInfo() (string, string, int) {
+	if p == nil {
+		return "", "", 0
+	}
+	p.Lock()
+	defer p.Unlock()
+	return p.bookName, p.bookID, p.fragment
+}
+
 func (p *Player) ChangeSpeed(offset float64) {
 	if p == nil {
 		return
