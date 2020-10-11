@@ -178,6 +178,18 @@ func Initialize(eventCH chan events.Event) error {
 					},
 				},
 			},
+			Menu{
+				Text: "&Справка",
+				Items: []MenuItem{
+					Action{
+						Text: "О программе",
+						OnTriggered: func() {
+							text := fmt.Sprintf("%v версия %v", config.ProgramName, config.ProgramVersion)
+							walk.MsgBox(mainWindow, "О программе", text, MsgBoxOK|MsgBoxIconInformation)
+						},
+					},
+				},
+			},
 		},
 
 		Children: []Widget{
