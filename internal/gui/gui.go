@@ -367,28 +367,33 @@ func Credentials() (name, url, username, password string, err error) {
 				PasswordMode:  true,
 			},
 
-			PushButton{
-				AssignTo: &OkPB,
-				Text:     "OK",
-				OnClicked: func() {
-					name = nameLE.Text()
-					url = urlLE.Text()
-					username = usernameLE.Text()
-					password = passwordLE.Text()
-					if name == "" || url == "" || username == "" || password == "" {
-						err = errors.New("There is an empty field")
-						return
-					}
-					dlg.Cancel()
-				},
-			},
-
-			PushButton{
-				AssignTo: &CancelPB,
-				Text:     "Отмена",
-				OnClicked: func() {
-					err = errors.New("Cancel")
-					dlg.Cancel()
+			Composite{
+				Layout: HBox{},
+				Children: []Widget{
+					HSpacer{},
+					PushButton{
+						AssignTo: &OkPB,
+						Text:     "OK",
+						OnClicked: func() {
+							name = nameLE.Text()
+							url = urlLE.Text()
+							username = usernameLE.Text()
+							password = passwordLE.Text()
+							if name == "" || url == "" || username == "" || password == "" {
+								err = errors.New("There is an empty field")
+								return
+							}
+							dlg.Cancel()
+						},
+					},
+					PushButton{
+						AssignTo: &CancelPB,
+						Text:     "Отмена",
+						OnClicked: func() {
+							err = errors.New("Cancel")
+							dlg.Cancel()
+						},
+					},
 				},
 			},
 		},
@@ -410,7 +415,6 @@ func TextEntryDialog(title, msg string) (text string, err error) {
 		Layout:        VBox{},
 		CancelButton:  &CancelPB,
 		DefaultButton: &OkPB,
-		Accessibility: Accessibility{Role: AccRoleClock},
 		Children: []Widget{
 
 			TextLabel{Text: msg},
@@ -419,24 +423,29 @@ func TextEntryDialog(title, msg string) (text string, err error) {
 				AssignTo:      &textLE,
 			},
 
-			PushButton{
-				AssignTo: &OkPB,
-				Text:     "OK",
-				OnClicked: func() {
-					text = textLE.Text()
-					if text == "" {
-						err = errors.New("Text is empty")
-					}
-					dlg.Cancel()
-				},
-			},
-
-			PushButton{
-				AssignTo: &CancelPB,
-				Text:     "Отмена",
-				OnClicked: func() {
-					err = errors.New("Cancel")
-					dlg.Cancel()
+			Composite{
+				Layout: HBox{},
+				Children: []Widget{
+					HSpacer{},
+					PushButton{
+						AssignTo: &OkPB,
+						Text:     "OK",
+						OnClicked: func() {
+							text = textLE.Text()
+							if text == "" {
+								err = errors.New("Text is empty")
+							}
+							dlg.Cancel()
+						},
+					},
+					PushButton{
+						AssignTo: &CancelPB,
+						Text:     "Отмена",
+						OnClicked: func() {
+							err = errors.New("Cancel")
+							dlg.Cancel()
+						},
+					},
 				},
 			},
 		},
@@ -450,6 +459,54 @@ func TextEntryDialog(title, msg string) (text string, err error) {
 
 	<-done
 	return
+}
+
+func QuestionDialog(title, msg string) bool {
+	var (
+		dlg         *walk.Dialog
+		yesPB, noPB *walk.PushButton
+	)
+
+	var layout = Dialog{
+		Title:         title,
+		AssignTo:      &dlg,
+		Layout:        VBox{},
+		CancelButton:  &noPB,
+		DefaultButton: &yesPB,
+		Children: []Widget{
+
+			TextLabel{Text: msg},
+
+			Composite{
+				Layout: HBox{},
+				Children: []Widget{
+					HSpacer{},
+					PushButton{
+						AssignTo:  &yesPB,
+						Text:      "Да",
+						OnClicked: func() { dlg.Accept() },
+					},
+					PushButton{
+						AssignTo:  &noPB,
+						Text:      "Нет",
+						OnClicked: func() { dlg.Cancel() },
+					},
+				},
+			},
+		},
+	}
+
+	done := make(chan bool)
+	mainWindow.Synchronize(func() {
+		layout.Run(mainWindow)
+		done <- true
+	})
+
+	<-done
+	if dlg.Result() == walk.DlgCmdOK {
+		return true
+	}
+	return false
 }
 
 func MessageBox(title, text string, style walk.MsgBoxStyle) {

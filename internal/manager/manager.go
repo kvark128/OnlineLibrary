@@ -117,8 +117,16 @@ func (m *Manager) Start(eventCH chan events.Event) {
 			m.logoff()
 
 		case events.LIBRARY_REMOVE:
+			service, index, err := config.Conf.Services.CurrentService()
+			if err != nil {
+				log.Printf("removing of service: %v", err)
+				break
+			}
+			msg := fmt.Sprintf("Вы действительно хотите удалить учётную запись %v?\nТакже будут удалены сохранённые позиции всех книг этой библиотеки.\nЭто действие не может быть отменено.", service.Name)
+			if !gui.QuestionDialog("Удаление учётной записи", msg) {
+				break
+			}
 			m.logoff()
-			_, index, _ := config.Conf.Services.CurrentService()
 			config.Conf.Services.RemoveService(index)
 			_, index, _ = config.Conf.Services.CurrentService()
 			gui.SetLibraryMenu(eventCH, config.Conf.Services, index)
