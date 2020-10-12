@@ -15,12 +15,13 @@ import (
 	"github.com/kvark128/OnlineLibrary/internal/lkf"
 	"github.com/kvark128/OnlineLibrary/internal/util"
 	daisy "github.com/kvark128/daisyonline"
+	"github.com/kvark128/sonic"
 )
 
 const (
-	DEFAULT_SPEED = 1.0
-	MIN_SPEED     = 0.5
-	MAX_SPEED     = 3.0
+	DEFAULT_SPEED = sonic.DEFAULT_SPEED
+	MIN_SPEED     = sonic.DEFAULT_SPEED / 2
+	MAX_SPEED     = sonic.DEFAULT_SPEED * 3
 )
 
 type Player struct {
@@ -30,7 +31,6 @@ type Player struct {
 	bookName string
 	playing  *flag.Flag
 	wg       *sync.WaitGroup
-	pause    bool
 	trk      *track
 	speed    float64
 	fragment int
@@ -56,13 +56,26 @@ func NewPlayer(bookID, bookName string, resources []daisy.Resource) *Player {
 	return p
 }
 
-func (p *Player) BookInfo() (string, string, int) {
+func (p *Player) BookInfo() (string, string) {
 	if p == nil {
-		return "", "", 0
+		return "", ""
 	}
 	p.Lock()
 	defer p.Unlock()
-	return p.bookName, p.bookID, p.fragment
+	return p.bookName, p.bookID
+}
+
+func (p *Player) PositionInfo() (int, time.Duration) {
+	if p == nil {
+		return 0, 0
+	}
+	p.Lock()
+	defer p.Unlock()
+	elapsedTime := p.offset
+	if p.trk != nil {
+		elapsedTime = p.trk.getElapsedTime()
+	}
+	return p.fragment, elapsedTime
 }
 
 func (p *Player) ChangeSpeed(offset float64) {
@@ -79,8 +92,8 @@ func (p *Player) SetSpeed(speed float64) {
 	if p == nil {
 		return
 	}
-
 	p.Lock()
+	defer p.Unlock()
 	switch {
 	case speed < MIN_SPEED:
 		p.speed = MIN_SPEED
@@ -92,7 +105,6 @@ func (p *Player) SetSpeed(speed float64) {
 	if p.trk != nil {
 		p.trk.setSpeed(p.speed)
 	}
-	p.Unlock()
 }
 
 func (p *Player) ChangeTrack(offset int) {
@@ -121,7 +133,8 @@ func (p *Player) SetTrack(fragment int) {
 	}
 	p.Unlock()
 	if p.playing.IsSet() {
-		p.Play()
+		p.Stop()
+		p.PlayPause()
 	}
 }
 
@@ -158,14 +171,14 @@ func (p *Player) ChangeVolume(offset int) {
 	p.trk.wp.SetVolume(uint16(newL), uint16(newR))
 }
 
-func (p *Player) Rewind(offset time.Duration) {
+func (p *Player) ChangeOffset(offset time.Duration) {
 	if p == nil {
 		return
 	}
 	p.Lock()
 	defer p.Unlock()
 	if !p.playing.IsSet() {
-		p.offset = offset
+		p.offset += offset
 		return
 	}
 	if p.trk != nil {
@@ -175,31 +188,20 @@ func (p *Player) Rewind(offset time.Duration) {
 	}
 }
 
-func (p *Player) Play() {
-	if p == nil {
-		return
-	}
-	p.Stop()
-	p.Lock()
-	p.pause = false
-	p.wg.Add(1)
-	go p.start(p.fragment)
-	p.Unlock()
-}
-
 func (p *Player) PlayPause() {
 	if p == nil {
 		return
 	}
+	p.Lock()
+	defer p.Unlock()
 	if !p.playing.IsSet() {
-		p.Play()
-	} else {
-		p.Lock()
-		if p.trk != nil {
-			p.pause = !p.pause
-			p.trk.pause(p.pause)
+		p.playing.Set()
+		p.wg.Add(1)
+		go p.start(p.fragment)
+	} else if p.trk != nil {
+		if !p.trk.pause(true) {
+			p.trk.pause(false)
 		}
-		p.Unlock()
 	}
 }
 
@@ -207,24 +209,19 @@ func (p *Player) Stop() {
 	if p == nil {
 		return
 	}
-
-	p.playing.Clear()
+	defer p.wg.Wait()
 	p.Lock()
-	elapsedTime := p.offset
+	defer p.Unlock()
+	p.playing.Clear()
+	p.offset = 0
 	if p.trk != nil {
-		elapsedTime = p.trk.getElapsedTime()
 		p.trk.stop()
 	}
-	service, _, _ := config.Conf.Services.CurrentService()
-	service.RecentBooks.SetBook(p.bookID, p.bookName, p.fragment, elapsedTime)
-	p.Unlock()
-	p.wg.Wait()
 }
 
 func (p *Player) start(startFragment int) {
 	defer p.wg.Done()
 	defer p.playing.Clear()
-	p.playing.Set()
 
 	for i, r := range p.playList[startFragment:] {
 		var src io.ReadCloser

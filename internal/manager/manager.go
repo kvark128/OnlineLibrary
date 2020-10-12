@@ -159,6 +159,7 @@ func (m *Manager) Start(eventCH chan events.Event) {
 			m.bookplayer.PlayPause()
 
 		case events.PLAYER_STOP:
+			m.saveBookPosition(m.bookplayer)
 			m.bookplayer.Stop()
 
 		case events.PLAYER_NEXT_TRACK:
@@ -183,10 +184,10 @@ func (m *Manager) Start(eventCH chan events.Event) {
 			m.bookplayer.ChangeVolume(-1)
 
 		case events.PLAYER_FORWARD:
-			m.bookplayer.Rewind(time.Second * +5)
+			m.bookplayer.ChangeOffset(time.Second * +5)
 
 		case events.PLAYER_BACK:
-			m.bookplayer.Rewind(time.Second * -5)
+			m.bookplayer.ChangeOffset(time.Second * -5)
 
 		case events.PLAYER_FIRST:
 			m.bookplayer.SetTrack(0)
@@ -199,6 +200,7 @@ func (m *Manager) Start(eventCH chan events.Event) {
 }
 
 func (m *Manager) logoff() {
+	m.saveBookPosition(m.bookplayer)
 	m.bookplayer.Stop()
 	gui.SetMainWindowTitle(config.ProgramName)
 	if _, err := m.client.LogOff(); err != nil {
@@ -253,7 +255,7 @@ func (m *Manager) logon(service config.Service) error {
 	gui.SetMainWindowTitle(book.Name)
 	m.bookplayer = player.NewPlayer(book.ID, book.Name, r.Resources)
 	m.bookplayer.SetTrack(book.Fragment)
-	m.bookplayer.Rewind(book.ElapsedTime)
+	m.bookplayer.ChangeOffset(book.ElapsedTime)
 	return nil
 }
 
@@ -355,12 +357,22 @@ func (m *Manager) setContent(contentID string) {
 	gui.SetListBoxItems(booksName, m.books.Label.Text)
 }
 
+func (m *Manager) saveBookPosition(bookplayer *player.Player) {
+	bookName, bookID := bookplayer.BookInfo()
+	if bookID != "" {
+		fragment, elapsedTime := bookplayer.PositionInfo()
+		service, _, _ := config.Conf.Services.CurrentService()
+		service.RecentBooks.SetBook(bookID, bookName, fragment, elapsedTime)
+	}
+}
+
 func (m *Manager) playBook(index int) {
 	book := m.books.ContentItems[index]
-	if _, id, _ := m.bookplayer.BookInfo(); book.ID == id {
+	if _, id := m.bookplayer.BookInfo(); book.ID == id {
 		m.bookplayer.PlayPause()
 		return
 	}
+	m.saveBookPosition(m.bookplayer)
 	m.bookplayer.Stop()
 
 	r, err := m.client.GetContentResources(book.ID)
@@ -376,7 +388,7 @@ func (m *Manager) playBook(index int) {
 	gui.SetMainWindowTitle(book.Label.Text)
 	m.bookplayer = player.NewPlayer(book.ID, book.Label.Text, r.Resources)
 	m.bookplayer.SetTrack(b.Fragment)
-	m.bookplayer.Rewind(b.ElapsedTime)
+	m.bookplayer.ChangeOffset(b.ElapsedTime)
 	m.bookplayer.PlayPause()
 }
 
