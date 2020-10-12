@@ -6,6 +6,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/kvark128/OnlineLibrary/internal/flag"
 	"github.com/kvark128/OnlineLibrary/internal/gui"
 	"github.com/kvark128/OnlineLibrary/internal/winmm"
 	"github.com/kvark128/minimp3"
@@ -14,7 +15,6 @@ import (
 
 type track struct {
 	sync.Mutex
-	stopped     bool
 	paused      bool
 	beRewind    bool
 	elapsedTime time.Duration
@@ -23,7 +23,7 @@ type track struct {
 	dec         *minimp3.Decoder
 	sampleRate  int
 	channels    int
-	samples     []byte
+	buffer      []byte
 	wp          *winmm.WavePlayer
 	trackSize   int64
 }
@@ -31,8 +31,8 @@ type track struct {
 func newTrack(mp3 io.Reader, speed float64, size int64) (*track, error) {
 	trk := &track{}
 	trk.dec = minimp3.NewDecoder(mp3)
-	trk.samples = make([]byte, 1024*16)
-	n, err := trk.dec.Read(trk.samples)
+	trk.buffer = make([]byte, 1024*16)
+	n, err := trk.dec.Read(trk.buffer)
 	if err != nil {
 		return nil, err
 	}
@@ -42,13 +42,13 @@ func newTrack(mp3 io.Reader, speed float64, size int64) (*track, error) {
 	}
 	trk.stream = sonic.NewStream(trk.sampleRate, trk.channels)
 	trk.stream.SetSpeed(speed)
-	trk.stream.Write(trk.samples[:n])
-	trk.wp = winmm.NewWavePlayer(trk.channels, trk.sampleRate, 16, len(trk.samples), winmm.WAVE_MAPPER)
+	trk.stream.Write(trk.buffer[:n])
+	trk.wp = winmm.NewWavePlayer(trk.channels, trk.sampleRate, 16, len(trk.buffer), winmm.WAVE_MAPPER)
 	trk.trackSize = size
 	return trk, nil
 }
 
-func (trk *track) play() {
+func (trk *track) play(playing *flag.Flag) {
 	sampleRate, _, _, _, frameSize, samples := trk.dec.LastFrameInfo()
 	if sampleRate > 0 && frameSize > 0 {
 		seconds := time.Duration(trk.trackSize) / time.Duration(frameSize) * time.Duration(samples) / time.Duration(sampleRate)
@@ -58,35 +58,27 @@ func (trk *track) play() {
 	var n int
 	var err error
 	trk.start = time.Now()
-	for {
-		trk.Lock()
-		if trk.stopped {
-			trk.Unlock()
-			break
-		}
-		trk.Unlock()
-		for {
+	for playing.IsSet() {
+		for playing.IsSet() {
 			gui.SetElapsedTime(trk.getElapsedTime())
 			trk.Lock()
-			if trk.stopped {
-				trk.Unlock()
-				break
-			}
-			n, _ := trk.stream.Read(trk.samples)
+			n, _ := trk.stream.Read(trk.buffer)
 			trk.Unlock()
 			if n == 0 {
 				break
 			}
-			trk.wp.Write(trk.samples[:n])
+			trk.wp.Write(trk.buffer[:n])
 		}
 		if err != nil {
 			break
 		}
-		n, err = trk.dec.Read(trk.samples)
-		trk.stream.Write(trk.samples[:n])
+		trk.Lock()
+		n, err = trk.dec.Read(trk.buffer)
+		trk.stream.Write(trk.buffer[:n])
 		if err != nil {
 			trk.stream.Flush()
 		}
+		trk.Unlock()
 	}
 
 	trk.wp.Sync()
@@ -95,12 +87,12 @@ func (trk *track) play() {
 
 func (trk *track) setSpeed(speed float64) {
 	trk.Lock()
+	defer trk.Unlock()
 	if !trk.paused {
 		trk.elapsedTime += time.Duration(float64(time.Since(trk.start)) * trk.stream.Speed())
 		trk.start = time.Now()
 	}
 	trk.stream.SetSpeed(speed)
-	trk.Unlock()
 }
 
 func (trk *track) getElapsedTime() time.Duration {
@@ -137,11 +129,31 @@ func (trk *track) pause(pause bool) bool {
 	return true
 }
 
+func (trk *track) changeVolume(offset int) {
+	l, r := trk.wp.GetVolume()
+	newOffset := offset * 4096
+	newL := int(l) + newOffset
+	newR := int(r) + newOffset
+
+	if newL < 0 {
+		newL = 0
+	}
+	if newL > 0xffff {
+		newL = 0xffff
+	}
+
+	if newR < 0 {
+		newR = 0
+	}
+	if newR > 0xffff {
+		newR = 0xffff
+	}
+
+	trk.wp.SetVolume(uint16(newL), uint16(newR))
+}
+
 func (trk *track) stop() {
-	trk.Lock()
-	trk.stopped = true
 	trk.wp.Stop()
-	trk.Unlock()
 }
 
 func (trk *track) rewind(offset time.Duration) error {
@@ -158,7 +170,7 @@ func (trk *track) rewind(offset time.Duration) error {
 
 	elapsedTime := trk.elapsedTime + offset
 	if elapsedTime < 0 {
-		elapsedTime = time.Duration(0)
+		elapsedTime = 0
 	}
 	offsetInBytes := int64(float64(trk.sampleRate*trk.channels*2) * elapsedTime.Seconds())
 
@@ -166,8 +178,9 @@ func (trk *track) rewind(offset time.Duration) error {
 		return err
 	}
 
+	trk.stream.Flush()
 	for {
-		nSamples, _ := trk.stream.Read(trk.samples)
+		nSamples, _ := trk.stream.Read(trk.buffer)
 		if nSamples == 0 {
 			break
 		}

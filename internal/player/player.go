@@ -142,33 +142,11 @@ func (p *Player) ChangeVolume(offset int) {
 	if p == nil {
 		return
 	}
-
 	p.Lock()
 	defer p.Unlock()
-	if p.trk == nil {
-		return
+	if p.trk != nil {
+		p.trk.changeVolume(offset)
 	}
-
-	l, r := p.trk.wp.GetVolume()
-	newOffset := offset * 4096
-	newL := int(l) + newOffset
-	newR := int(r) + newOffset
-
-	if newL < 0 {
-		newL = 0
-	}
-	if newL > 0xffff {
-		newL = 0xffff
-	}
-
-	if newR < 0 {
-		newR = 0
-	}
-	if newR > 0xffff {
-		newR = 0xffff
-	}
-
-	p.trk.wp.SetVolume(uint16(newL), uint16(newR))
 }
 
 func (p *Player) ChangeOffset(offset time.Duration) {
@@ -253,23 +231,25 @@ func (p *Player) start(startFragment int) {
 		case config.MP3_FORMAT:
 			mp3 = src
 		default:
+			src.Close()
 			panic("Unsupported MimeType")
 		}
 
 		p.Lock()
 		speed := p.speed
 		offset := p.offset
-		p.offset = 0
 		p.Unlock()
 
 		trk, err := newTrack(mp3, speed, r.Size)
 		if err != nil {
 			log.Printf("new track for %v: %v", uri, err)
+			src.Close()
 			continue
 		}
 
 		if err := trk.rewind(offset); err != nil {
 			log.Printf("track rewind: %v", err)
+			src.Close()
 			continue
 		}
 
@@ -277,16 +257,17 @@ func (p *Player) start(startFragment int) {
 			src.Close()
 			break
 		}
-		currentFragment := startFragment + i
 
 		p.Lock()
 		p.trk = trk
-		p.fragment = currentFragment
+		p.fragment += i
+		currentFragment := p.fragment // copy for gui.SetFragments
+		p.offset = 0
 		p.Unlock()
 
 		log.Printf("playing %s: %s", uri, r.MimeType)
 		gui.SetFragments(currentFragment, len(p.playList))
-		trk.play()
+		trk.play(p.playing)
 		src.Close()
 		log.Printf("stopping %s: %s", uri, r.MimeType)
 
