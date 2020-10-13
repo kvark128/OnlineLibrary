@@ -14,8 +14,8 @@ import (
 
 // General client configuration of DAISY-online
 var readingSystemAttributes = daisy.ReadingSystemAttributes{
-	Manufacturer: "Kvark <kvark128@yandex.ru>",
-	Model:        "OnlineLibrary",
+	Manufacturer: config.ProgramAuthor,
+	Model:        config.ProgramName,
 	Version:      config.ProgramVersion,
 	Config: daisy.Config{
 		SupportsMultipleSelections:        false,

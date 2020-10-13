@@ -9,6 +9,7 @@ import (
 )
 
 const (
+	ProgramAuthor  = "Kvark <kvark128@yandex.ru>"
 	ProgramName    = "OnlineLibrary"
 	ProgramVersion = "2020.10.11"
 	ConfigFile     = "config.json"
