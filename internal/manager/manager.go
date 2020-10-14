@@ -119,7 +119,7 @@ func (m *Manager) Start(eventCH chan events.Event) {
 				break
 			}
 			msg := fmt.Sprintf("Вы действительно хотите удалить учётную запись %v?\nТакже будут удалены сохранённые позиции всех книг этой библиотеки.\nЭто действие не может быть отменено.", service.Name)
-			if !gui.QuestionDialog("Удаление учётной записи", msg) {
+			if gui.QuestionDialog("Удаление учётной записи", msg) != gui.DlgCmdYes {
 				break
 			}
 			m.logoff()
@@ -311,9 +311,8 @@ func (m *Manager) setMultipleChoiceQuestion(index int) {
 
 func (m *Manager) setInputQuestion() {
 	for _, inputQuestion := range m.questions.InputQuestion {
-		text, err := gui.TextEntryDialog("Ввод текста", inputQuestion.Label.Text)
-		if err != nil {
-			log.Printf("userText: %s", err)
+		var text string
+		if gui.TextEntryDialog("Поиск", inputQuestion.Label.Text, &text) != gui.DlgCmdOK {
 			// Return to the main menu of the library
 			m.setQuestions(daisy.UserResponse{QuestionID: daisy.Default})
 			return

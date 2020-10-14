@@ -1,7 +1,6 @@
 package gui
 
 import (
-	"errors"
 	"fmt"
 	"time"
 
@@ -14,6 +13,8 @@ import (
 const (
 	DlgCmdOK     = walk.DlgCmdOK
 	DlgCmdCancel = walk.DlgCmdCancel
+	DlgCmdYes    = walk.DlgCmdYes
+	DlgCmdNo     = walk.DlgCmdNo
 )
 
 const (
@@ -339,7 +340,7 @@ func Credentials(service *config.Service) int {
 		OkPB, CancelPB                        *walk.PushButton
 	)
 
-	layout := Dialog{
+	var layout = Dialog{
 		Title:         "Добавление новой учётной записи",
 		AssignTo:      &dlg,
 		Layout:        VBox{},
@@ -399,17 +400,15 @@ func Credentials(service *config.Service) int {
 		},
 	}
 
-	done := make(chan bool)
+	result := make(chan int)
 	mainWindow.Synchronize(func() {
 		layout.Run(mainWindow)
-		done <- true
+		result <- dlg.Result()
 	})
-
-	<-done
-	return dlg.Result()
+	return <-result
 }
 
-func TextEntryDialog(title, msg string) (text string, err error) {
+func TextEntryDialog(title, msg string, text *string) int {
 	var (
 		dlg            *walk.Dialog
 		textLE         *walk.LineEdit
@@ -438,19 +437,15 @@ func TextEntryDialog(title, msg string) (text string, err error) {
 						AssignTo: &OkPB,
 						Text:     "OK",
 						OnClicked: func() {
-							text = textLE.Text()
-							if text == "" {
-								err = errors.New("Text is empty")
-							}
-							dlg.Cancel()
+							*text = textLE.Text()
+							dlg.Close(DlgCmdOK)
 						},
 					},
 					PushButton{
 						AssignTo: &CancelPB,
 						Text:     "Отмена",
 						OnClicked: func() {
-							err = errors.New("Cancel")
-							dlg.Cancel()
+							dlg.Close(DlgCmdCancel)
 						},
 					},
 				},
@@ -458,17 +453,15 @@ func TextEntryDialog(title, msg string) (text string, err error) {
 		},
 	}
 
-	done := make(chan bool)
+	result := make(chan int)
 	mainWindow.Synchronize(func() {
 		layout.Run(mainWindow)
-		done <- true
+		result <- dlg.Result()
 	})
-
-	<-done
-	return
+	return <-result
 }
 
-func QuestionDialog(title, msg string) bool {
+func QuestionDialog(title, msg string) int {
 	var (
 		dlg         *walk.Dialog
 		yesPB, noPB *walk.PushButton
@@ -491,29 +484,24 @@ func QuestionDialog(title, msg string) bool {
 					PushButton{
 						AssignTo:  &yesPB,
 						Text:      "Да",
-						OnClicked: func() { dlg.Accept() },
+						OnClicked: func() { dlg.Close(DlgCmdYes) },
 					},
 					PushButton{
 						AssignTo:  &noPB,
 						Text:      "Нет",
-						OnClicked: func() { dlg.Cancel() },
+						OnClicked: func() { dlg.Close(DlgCmdNo) },
 					},
 				},
 			},
 		},
 	}
 
-	done := make(chan bool)
+	result := make(chan int)
 	mainWindow.Synchronize(func() {
 		layout.Run(mainWindow)
-		done <- true
+		result <- dlg.Result()
 	})
-
-	<-done
-	if dlg.Result() == walk.DlgCmdOK {
-		return true
-	}
-	return false
+	return <-result
 }
 
 func MessageBox(title, text string, style walk.MsgBoxStyle) {
