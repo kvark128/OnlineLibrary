@@ -12,6 +12,11 @@ import (
 )
 
 const (
+	DlgCmdOK     = walk.DlgCmdOK
+	DlgCmdCancel = walk.DlgCmdCancel
+)
+
+const (
 	MsgBoxOK              = walk.MsgBoxOK
 	MsgBoxIconInformation = walk.MsgBoxIconInformation
 	MsgBoxIconError       = walk.MsgBoxIconError
@@ -327,14 +332,14 @@ func CurrentListBoxIndex() int {
 	return <-ic
 }
 
-func Credentials() (name, url, username, password string, err error) {
+func Credentials(service *config.Service) int {
 	var (
 		dlg                                   *walk.Dialog
 		nameLE, urlLE, usernameLE, passwordLE *walk.LineEdit
 		OkPB, CancelPB                        *walk.PushButton
 	)
 
-	Dialog{
+	layout := Dialog{
 		Title:         "Добавление новой учётной записи",
 		AssignTo:      &dlg,
 		Layout:        VBox{},
@@ -375,31 +380,33 @@ func Credentials() (name, url, username, password string, err error) {
 						AssignTo: &OkPB,
 						Text:     "OK",
 						OnClicked: func() {
-							name = nameLE.Text()
-							url = urlLE.Text()
-							username = usernameLE.Text()
-							password = passwordLE.Text()
-							if name == "" || url == "" || username == "" || password == "" {
-								err = errors.New("There is an empty field")
-								return
-							}
-							dlg.Cancel()
+							service.Name = nameLE.Text()
+							service.URL = urlLE.Text()
+							service.Credentials.Username = usernameLE.Text()
+							service.Credentials.Password = passwordLE.Text()
+							dlg.Accept()
 						},
 					},
 					PushButton{
 						AssignTo: &CancelPB,
 						Text:     "Отмена",
 						OnClicked: func() {
-							err = errors.New("Cancel")
 							dlg.Cancel()
 						},
 					},
 				},
 			},
 		},
-	}.Run(mainWindow)
+	}
 
-	return
+	done := make(chan bool)
+	mainWindow.Synchronize(func() {
+		layout.Run(mainWindow)
+		done <- true
+	})
+
+	<-done
+	return dlg.Result()
 }
 
 func TextEntryDialog(title, msg string) (text string, err error) {

@@ -84,15 +84,11 @@ func (m *Manager) Start(eventCH chan events.Event) {
 			gui.SetLibraryMenu(eventCH, config.Conf.Services, index)
 
 		case events.LIBRARY_ADD:
-			name, url, username, password, err := gui.Credentials()
-			if err != nil {
+			var service config.Service
+			if gui.Credentials(&service) != gui.DlgCmdOK || service.Name == "" {
+				log.Printf("adding library: pressed Cancel button or len(service.Name) == 0")
 				break
 			}
-			var service config.Service
-			service.Name = name
-			service.URL = url
-			service.Credentials.Username = username
-			service.Credentials.Password = password
 			if err := m.logon(service); err != nil {
 				log.Printf("logon: %v", err)
 				gui.MessageBox("Ошибка", fmt.Sprintf("logon: %v", err), gui.MsgBoxOK|gui.MsgBoxIconError)
