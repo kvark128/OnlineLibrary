@@ -311,8 +311,11 @@ func RunMainWindow() {
 
 func SetMainWindowTitle(title string) {
 	mainWindow.Synchronize(func() {
-		title := fmt.Sprintf("%s — %s", title, config.ProgramName)
-		mainWindow.SetTitle(title)
+		var windowTitle = config.ProgramName
+		if title != "" {
+			windowTitle = fmt.Sprintf("%s — %s", title, windowTitle)
+		}
+		mainWindow.SetTitle(windowTitle)
 	})
 }
 

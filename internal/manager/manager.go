@@ -198,7 +198,7 @@ func (m *Manager) Start(eventCH chan events.Event) {
 func (m *Manager) logoff() {
 	m.saveBookPosition(m.bookplayer)
 	m.bookplayer.Stop()
-	gui.SetMainWindowTitle(config.ProgramName)
+	gui.SetMainWindowTitle("")
 	if _, err := m.client.LogOff(); err != nil {
 		log.Printf("logoff: %v", err)
 	}
