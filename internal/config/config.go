@@ -11,7 +11,7 @@ import (
 const (
 	ProgramAuthor  = "Kvark <kvark128@yandex.ru>"
 	ProgramName    = "OnlineLibrary"
-	ProgramVersion = "2020.10.14"
+	ProgramVersion = "2020.10.15"
 	ConfigFile     = "config.json"
 	LogFile        = "session.log"
 )
