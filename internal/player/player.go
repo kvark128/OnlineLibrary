@@ -10,7 +10,6 @@ import (
 
 	"github.com/kvark128/OnlineLibrary/internal/config"
 	"github.com/kvark128/OnlineLibrary/internal/connect"
-	"github.com/kvark128/OnlineLibrary/internal/flag"
 	"github.com/kvark128/OnlineLibrary/internal/gui"
 	"github.com/kvark128/OnlineLibrary/internal/lkf"
 	"github.com/kvark128/OnlineLibrary/internal/util"
@@ -29,7 +28,7 @@ type Player struct {
 	playList []daisy.Resource
 	bookID   string
 	bookName string
-	playing  *flag.Flag
+	playing  *util.Flag
 	wg       *sync.WaitGroup
 	trk      *track
 	speed    float64
@@ -39,7 +38,7 @@ type Player struct {
 
 func NewPlayer(bookID, bookName string, resources []daisy.Resource) *Player {
 	p := &Player{
-		playing:  new(flag.Flag),
+		playing:  new(util.Flag),
 		wg:       new(sync.WaitGroup),
 		bookID:   bookID,
 		bookName: bookName,

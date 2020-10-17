@@ -6,8 +6,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/kvark128/OnlineLibrary/internal/flag"
 	"github.com/kvark128/OnlineLibrary/internal/gui"
+	"github.com/kvark128/OnlineLibrary/internal/util"
 	"github.com/kvark128/OnlineLibrary/internal/winmm"
 	"github.com/kvark128/minimp3"
 	"github.com/kvark128/sonic"
@@ -48,7 +48,7 @@ func newTrack(mp3 io.Reader, speed float64, size int64) (*track, error) {
 	return trk, nil
 }
 
-func (trk *track) play(playing *flag.Flag) {
+func (trk *track) play(playing *util.Flag) {
 	sampleRate, _, _, _, frameSize, samples := trk.dec.LastFrameInfo()
 	if sampleRate > 0 && frameSize > 0 {
 		seconds := time.Duration(trk.trackSize) / time.Duration(frameSize) * time.Duration(samples) / time.Duration(sampleRate)

@@ -1,6 +1,8 @@
-package flag
+package util
 
-import "sync"
+import (
+	"sync"
+)
 
 type Flag struct {
 	sync.RWMutex
