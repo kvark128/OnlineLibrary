@@ -8,7 +8,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/kvark128/OnlineLibrary/internal/connect"
+	"github.com/kvark128/OnlineLibrary/internal/connection"
 	"github.com/kvark128/OnlineLibrary/internal/gui"
 	daisy "github.com/kvark128/daisyonline"
 )
@@ -51,7 +51,7 @@ func DownloadBook(dir, book string, r *daisy.Resources) {
 			}
 		}
 
-		conn, err = connect.NewConnection(v.URI)
+		conn, err = connection.NewConnection(v.URI)
 		if err != nil {
 			break
 		}

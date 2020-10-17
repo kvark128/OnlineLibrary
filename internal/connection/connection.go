@@ -1,4 +1,4 @@
-package connect
+package connection
 
 import (
 	"context"
@@ -27,15 +27,16 @@ type Connection struct {
 	timer               *time.Timer
 	reads               int64
 	contentLength       int64
+	contentType         string
 }
 
-func NewConnection(url string) (io.ReadCloser, error) {
+func NewConnection(url string) (*Connection, error) {
 	c := &Connection{
 		url: url,
 		buf: make([]byte, buf_size),
 	}
 
-	if err := c.setNewResponse(); err != nil {
+	if err := c.createResponse(); err != nil {
 		return nil, err
 	}
 
@@ -44,10 +45,11 @@ func NewConnection(url string) (io.ReadCloser, error) {
 	}
 
 	c.contentLength = c.resp.ContentLength
+	c.contentType = c.resp.Header.Get("Content-Type")
 	return c, nil
 }
 
-func (c *Connection) setNewResponse() error {
+func (c *Connection) createResponse() error {
 	c.Lock()
 	defer c.Unlock()
 
@@ -117,7 +119,7 @@ fillLoop:
 			if c.reads < c.contentLength {
 				for attempt := 1; attempt <= 3; attempt++ {
 					log.Printf("connection recovery: attempt %v/3: reason: %v", attempt, c.lastErr)
-					if c.setNewResponse() == nil {
+					if c.createResponse() == nil {
 						c.lastErr = nil
 						continue fillLoop
 					}
@@ -126,6 +128,10 @@ fillLoop:
 			break fillLoop
 		}
 	}
+}
+
+func (c *Connection) ContentType() string {
+	return c.contentType
 }
 
 func (c *Connection) Seek(offset int64, whence int) (int64, error) {
@@ -162,7 +168,7 @@ func (c *Connection) Seek(offset int64, whence int) (int64, error) {
 	c.reads = position
 	c.bufStart = 0
 	c.bufFinish = 0
-	if err := c.setNewResponse(); err != nil {
+	if err := c.createResponse(); err != nil {
 		return 0, err
 	}
 	return position, nil

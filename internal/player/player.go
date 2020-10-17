@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/kvark128/OnlineLibrary/internal/config"
-	"github.com/kvark128/OnlineLibrary/internal/connect"
+	"github.com/kvark128/OnlineLibrary/internal/connection"
 	"github.com/kvark128/OnlineLibrary/internal/gui"
 	"github.com/kvark128/OnlineLibrary/internal/lkf"
 	"github.com/kvark128/OnlineLibrary/internal/util"
@@ -216,9 +216,9 @@ func (p *Player) start(startFragment int) {
 		if src == nil {
 			// There is no track on the disc. Trying to get it from the network
 			uri = r.URI
-			src, err = connect.NewConnection(uri)
+			src, err = connection.NewConnection(uri)
 			if err != nil {
-				log.Printf("Connection creating: %s\n", err)
+				log.Printf("Connection creating: %v", err)
 				break
 			}
 		}
@@ -226,7 +226,13 @@ func (p *Player) start(startFragment int) {
 		var mp3 io.Reader
 		switch r.MimeType {
 		case config.LKF_FORMAT:
-			mp3 = lkf.NewLKFReader(src)
+			// Some libraries provide incorrect MimeType for mp3 resources. We check this by the file extension
+			if filepath.Ext(r.LocalURI) == ".mp3" {
+				log.Printf("player: incorrect MimeType as lkf for %v", uri)
+				mp3 = src
+			} else {
+				mp3 = lkf.NewLKFReader(src)
+			}
 		case config.MP3_FORMAT:
 			mp3 = src
 		default:
@@ -264,11 +270,9 @@ func (p *Player) start(startFragment int) {
 		p.offset = 0
 		p.Unlock()
 
-		log.Printf("playing %s: %s", uri, r.MimeType)
 		gui.SetFragments(currentFragment, len(p.playList))
 		trk.play(p.playing)
 		src.Close()
-		log.Printf("stopping %s: %s", uri, r.MimeType)
 
 		p.Lock()
 		p.trk = nil
