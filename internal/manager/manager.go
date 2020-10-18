@@ -173,6 +173,15 @@ func (m *Manager) Start(eventCH chan events.Event) {
 		case events.PLAYER_SPEED_DOWN:
 			m.bookplayer.ChangeSpeed(-0.1)
 
+		case events.PLAYER_PITCH_RESET:
+			m.bookplayer.SetPitch(player.DEFAULT_PITCH)
+
+		case events.PLAYER_PITCH_UP:
+			m.bookplayer.ChangePitch(+0.1)
+
+		case events.PLAYER_PITCH_DOWN:
+			m.bookplayer.ChangePitch(-0.1)
+
 		case events.PLAYER_VOLUME_UP:
 			m.bookplayer.ChangeVolume(+1)
 

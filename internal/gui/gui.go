@@ -183,6 +183,26 @@ func Initialize(eventCH chan events.Event) error {
 							},
 						},
 					},
+					Menu{
+						Text: "Высота",
+						Items: []MenuItem{
+							Action{
+								Text:        "Увеличить высоту",
+								Shortcut:    Shortcut{walk.ModShift, walk.KeyC},
+								OnTriggered: func() { eventCH <- events.PLAYER_PITCH_UP },
+							},
+							Action{
+								Text:        "Уменьшить высоту",
+								Shortcut:    Shortcut{walk.ModShift, walk.KeyX},
+								OnTriggered: func() { eventCH <- events.PLAYER_PITCH_DOWN },
+							},
+							Action{
+								Text:        "Сбросить высоту",
+								Shortcut:    Shortcut{walk.ModShift, walk.KeyZ},
+								OnTriggered: func() { eventCH <- events.PLAYER_PITCH_RESET },
+							},
+						},
+					},
 				},
 			},
 			Menu{

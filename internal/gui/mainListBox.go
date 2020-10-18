@@ -46,6 +46,20 @@ func (mlb *MainListBox) CurrentIndex() int {
 func (mlb *MainListBox) WndProc(hwnd win.HWND, msg uint32, wParam, lParam uintptr) uintptr {
 	switch msg {
 	case win.WM_KEYDOWN:
+		if walk.ShiftDown() {
+			switch walk.Key(wParam) {
+			case walk.KeyC:
+				mlb.eventCH <- events.PLAYER_PITCH_UP
+			case walk.KeyX:
+				mlb.eventCH <- events.PLAYER_PITCH_DOWN
+			case walk.KeyZ:
+				mlb.eventCH <- events.PLAYER_PITCH_RESET
+			default:
+				return mlb.ListBox.WndProc(hwnd, msg, wParam, lParam)
+			}
+			return 0
+		}
+
 		if walk.ControlDown() {
 			switch walk.Key(wParam) {
 			case walk.KeyRight:
@@ -61,6 +75,7 @@ func (mlb *MainListBox) WndProc(hwnd win.HWND, msg uint32, wParam, lParam uintpt
 			}
 			return 0
 		}
+
 	}
 
 	return mlb.ListBox.WndProc(hwnd, msg, wParam, lParam)

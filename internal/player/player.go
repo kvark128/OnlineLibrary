@@ -21,6 +21,10 @@ const (
 	DEFAULT_SPEED = sonic.DEFAULT_SPEED
 	MIN_SPEED     = sonic.DEFAULT_SPEED / 2
 	MAX_SPEED     = sonic.DEFAULT_SPEED * 3
+
+	DEFAULT_PITCH = sonic.DEFAULT_PITCH
+	MIN_PITCH     = sonic.DEFAULT_PITCH / 2
+	MAX_PITCH     = sonic.DEFAULT_PITCH * 3
 )
 
 type Player struct {
@@ -32,6 +36,7 @@ type Player struct {
 	wg       *sync.WaitGroup
 	trk      *track
 	speed    float64
+	pitch    float64
 	fragment int
 	offset   time.Duration
 }
@@ -43,6 +48,7 @@ func NewPlayer(bookID, bookName string, resources []daisy.Resource) *Player {
 		bookID:   bookID,
 		bookName: bookName,
 		speed:    DEFAULT_SPEED,
+		pitch:    DEFAULT_PITCH,
 	}
 
 	// The player supports only LKF and MP3 formats. Unsupported resources must not be uploaded to the player
@@ -103,6 +109,35 @@ func (p *Player) SetSpeed(speed float64) {
 	}
 	if p.trk != nil {
 		p.trk.setSpeed(p.speed)
+	}
+}
+
+func (p *Player) ChangePitch(offset float64) {
+	if p == nil {
+		return
+	}
+	p.Lock()
+	newPitch := p.pitch + offset
+	p.Unlock()
+	p.SetPitch(newPitch)
+}
+
+func (p *Player) SetPitch(pitch float64) {
+	if p == nil {
+		return
+	}
+	p.Lock()
+	defer p.Unlock()
+	switch {
+	case pitch < MIN_PITCH:
+		p.pitch = MIN_PITCH
+	case pitch > MAX_PITCH:
+		p.pitch = MAX_PITCH
+	default:
+		p.pitch = pitch
+	}
+	if p.trk != nil {
+		p.trk.setPitch(p.pitch)
 	}
 }
 
@@ -242,10 +277,11 @@ func (p *Player) start(startFragment int) {
 
 		p.Lock()
 		speed := p.speed
+		pitch := p.pitch
 		offset := p.offset
 		p.Unlock()
 
-		trk, err := newTrack(mp3, speed, r.Size)
+		trk, err := newTrack(mp3, speed, pitch, r.Size)
 		if err != nil {
 			log.Printf("new track for %v: %v", uri, err)
 			src.Close()

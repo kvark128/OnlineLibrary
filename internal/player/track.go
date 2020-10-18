@@ -28,7 +28,7 @@ type track struct {
 	trackSize   int64
 }
 
-func newTrack(mp3 io.Reader, speed float64, size int64) (*track, error) {
+func newTrack(mp3 io.Reader, speed, pitch float64, size int64) (*track, error) {
 	trk := &track{}
 	trk.dec = minimp3.NewDecoder(mp3)
 	trk.buffer = make([]byte, 1024*16)
@@ -42,6 +42,7 @@ func newTrack(mp3 io.Reader, speed float64, size int64) (*track, error) {
 	}
 	trk.stream = sonic.NewStream(trk.sampleRate, trk.channels)
 	trk.stream.SetSpeed(speed)
+	trk.stream.SetPitch(pitch)
 	trk.stream.Write(trk.buffer[:n])
 	trk.wp = winmm.NewWavePlayer(trk.channels, trk.sampleRate, 16, len(trk.buffer), winmm.WAVE_MAPPER)
 	trk.trackSize = size
@@ -93,6 +94,12 @@ func (trk *track) setSpeed(speed float64) {
 		trk.start = time.Now()
 	}
 	trk.stream.SetSpeed(speed)
+}
+
+func (trk *track) setPitch(pitch float64) {
+	trk.Lock()
+	defer trk.Unlock()
+	trk.stream.SetPitch(pitch)
 }
 
 func (trk *track) getElapsedTime() time.Duration {
