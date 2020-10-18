@@ -29,8 +29,7 @@ const (
 
 var (
 	mainWindow                       *walk.MainWindow
-	textLabel                        *walk.TextLabel
-	listBox                          *walk.ListBox
+	MainList                         *MainListBox
 	libraryMenu                      *walk.Menu
 	elapseTime, totalTime, fragments *walk.StatusBarItem
 )
@@ -39,6 +38,9 @@ func Initialize(eventCH chan events.Event) error {
 	if mainWindow != nil {
 		panic("GUI already initialized")
 	}
+
+	var lb *walk.ListBox
+	var label *walk.TextLabel
 
 	if err := (MainWindow{
 		Title:    config.ProgramName,
@@ -128,22 +130,22 @@ func Initialize(eventCH chan events.Event) error {
 					},
 					Action{
 						Text:        "Перемотка вперёд",
-						Shortcut:    Shortcut{walk.ModControl, walk.KeyOEMPeriod},
+						Shortcut:    Shortcut{walk.ModControl, walk.KeyRight},
 						OnTriggered: func() { eventCH <- events.PLAYER_FORWARD },
 					},
 					Action{
 						Text:        "Перемотка назад",
-						Shortcut:    Shortcut{walk.ModControl, walk.KeyOEMComma},
+						Shortcut:    Shortcut{walk.ModControl, walk.KeyLeft},
 						OnTriggered: func() { eventCH <- events.PLAYER_BACK },
 					},
 					Action{
 						Text:        "У&величить громкость",
-						Shortcut:    Shortcut{walk.ModControl, walk.KeyB},
+						Shortcut:    Shortcut{walk.ModControl, walk.KeyUp},
 						OnTriggered: func() { eventCH <- events.PLAYER_VOLUME_UP },
 					},
 					Action{
 						Text:        "У&меньшить громкость",
-						Shortcut:    Shortcut{walk.ModControl, walk.KeyV},
+						Shortcut:    Shortcut{walk.ModControl, walk.KeyDown},
 						OnTriggered: func() { eventCH <- events.PLAYER_VOLUME_DOWN },
 					},
 					Action{
@@ -199,10 +201,10 @@ func Initialize(eventCH chan events.Event) error {
 
 		Children: []Widget{
 			TextLabel{
-				AssignTo: &textLabel,
+				AssignTo: &label,
 			},
 			ListBox{
-				AssignTo:        &listBox,
+				AssignTo:        &lb,
 				OnItemActivated: func() { eventCH <- events.ACTIVATE_MENU },
 				OnKeyPress: func(key walk.Key) {
 					if key == walk.KeySpace {
@@ -212,6 +214,12 @@ func Initialize(eventCH chan events.Event) error {
 			},
 		},
 	}.Create()); err != nil {
+		return err
+	}
+
+	var err error
+	MainList, err = NewMainListBox(lb, label, eventCH)
+	if err != nil {
 		return err
 	}
 
@@ -317,23 +325,6 @@ func SetMainWindowTitle(title string) {
 		}
 		mainWindow.SetTitle(windowTitle)
 	})
-}
-
-func SetListBoxItems(items []string, label string) {
-	mainWindow.Synchronize(func() {
-		textLabel.SetText(label)
-		listBox.Accessibility().SetName(label)
-		listBox.SetModel(items)
-		listBox.SetCurrentIndex(0)
-	})
-}
-
-func CurrentListBoxIndex() int {
-	ic := make(chan int)
-	mainWindow.Synchronize(func() {
-		ic <- listBox.CurrentIndex()
-	})
-	return <-ic
 }
 
 func Credentials(service *config.Service) int {

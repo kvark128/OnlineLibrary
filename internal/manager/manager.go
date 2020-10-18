@@ -43,7 +43,7 @@ func (m *Manager) Start(eventCH chan events.Event) {
 
 		switch evt {
 		case events.ACTIVATE_MENU:
-			index := gui.CurrentListBoxIndex()
+			index := gui.MainList.CurrentIndex()
 			if m.books != nil {
 				m.playBook(index)
 			} else if m.questions != nil {
@@ -129,25 +129,25 @@ func (m *Manager) Start(eventCH chan events.Event) {
 
 		case events.ISSUE_BOOK:
 			if m.books != nil {
-				index := gui.CurrentListBoxIndex()
+				index := gui.MainList.CurrentIndex()
 				m.issueBook(index)
 			}
 
 		case events.REMOVE_BOOK:
 			if m.books != nil {
-				index := gui.CurrentListBoxIndex()
+				index := gui.MainList.CurrentIndex()
 				m.removeBook(index)
 			}
 
 		case events.DOWNLOAD_BOOK:
 			if m.books != nil {
-				index := gui.CurrentListBoxIndex()
+				index := gui.MainList.CurrentIndex()
 				m.downloadBook(index)
 			}
 
 		case events.BOOK_DESCRIPTION:
 			if m.books != nil {
-				index := gui.CurrentListBoxIndex()
+				index := gui.MainList.CurrentIndex()
 				m.showBookDescription(index)
 			}
 
@@ -208,7 +208,7 @@ func (m *Manager) logoff() {
 	m.client = nil
 	m.serviceAttributes = nil
 	m.userResponses = nil
-	gui.SetListBoxItems([]string{}, "")
+	gui.MainList.SetItems([]string{}, "")
 }
 
 func (m *Manager) logon(service config.Service) error {
@@ -259,7 +259,7 @@ func (m *Manager) setQuestions(response ...daisy.UserResponse) {
 	if len(response) == 0 {
 		log.Printf("Error: len(response) == 0")
 		m.questions = nil
-		gui.SetListBoxItems([]string{}, "")
+		gui.MainList.SetItems([]string{}, "")
 		return
 	}
 
@@ -270,7 +270,7 @@ func (m *Manager) setQuestions(response ...daisy.UserResponse) {
 		log.Printf(msg)
 		gui.MessageBox("Ошибка", msg, gui.MsgBoxOK|gui.MsgBoxIconError)
 		m.questions = nil
-		gui.SetListBoxItems([]string{}, "")
+		gui.MainList.SetItems([]string{}, "")
 		return
 	}
 
@@ -306,7 +306,7 @@ func (m *Manager) setMultipleChoiceQuestion(index int) {
 		items = append(items, c.Label.Text)
 	}
 
-	gui.SetListBoxItems(items, choiceQuestion.Label.Text)
+	gui.MainList.SetItems(items, choiceQuestion.Label.Text)
 }
 
 func (m *Manager) setInputQuestion() {
@@ -331,7 +331,7 @@ func (m *Manager) setContent(contentID string) {
 		log.Printf(msg)
 		gui.MessageBox("Ошибка", msg, gui.MsgBoxOK|gui.MsgBoxIconError)
 		m.questions = nil
-		gui.SetListBoxItems([]string{}, "")
+		gui.MainList.SetItems([]string{}, "")
 		return
 	}
 
@@ -349,7 +349,7 @@ func (m *Manager) setContent(contentID string) {
 	for _, book := range m.books.ContentItems {
 		booksName = append(booksName, book.Label.Text)
 	}
-	gui.SetListBoxItems(booksName, m.books.Label.Text)
+	gui.MainList.SetItems(booksName, m.books.Label.Text)
 }
 
 func (m *Manager) saveBookPosition(bookplayer *player.Player) {
