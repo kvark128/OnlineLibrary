@@ -45,8 +45,15 @@ func (mlb *MainListBox) CurrentIndex() int {
 
 func (mlb *MainListBox) WndProc(hwnd win.HWND, msg uint32, wParam, lParam uintptr) uintptr {
 	switch msg {
+	case win.WM_CHAR:
+		if walk.ModifiersDown() != 0 {
+			return 0
+		}
+
 	case win.WM_KEYDOWN:
-		if walk.ShiftDown() {
+		mods := walk.ModifiersDown()
+
+		if mods == walk.ModShift {
 			switch walk.Key(wParam) {
 			case walk.KeyC:
 				mlb.eventCH <- events.PLAYER_PITCH_UP
@@ -60,7 +67,7 @@ func (mlb *MainListBox) WndProc(hwnd win.HWND, msg uint32, wParam, lParam uintpt
 			return 0
 		}
 
-		if walk.ControlDown() {
+		if mods == walk.ModControl {
 			switch walk.Key(wParam) {
 			case walk.KeyRight:
 				mlb.eventCH <- events.PLAYER_FORWARD
