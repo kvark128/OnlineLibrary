@@ -63,11 +63,13 @@ func (trk *track) play(playing *util.Flag) {
 		for playing.IsSet() {
 			gui.SetElapsedTime(trk.getElapsedTime())
 			trk.Lock()
-			n, _ := trk.stream.Read(trk.buffer)
-			trk.Unlock()
-			if n == 0 {
+			nSamples := trk.stream.SamplesAvailable()
+			if nSamples == 0 || (nSamples*trk.channels*2 < len(trk.buffer) && err == nil) {
+				trk.Unlock()
 				break
 			}
+			n, _ := trk.stream.Read(trk.buffer)
+			trk.Unlock()
 			trk.wp.Write(trk.buffer[:n])
 		}
 		if err != nil {
