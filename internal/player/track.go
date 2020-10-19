@@ -188,11 +188,8 @@ func (trk *track) rewind(offset time.Duration) error {
 	}
 
 	trk.stream.Flush()
-	for {
-		nSamples, _ := trk.stream.Read(trk.buffer)
-		if nSamples == 0 {
-			break
-		}
+	for trk.stream.SamplesAvailable() > 0 {
+		trk.stream.Read(trk.buffer)
 	}
 
 	trk.elapsedTime = elapsedTime
