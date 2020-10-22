@@ -123,20 +123,35 @@ func Initialize(eventCH chan events.Event) error {
 			Menu{
 				Text: "&Воспроизведение",
 				Items: []MenuItem{
-					Action{
-						Text:        "Первый трек",
-						Shortcut:    Shortcut{walk.ModControl, walk.KeyBack},
-						OnTriggered: func() { eventCH <- events.PLAYER_FIRST },
-					},
-					Action{
-						Text:        "Перемотка вперёд",
-						Shortcut:    Shortcut{walk.ModControl, walk.KeyRight},
-						OnTriggered: func() { eventCH <- events.PLAYER_FORWARD },
-					},
-					Action{
-						Text:        "Перемотка назад",
-						Shortcut:    Shortcut{walk.ModControl, walk.KeyLeft},
-						OnTriggered: func() { eventCH <- events.PLAYER_BACK },
+					Menu{
+						Text: "Переход",
+						Items: []MenuItem{
+							Action{
+								Text:        "На первый фрагмент",
+								Shortcut:    Shortcut{walk.ModControl, walk.KeyBack},
+								OnTriggered: func() { eventCH <- events.PLAYER_FIRST },
+							},
+							Action{
+								Text:        "На 5 сек. вперёд",
+								Shortcut:    Shortcut{0, walk.KeyRight},
+								OnTriggered: func() { eventCH <- events.PLAYER_FORWARD },
+							},
+							Action{
+								Text:        "На 5 сек. назад",
+								Shortcut:    Shortcut{0, walk.KeyLeft},
+								OnTriggered: func() { eventCH <- events.PLAYER_BACK },
+							},
+							Action{
+								Text:        "На 30 сек. вперёд",
+								Shortcut:    Shortcut{walk.ModControl, walk.KeyRight},
+								OnTriggered: func() { eventCH <- events.PLAYER_LONG_FORWARD },
+							},
+							Action{
+								Text:        "На 30 сек. назад",
+								Shortcut:    Shortcut{walk.ModControl, walk.KeyLeft},
+								OnTriggered: func() { eventCH <- events.PLAYER_LONG_BACK },
+							},
+						},
 					},
 					Action{
 						Text:        "У&величить громкость",

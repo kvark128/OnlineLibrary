@@ -70,6 +70,12 @@ func (mlb *MainListBox) WndProc(hwnd win.HWND, msg uint32, wParam, lParam uintpt
 
 		if mods == walk.ModControl {
 			switch key {
+			case walk.KeyLeft:
+				mlb.eventCH <- events.PLAYER_LONG_BACK
+				return 0
+			case walk.KeyRight:
+				mlb.eventCH <- events.PLAYER_LONG_FORWARD
+				return 0
 			case walk.KeyUp:
 				mlb.eventCH <- events.PLAYER_VOLUME_UP
 				return 0
