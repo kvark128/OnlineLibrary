@@ -52,35 +52,42 @@ func (mlb *MainListBox) WndProc(hwnd win.HWND, msg uint32, wParam, lParam uintpt
 
 	case win.WM_KEYDOWN:
 		mods := walk.ModifiersDown()
+		key := walk.Key(wParam)
 
 		if mods == walk.ModShift {
-			switch walk.Key(wParam) {
+			switch key {
 			case walk.KeyC:
 				mlb.eventCH <- events.PLAYER_PITCH_UP
+				return 0
 			case walk.KeyX:
 				mlb.eventCH <- events.PLAYER_PITCH_DOWN
+				return 0
 			case walk.KeyZ:
 				mlb.eventCH <- events.PLAYER_PITCH_RESET
-			default:
-				return mlb.ListBox.WndProc(hwnd, msg, wParam, lParam)
+				return 0
 			}
-			return 0
 		}
 
 		if mods == walk.ModControl {
-			switch walk.Key(wParam) {
-			case walk.KeyRight:
-				mlb.eventCH <- events.PLAYER_FORWARD
-			case walk.KeyLeft:
-				mlb.eventCH <- events.PLAYER_BACK
+			switch key {
 			case walk.KeyUp:
 				mlb.eventCH <- events.PLAYER_VOLUME_UP
+				return 0
 			case walk.KeyDown:
 				mlb.eventCH <- events.PLAYER_VOLUME_DOWN
-			default:
-				return mlb.ListBox.WndProc(hwnd, msg, wParam, lParam)
+				return 0
 			}
-			return 0
+		}
+
+		if mods == 0 {
+			switch key {
+			case walk.KeyRight:
+				mlb.eventCH <- events.PLAYER_FORWARD
+				return 0
+			case walk.KeyLeft:
+				mlb.eventCH <- events.PLAYER_BACK
+				return 0
+			}
 		}
 
 	}
