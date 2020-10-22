@@ -235,7 +235,7 @@ func (p *Player) start(startFragment int) {
 	defer p.wg.Done()
 	defer p.playing.Clear()
 
-	for i, r := range p.playList[startFragment:] {
+	for _, r := range p.playList[startFragment:] {
 		var src io.ReadCloser
 		var uri string
 		var err error
@@ -301,12 +301,11 @@ func (p *Player) start(startFragment int) {
 
 		p.Lock()
 		p.trk = trk
-		p.fragment += i
-		currentFragment := p.fragment // copy for gui.SetFragments
+		p.fragment++
+		gui.SetFragments(p.fragment, len(p.playList))
 		p.offset = 0
 		p.Unlock()
 
-		gui.SetFragments(currentFragment, len(p.playList))
 		trk.play(p.playing)
 		src.Close()
 
