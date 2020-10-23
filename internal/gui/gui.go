@@ -6,6 +6,7 @@ import (
 
 	"github.com/kvark128/OnlineLibrary/internal/config"
 	"github.com/kvark128/OnlineLibrary/internal/events"
+	"github.com/kvark128/OnlineLibrary/internal/util"
 	"github.com/lxn/walk"
 	. "github.com/lxn/walk/declarative"
 )
@@ -279,24 +280,16 @@ func Initialize(eventCH chan events.Event) error {
 	return nil
 }
 
-// Formatting duration as HH:MM:SS
-func FmtDuration(d time.Duration) string {
-	h := d / time.Hour
-	m := (d % time.Hour).Minutes()
-	s := (d % time.Minute).Seconds()
-	return fmt.Sprintf("%02d:%02d:%02d", int(h), int(m), int(s))
-}
-
 func SetElapsedTime(elapsed time.Duration) {
 	mainWindow.Synchronize(func() {
-		str := FmtDuration(elapsed)
+		str := util.FmtDuration(elapsed)
 		elapseTime.SetText(str)
 	})
 }
 
 func SetTotalTime(total time.Duration) {
 	mainWindow.Synchronize(func() {
-		str := FmtDuration(total)
+		str := util.FmtDuration(total)
 		totalTime.SetText(str)
 	})
 }
