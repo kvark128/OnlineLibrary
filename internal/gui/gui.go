@@ -279,23 +279,25 @@ func Initialize(eventCH chan events.Event) error {
 	return nil
 }
 
-func SetElapsedTime(elapse time.Duration) {
+// Formatting duration as HH:MM:SS
+func FmtDuration(d time.Duration) string {
+	h := d / time.Hour
+	m := (d % time.Hour).Minutes()
+	s := (d % time.Minute).Seconds()
+	return fmt.Sprintf("%02d:%02d:%02d", int(h), int(m), int(s))
+}
+
+func SetElapsedTime(elapsed time.Duration) {
 	mainWindow.Synchronize(func() {
-		h := (elapse / time.Hour).Hours()
-		m := (elapse % time.Hour).Minutes()
-		s := (elapse % time.Minute).Seconds()
-		text := fmt.Sprintf("%02d:%02d:%02d", int(h), int(m), int(s))
-		elapseTime.SetText(text)
+		str := FmtDuration(elapsed)
+		elapseTime.SetText(str)
 	})
 }
 
 func SetTotalTime(total time.Duration) {
 	mainWindow.Synchronize(func() {
-		h := (total / time.Hour).Hours()
-		m := (total % time.Hour).Minutes()
-		s := (total % time.Minute).Seconds()
-		text := fmt.Sprintf("%02d:%02d:%02d", int(h), int(m), int(s))
-		totalTime.SetText(text)
+		str := FmtDuration(total)
+		totalTime.SetText(str)
 	})
 }
 
