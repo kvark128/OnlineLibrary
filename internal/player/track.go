@@ -85,6 +85,7 @@ func (trk *track) play(playing *util.Flag) {
 	}
 
 	trk.wp.Sync()
+	gui.SetElapsedTime(0)
 	trk.wp.Close()
 }
 
