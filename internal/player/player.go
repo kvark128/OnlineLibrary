@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 
@@ -25,6 +26,12 @@ const (
 	DEFAULT_PITCH = sonic.DEFAULT_PITCH
 	MIN_PITCH     = sonic.DEFAULT_PITCH / 2
 	MAX_PITCH     = sonic.DEFAULT_PITCH * 3
+)
+
+// Extensions of supported formats
+const (
+	LKF_EXT = ".lkf"
+	MP3_EXT = ".mp3"
 )
 
 type Player struct {
@@ -52,8 +59,10 @@ func NewPlayer(bookID, bookName string, resources []daisy.Resource) *Player {
 	}
 
 	// The player supports only LKF and MP3 formats. Unsupported resources must not be uploaded to the player
+	// Some services specify an incorrect r.MimeType value, so we check the resource type by extension from the r.LocalURI field
 	for _, r := range resources {
-		if r.MimeType == config.LKF_FORMAT || r.MimeType == config.MP3_FORMAT {
+		ext := strings.ToLower(filepath.Ext(r.LocalURI))
+		if ext == LKF_EXT || ext == MP3_EXT {
 			p.playList = append(p.playList, r)
 		}
 	}
@@ -258,21 +267,9 @@ func (p *Player) start(startFragment int) {
 			}
 		}
 
-		var mp3 io.Reader
-		switch r.MimeType {
-		case config.LKF_FORMAT:
-			// Some libraries provide incorrect MimeType for mp3 resources. We check this by the file extension
-			if filepath.Ext(r.LocalURI) == ".mp3" {
-				log.Printf("player: incorrect MimeType as lkf for %v", uri)
-				mp3 = src
-			} else {
-				mp3 = lkf.NewLKFReader(src)
-			}
-		case config.MP3_FORMAT:
-			mp3 = src
-		default:
-			src.Close()
-			panic("Unsupported MimeType")
+		var mp3 io.Reader = src
+		if strings.ToLower(filepath.Ext(r.LocalURI)) == LKF_EXT {
+			mp3 = lkf.NewLKFReader(src)
 		}
 
 		p.Lock()
