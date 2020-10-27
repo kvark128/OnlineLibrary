@@ -124,14 +124,49 @@ func Initialize(eventCH chan events.Event) error {
 			Menu{
 				Text: "&Воспроизведение",
 				Items: []MenuItem{
+					Action{
+						Text:        "Воспроизвести / Приостановить",
+						Shortcut:    Shortcut{walk.ModControl, walk.KeyK},
+						OnTriggered: func() { eventCH <- events.PLAYER_PLAY_PAUSE },
+					},
+					Action{
+						Text:        "У&величить громкость",
+						Shortcut:    Shortcut{walk.ModControl, walk.KeyUp},
+						OnTriggered: func() { eventCH <- events.PLAYER_VOLUME_UP },
+					},
+					Action{
+						Text:        "У&меньшить громкость",
+						Shortcut:    Shortcut{walk.ModControl, walk.KeyDown},
+						OnTriggered: func() { eventCH <- events.PLAYER_VOLUME_DOWN },
+					},
 					Menu{
-						Text: "Переход",
+						Text: "Переход по книге",
 						Items: []MenuItem{
 							Action{
 								Text:        "На первый фрагмент",
 								Shortcut:    Shortcut{walk.ModControl, walk.KeyBack},
 								OnTriggered: func() { eventCH <- events.PLAYER_FIRST },
 							},
+							Action{
+								Text:        "На указанный фрагмент",
+								Shortcut:    Shortcut{walk.ModControl, walk.KeyG},
+								OnTriggered: func() { eventCH <- events.PLAYER_GOTO },
+							},
+							Action{
+								Text:        "На следующий фрагмент",
+								Shortcut:    Shortcut{walk.ModControl, walk.KeyL},
+								OnTriggered: func() { eventCH <- events.PLAYER_NEXT_TRACK },
+							},
+							Action{
+								Text:        "На предыдущий фрагмент",
+								Shortcut:    Shortcut{walk.ModControl, walk.KeyJ},
+								OnTriggered: func() { eventCH <- events.PLAYER_PREVIOUS_TRACK },
+							},
+						},
+					},
+					Menu{
+						Text: "Переход по фрагменту",
+						Items: []MenuItem{
 							Action{
 								Text:        "На 5 сек. вперёд",
 								Shortcut:    Shortcut{0, walk.KeyRight},
@@ -153,31 +188,6 @@ func Initialize(eventCH chan events.Event) error {
 								OnTriggered: func() { eventCH <- events.PLAYER_LONG_BACK },
 							},
 						},
-					},
-					Action{
-						Text:        "У&величить громкость",
-						Shortcut:    Shortcut{walk.ModControl, walk.KeyUp},
-						OnTriggered: func() { eventCH <- events.PLAYER_VOLUME_UP },
-					},
-					Action{
-						Text:        "У&меньшить громкость",
-						Shortcut:    Shortcut{walk.ModControl, walk.KeyDown},
-						OnTriggered: func() { eventCH <- events.PLAYER_VOLUME_DOWN },
-					},
-					Action{
-						Text:        "Следующий фрагмент",
-						Shortcut:    Shortcut{walk.ModControl, walk.KeyL},
-						OnTriggered: func() { eventCH <- events.PLAYER_NEXT_TRACK },
-					},
-					Action{
-						Text:        "Предыдущий фрагмент",
-						Shortcut:    Shortcut{walk.ModControl, walk.KeyJ},
-						OnTriggered: func() { eventCH <- events.PLAYER_PREVIOUS_TRACK },
-					},
-					Action{
-						Text:        "Воспроизвести / Приостановить",
-						Shortcut:    Shortcut{walk.ModControl, walk.KeyK},
-						OnTriggered: func() { eventCH <- events.PLAYER_PLAY_PAUSE },
 					},
 					Menu{
 						Text: "Скорость",

@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -206,6 +207,17 @@ func (m *Manager) Start(eventCH chan events.Event) {
 
 		case events.PLAYER_FIRST:
 			m.bookplayer.SetTrack(0)
+
+		case events.PLAYER_GOTO:
+			var text string
+			if gui.TextEntryDialog("Переход к фрагменту", "Введите номер фрагмента:", &text) != gui.DlgCmdOK {
+				break
+			}
+			fragment, err := strconv.Atoi(text)
+			if err != nil {
+				break
+			}
+			m.bookplayer.SetTrack(fragment - 1) // Requires an index of fragment
 
 		default:
 			log.Printf("Unknown event: %v", evt)
