@@ -46,7 +46,7 @@ func (mlb *MainListBox) CurrentIndex() int {
 func (mlb *MainListBox) WndProc(hwnd win.HWND, msg uint32, wParam, lParam uintptr) uintptr {
 	switch msg {
 	case win.WM_CHAR:
-		if walk.ModifiersDown() != 0 {
+		if wParam <= 32 || walk.ModifiersDown() != 0 {
 			return 0
 		}
 
