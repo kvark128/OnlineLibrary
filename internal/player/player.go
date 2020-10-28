@@ -267,9 +267,8 @@ func (p *Player) start(startFragment int) {
 			}
 		}
 
-		var mp3 io.Reader = src
 		if strings.ToLower(filepath.Ext(r.LocalURI)) == LKF_EXT {
-			mp3 = lkf.NewLKFReader(src)
+			src = lkf.NewReader(src)
 		}
 
 		p.Lock()
@@ -278,7 +277,7 @@ func (p *Player) start(startFragment int) {
 		offset := p.offset
 		p.Unlock()
 
-		trk, err := newTrack(mp3, speed, pitch, r.Size)
+		trk, err := newTrack(src, speed, pitch, r.Size)
 		if err != nil {
 			log.Printf("new track for %v: %v", uri, err)
 			src.Close()

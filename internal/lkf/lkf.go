@@ -7,24 +7,23 @@ import (
 	"github.com/kvark128/lkf"
 )
 
-type LKFReader struct {
-	src       io.Reader
+type Reader struct {
+	src       io.ReadCloser
 	buf       []byte
 	bufLength int
 	c         *lkf.Cryptor
 	lastErr   error
 }
 
-func NewLKFReader(src io.Reader) *LKFReader {
-	r := &LKFReader{
+func NewReader(src io.ReadCloser) *Reader {
+	return &Reader{
 		src: src,
 		buf: make([]byte, lkf.BlockSize*64),
 		c:   new(lkf.Cryptor),
 	}
-	return r
 }
 
-func (r *LKFReader) Read(p []byte) (int, error) {
+func (r *Reader) Read(p []byte) (int, error) {
 	var n, n2 int
 	for {
 		n2 = copy(p[n:], r.buf[:r.bufLength])
@@ -44,7 +43,7 @@ func (r *LKFReader) Read(p []byte) (int, error) {
 	}
 }
 
-func (r *LKFReader) Seek(offset int64, whence int) (int64, error) {
+func (r *Reader) Seek(offset int64, whence int) (int64, error) {
 	seeker, ok := r.src.(io.Seeker)
 	if !ok {
 		panic("LKFReader: r.src is not seeker")
@@ -69,4 +68,9 @@ func (r *LKFReader) Seek(offset int64, whence int) (int64, error) {
 
 	n, err := r.Read(make([]byte, blockOffset))
 	return pos + int64(n), err
+}
+
+func (r *Reader) Close() error {
+	r.bufLength = 0
+	return r.src.Close()
 }
