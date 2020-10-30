@@ -13,6 +13,7 @@ const (
 	WAVE_MAPPER     = -1
 	WHDR_DONE       = 1
 	CALLBACK_EVENT  = 0x50000
+	MAXPNAMELEN     = 32
 )
 
 var winmm = windows.NewLazySystemDLL("winmm.dll")
@@ -20,6 +21,8 @@ var ErrClosed = errors.New("wave player already closed")
 
 // Output
 var (
+	procWaveOutGetNumDevs      = winmm.NewProc("waveOutGetNumDevs")
+	procWaveOutGetDevCapsW     = winmm.NewProc("waveOutGetDevCapsW")
 	procWaveOutOpen            = winmm.NewProc("waveOutOpen")
 	procWaveOutPrepareHeader   = winmm.NewProc("waveOutPrepareHeader")
 	procWaveOutUnprepareHeader = winmm.NewProc("waveOutUnprepareHeader")
@@ -62,6 +65,28 @@ type WAVEHDR struct {
 	dwLoops         uint32
 	lpNext          uintptr
 	reserved        uintptr
+}
+
+type WAVEOUTCAPS struct {
+	wMid           uint16
+	wPid           uint16
+	vDriverVersion uint
+	szPname        [MAXPNAMELEN]uint16
+	dwFormats      uint32
+	wChannels      uint16
+	wReserved1     uint16
+	dwSupport      uint32
+}
+
+func OutputDevices() map[int]string {
+	caps := &WAVEOUTCAPS{}
+	numDevs, _, _ := procWaveOutGetNumDevs.Call()
+	devs := make(map[int]string, int(numDevs))
+	for devID := WAVE_MAPPER; devID < int(numDevs); devID++ {
+		procWaveOutGetDevCapsW.Call(uintptr(devID), uintptr(unsafe.Pointer(caps)), unsafe.Sizeof(*caps))
+		devs[devID] = windows.UTF16ToString(caps.szPname[:MAXPNAMELEN])
+	}
+	return devs
 }
 
 type WavePlayer struct {
