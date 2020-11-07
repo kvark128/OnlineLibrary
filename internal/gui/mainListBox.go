@@ -1,6 +1,8 @@
 package gui
 
 import (
+	"time"
+
 	"github.com/kvark128/OnlineLibrary/internal/events"
 	"github.com/lxn/walk"
 	"github.com/lxn/win"
@@ -54,6 +56,17 @@ func (mlb *MainListBox) WndProc(hwnd win.HWND, msg uint32, wParam, lParam uintpt
 		mods := walk.ModifiersDown()
 		key := walk.Key(wParam)
 
+		if mods == walk.ModControl|walk.ModShift {
+			switch key {
+			case walk.KeyLeft:
+				mlb.eventCH <- events.Event{events.PLAYER_REWIND, -time.Minute}
+				return 0
+			case walk.KeyRight:
+				mlb.eventCH <- events.Event{events.PLAYER_REWIND, time.Minute}
+				return 0
+			}
+		}
+
 		if mods == walk.ModShift {
 			switch key {
 			case walk.KeyC:
@@ -71,10 +84,10 @@ func (mlb *MainListBox) WndProc(hwnd win.HWND, msg uint32, wParam, lParam uintpt
 		if mods == walk.ModControl {
 			switch key {
 			case walk.KeyLeft:
-				mlb.eventCH <- events.Event{events.PLAYER_LONG_BACK, nil}
+				mlb.eventCH <- events.Event{events.PLAYER_REWIND, time.Second * -30}
 				return 0
 			case walk.KeyRight:
-				mlb.eventCH <- events.Event{events.PLAYER_LONG_FORWARD, nil}
+				mlb.eventCH <- events.Event{events.PLAYER_REWIND, time.Second * 30}
 				return 0
 			case walk.KeyUp:
 				mlb.eventCH <- events.Event{events.PLAYER_VOLUME_UP, nil}
@@ -88,10 +101,10 @@ func (mlb *MainListBox) WndProc(hwnd win.HWND, msg uint32, wParam, lParam uintpt
 		if mods == 0 {
 			switch key {
 			case walk.KeyRight:
-				mlb.eventCH <- events.Event{events.PLAYER_FORWARD, nil}
+				mlb.eventCH <- events.Event{events.PLAYER_REWIND, time.Second * 5}
 				return 0
 			case walk.KeyLeft:
-				mlb.eventCH <- events.Event{events.PLAYER_BACK, nil}
+				mlb.eventCH <- events.Event{events.PLAYER_REWIND, time.Second * -5}
 				return 0
 			}
 		}

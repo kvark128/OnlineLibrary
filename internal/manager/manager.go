@@ -193,17 +193,13 @@ func (m *Manager) Start(eventCH chan events.Event) {
 		case events.PLAYER_VOLUME_DOWN:
 			m.bookplayer.ChangeVolume(-1)
 
-		case events.PLAYER_FORWARD:
-			m.bookplayer.ChangeOffset(time.Second * +5)
-
-		case events.PLAYER_BACK:
-			m.bookplayer.ChangeOffset(time.Second * -5)
-
-		case events.PLAYER_LONG_FORWARD:
-			m.bookplayer.ChangeOffset(time.Second * +30)
-
-		case events.PLAYER_LONG_BACK:
-			m.bookplayer.ChangeOffset(time.Second * -30)
+		case events.PLAYER_REWIND:
+			offset, ok := evt.Data.(time.Duration)
+			if !ok {
+				log.Printf("manager.rewind: invalid evt.Data")
+				break
+			}
+			m.bookplayer.ChangeOffset(offset)
 
 		case events.PLAYER_FIRST:
 			m.bookplayer.SetTrack(0)

@@ -170,22 +170,32 @@ func Initialize(eventCH chan events.Event) error {
 							Action{
 								Text:        "На 5 сек. вперёд",
 								Shortcut:    Shortcut{0, walk.KeyRight},
-								OnTriggered: func() { eventCH <- events.Event{events.PLAYER_FORWARD, nil} },
+								OnTriggered: func() { eventCH <- events.Event{events.PLAYER_REWIND, time.Second * 5} },
 							},
 							Action{
 								Text:        "На 5 сек. назад",
 								Shortcut:    Shortcut{0, walk.KeyLeft},
-								OnTriggered: func() { eventCH <- events.Event{events.PLAYER_BACK, nil} },
+								OnTriggered: func() { eventCH <- events.Event{events.PLAYER_REWIND, time.Second * -5} },
 							},
 							Action{
 								Text:        "На 30 сек. вперёд",
 								Shortcut:    Shortcut{walk.ModControl, walk.KeyRight},
-								OnTriggered: func() { eventCH <- events.Event{events.PLAYER_LONG_FORWARD, nil} },
+								OnTriggered: func() { eventCH <- events.Event{events.PLAYER_REWIND, time.Second * 30} },
 							},
 							Action{
 								Text:        "На 30 сек. назад",
 								Shortcut:    Shortcut{walk.ModControl, walk.KeyLeft},
-								OnTriggered: func() { eventCH <- events.Event{events.PLAYER_LONG_BACK, nil} },
+								OnTriggered: func() { eventCH <- events.Event{events.PLAYER_REWIND, time.Second * -30} },
+							},
+							Action{
+								Text:        "На 1 мин. вперёд",
+								Shortcut:    Shortcut{walk.ModControl | walk.ModShift, walk.KeyRight},
+								OnTriggered: func() { eventCH <- events.Event{events.PLAYER_REWIND, time.Minute} },
+							},
+							Action{
+								Text:        "На 1 мин. назад",
+								Shortcut:    Shortcut{walk.ModControl | walk.ModShift, walk.KeyLeft},
+								OnTriggered: func() { eventCH <- events.Event{events.PLAYER_REWIND, -time.Minute} },
 							},
 						},
 					},
