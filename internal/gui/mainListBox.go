@@ -57,13 +57,13 @@ func (mlb *MainListBox) WndProc(hwnd win.HWND, msg uint32, wParam, lParam uintpt
 		if mods == walk.ModShift {
 			switch key {
 			case walk.KeyC:
-				mlb.eventCH <- events.PLAYER_PITCH_UP
+				mlb.eventCH <- events.Event{events.PLAYER_PITCH_UP, nil}
 				return 0
 			case walk.KeyX:
-				mlb.eventCH <- events.PLAYER_PITCH_DOWN
+				mlb.eventCH <- events.Event{events.PLAYER_PITCH_DOWN, nil}
 				return 0
 			case walk.KeyZ:
-				mlb.eventCH <- events.PLAYER_PITCH_RESET
+				mlb.eventCH <- events.Event{events.PLAYER_PITCH_RESET, nil}
 				return 0
 			}
 		}
@@ -71,16 +71,16 @@ func (mlb *MainListBox) WndProc(hwnd win.HWND, msg uint32, wParam, lParam uintpt
 		if mods == walk.ModControl {
 			switch key {
 			case walk.KeyLeft:
-				mlb.eventCH <- events.PLAYER_LONG_BACK
+				mlb.eventCH <- events.Event{events.PLAYER_LONG_BACK, nil}
 				return 0
 			case walk.KeyRight:
-				mlb.eventCH <- events.PLAYER_LONG_FORWARD
+				mlb.eventCH <- events.Event{events.PLAYER_LONG_FORWARD, nil}
 				return 0
 			case walk.KeyUp:
-				mlb.eventCH <- events.PLAYER_VOLUME_UP
+				mlb.eventCH <- events.Event{events.PLAYER_VOLUME_UP, nil}
 				return 0
 			case walk.KeyDown:
-				mlb.eventCH <- events.PLAYER_VOLUME_DOWN
+				mlb.eventCH <- events.Event{events.PLAYER_VOLUME_DOWN, nil}
 				return 0
 			}
 		}
@@ -88,10 +88,10 @@ func (mlb *MainListBox) WndProc(hwnd win.HWND, msg uint32, wParam, lParam uintpt
 		if mods == 0 {
 			switch key {
 			case walk.KeyRight:
-				mlb.eventCH <- events.PLAYER_FORWARD
+				mlb.eventCH <- events.Event{events.PLAYER_FORWARD, nil}
 				return 0
 			case walk.KeyLeft:
-				mlb.eventCH <- events.PLAYER_BACK
+				mlb.eventCH <- events.Event{events.PLAYER_BACK, nil}
 				return 0
 			}
 		}

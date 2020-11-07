@@ -1,9 +1,14 @@
 package events
 
-type Event int
+type Event struct {
+	EventCode EventCode
+	Data      interface{}
+}
+
+type EventCode uint32
 
 const (
-	ACTIVATE_MENU Event = iota
+	ACTIVATE_MENU EventCode = iota
 	OPEN_BOOKSHELF
 	MAIN_MENU
 	DOWNLOAD_BOOK

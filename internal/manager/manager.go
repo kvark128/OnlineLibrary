@@ -40,13 +40,13 @@ func (m *Manager) Start(eventCH chan events.Event) {
 	defer m.Done()
 
 	for evt := range eventCH {
-		if m.client == nil && evt != events.LIBRARY_LOGON && evt != events.LIBRARY_ADD && evt != events.LIBRARY_SWITCH {
+		if m.client == nil && evt.EventCode != events.LIBRARY_LOGON && evt.EventCode != events.LIBRARY_ADD && evt.EventCode != events.LIBRARY_SWITCH {
 			// If the client is nil, we can only log in or add a new account
-			log.Printf("event: %v: client is nil", evt)
+			log.Printf("event: %v: client is nil", evt.EventCode)
 			continue
 		}
 
-		switch evt {
+		switch evt.EventCode {
 		case events.ACTIVATE_MENU:
 			index := gui.MainList.CurrentIndex()
 			if m.books != nil {
@@ -220,7 +220,7 @@ func (m *Manager) Start(eventCH chan events.Event) {
 			m.bookplayer.SetTrack(fragment - 1) // Requires an index of fragment
 
 		default:
-			log.Printf("Unknown event: %v", evt)
+			log.Printf("Unknown event: %v", evt.EventCode)
 
 		}
 	}

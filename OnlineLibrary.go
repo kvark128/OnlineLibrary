@@ -47,10 +47,10 @@ func main() {
 	mng := manager.NewManager(&readingSystemAttributes)
 	go mng.Start(eventCH)
 
-	eventCH <- events.LIBRARY_LOGON
+	eventCH <- events.Event{events.LIBRARY_LOGON, nil}
 	gui.RunMainWindow()
 
-	eventCH <- events.LIBRARY_LOGOFF
+	eventCH <- events.Event{events.LIBRARY_LOGOFF, nil}
 	close(eventCH)
 
 	mng.Wait()
