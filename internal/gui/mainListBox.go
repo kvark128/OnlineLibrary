@@ -8,6 +8,18 @@ import (
 	"github.com/lxn/win"
 )
 
+// Events for rewinding a fragment
+var (
+	rewind_5sec_forward  = events.Event{events.PLAYER_REWIND, time.Second * 5}
+	rewind_5sec_back     = events.Event{events.PLAYER_REWIND, time.Second * -5}
+	rewind_30sec_forward = events.Event{events.PLAYER_REWIND, time.Second * 30}
+	rewind_30sec_back    = events.Event{events.PLAYER_REWIND, time.Second * -30}
+	rewind_1min_forward  = events.Event{events.PLAYER_REWIND, time.Minute}
+	rewind_1min_back     = events.Event{events.PLAYER_REWIND, -time.Minute}
+	rewind_5min_forward  = events.Event{events.PLAYER_REWIND, time.Minute * 5}
+	rewind_5min_back     = events.Event{events.PLAYER_REWIND, time.Minute * -5}
+)
+
 type MainListBox struct {
 	*walk.ListBox
 	label   *walk.TextLabel
@@ -59,16 +71,22 @@ func (mlb *MainListBox) WndProc(hwnd win.HWND, msg uint32, wParam, lParam uintpt
 		if mods == walk.ModControl|walk.ModShift {
 			switch key {
 			case walk.KeyLeft:
-				mlb.eventCH <- events.Event{events.PLAYER_REWIND, -time.Minute}
+				mlb.eventCH <- rewind_5min_back
 				return 0
 			case walk.KeyRight:
-				mlb.eventCH <- events.Event{events.PLAYER_REWIND, time.Minute}
+				mlb.eventCH <- rewind_5min_forward
 				return 0
 			}
 		}
 
 		if mods == walk.ModShift {
 			switch key {
+			case walk.KeyLeft:
+				mlb.eventCH <- rewind_1min_back
+				return 0
+			case walk.KeyRight:
+				mlb.eventCH <- rewind_1min_forward
+				return 0
 			case walk.KeyC:
 				mlb.eventCH <- events.Event{events.PLAYER_PITCH_UP, nil}
 				return 0
@@ -84,10 +102,10 @@ func (mlb *MainListBox) WndProc(hwnd win.HWND, msg uint32, wParam, lParam uintpt
 		if mods == walk.ModControl {
 			switch key {
 			case walk.KeyLeft:
-				mlb.eventCH <- events.Event{events.PLAYER_REWIND, time.Second * -30}
+				mlb.eventCH <- rewind_30sec_back
 				return 0
 			case walk.KeyRight:
-				mlb.eventCH <- events.Event{events.PLAYER_REWIND, time.Second * 30}
+				mlb.eventCH <- rewind_30sec_forward
 				return 0
 			case walk.KeyUp:
 				mlb.eventCH <- events.Event{events.PLAYER_VOLUME_UP, nil}
@@ -101,10 +119,10 @@ func (mlb *MainListBox) WndProc(hwnd win.HWND, msg uint32, wParam, lParam uintpt
 		if mods == 0 {
 			switch key {
 			case walk.KeyRight:
-				mlb.eventCH <- events.Event{events.PLAYER_REWIND, time.Second * 5}
+				mlb.eventCH <- rewind_5sec_forward
 				return 0
 			case walk.KeyLeft:
-				mlb.eventCH <- events.Event{events.PLAYER_REWIND, time.Second * -5}
+				mlb.eventCH <- rewind_5sec_back
 				return 0
 			}
 		}
