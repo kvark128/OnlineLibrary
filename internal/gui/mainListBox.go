@@ -127,6 +127,9 @@ func (mlb *MainListBox) WndProc(hwnd win.HWND, msg uint32, wParam, lParam uintpt
 			case walk.KeyMediaPlayPause:
 				mlb.eventCH <- events.Event{events.PLAYER_PLAY_PAUSE, nil}
 				return 0
+			case walk.KeyMediaStop:
+				mlb.eventCH <- events.Event{events.PLAYER_STOP, nil}
+				return 0
 			case walk.KeyMediaNextTrack:
 				mlb.eventCH <- events.Event{events.PLAYER_NEXT_TRACK, nil}
 				return 0
