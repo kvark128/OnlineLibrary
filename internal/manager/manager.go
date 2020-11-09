@@ -40,7 +40,7 @@ func (m *Manager) Start(eventCH chan events.Event) {
 	defer m.Done()
 
 	for evt := range eventCH {
-		if m.client == nil && evt.EventCode != events.LIBRARY_LOGON && evt.EventCode != events.LIBRARY_ADD && evt.EventCode != events.LIBRARY_SWITCH {
+		if m.client == nil && evt.EventCode != events.LIBRARY_LOGON && evt.EventCode != events.LIBRARY_ADD {
 			// If the client is nil, we can only log in or add a new account
 			log.Printf("event: %v: client is nil", evt.EventCode)
 			continue
@@ -76,13 +76,21 @@ func (m *Manager) Start(eventCH chan events.Event) {
 		case events.MENU_BACK:
 			m.setQuestions(daisy.UserResponse{QuestionID: daisy.Back})
 
-		case events.LIBRARY_SWITCH:
-			index, ok := evt.Data.(int)
-			if !ok {
-				log.Printf("switching library: invalid index")
+		case events.LIBRARY_LOGON:
+			service, index, err := config.Conf.Services.CurrentService()
+			if err != nil {
 				break
 			}
-			service := config.Conf.Services.Service(index)
+			gui.SetLibraryMenu(eventCH, config.Conf.Services, index)
+			if evt.Data != nil {
+				var ok bool
+				index, ok = evt.Data.(int)
+				if !ok {
+					log.Printf("logon: invalid index")
+					break
+				}
+				service = config.Conf.Services.Service(index)
+			}
 			if err := m.logon(service); err != nil {
 				log.Printf("logon: %v", err)
 				gui.MessageBox("Ошибка", fmt.Sprintf("logon: %v", err), gui.MsgBoxOK|gui.MsgBoxIconError)
@@ -106,17 +114,6 @@ func (m *Manager) Start(eventCH chan events.Event) {
 			config.Conf.Services.SetService(service)
 			_, index, _ := config.Conf.Services.CurrentService()
 			gui.SetLibraryMenu(eventCH, config.Conf.Services, index)
-
-		case events.LIBRARY_LOGON:
-			service, index, err := config.Conf.Services.CurrentService()
-			if err != nil {
-				break
-			}
-			gui.SetLibraryMenu(eventCH, config.Conf.Services, index)
-			if err := m.logon(service); err != nil {
-				log.Printf("logon: %v", err)
-				gui.MessageBox("Ошибка", fmt.Sprintf("logon: %v", err), gui.MsgBoxOK|gui.MsgBoxIconError)
-			}
 
 		case events.LIBRARY_LOGOFF:
 			m.logoff()

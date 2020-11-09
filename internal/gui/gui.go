@@ -351,7 +351,7 @@ func SetLibraryMenu(eventCH chan events.Event, services []config.Service, curren
 					actions.At(index).SetChecked(false)
 				}
 				a.SetChecked(true)
-				eventCH <- events.Event{events.LIBRARY_SWITCH, actions.Index(a)}
+				eventCH <- events.Event{events.LIBRARY_LOGON, actions.Index(a)}
 			})
 			actions.Insert(i, a)
 		}
