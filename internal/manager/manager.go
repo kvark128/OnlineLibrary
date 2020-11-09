@@ -77,7 +77,11 @@ func (m *Manager) Start(eventCH chan events.Event) {
 			m.setQuestions(daisy.UserResponse{QuestionID: daisy.Back})
 
 		case events.LIBRARY_SWITCH:
-			index := gui.GetCurrentLibrary()
+			index, ok := evt.Data.(int)
+			if !ok {
+				log.Printf("switching library: invalid index")
+				break
+			}
 			service := config.Conf.Services.Service(index)
 			if err := m.logon(service); err != nil {
 				log.Printf("logon: %v", err)

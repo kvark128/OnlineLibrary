@@ -351,26 +351,11 @@ func SetLibraryMenu(eventCH chan events.Event, services []config.Service, curren
 					actions.At(index).SetChecked(false)
 				}
 				a.SetChecked(true)
-				eventCH <- events.Event{events.LIBRARY_SWITCH, nil}
+				eventCH <- events.Event{events.LIBRARY_SWITCH, actions.Index(a)}
 			})
 			actions.Insert(i, a)
 		}
 	})
-}
-
-func GetCurrentLibrary() int {
-	result := make(chan int)
-	mainWindow.Synchronize(func() {
-		actions := libraryMenu.Actions()
-		for i := 0; i < actions.Len(); i++ {
-			if actions.At(i).Checked() {
-				result <- i
-				return
-			}
-		}
-		panic("no checked library")
-	})
-	return <-result
 }
 
 func RunMainWindow() {
