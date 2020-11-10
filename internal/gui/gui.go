@@ -272,11 +272,6 @@ func Initialize(eventCH chan events.Event) error {
 			ListBox{
 				AssignTo:        &lb,
 				OnItemActivated: func() { eventCH <- events.Event{events.ACTIVATE_MENU, nil} },
-				OnKeyPress: func(key walk.Key) {
-					if key == walk.KeySpace {
-						eventCH <- events.Event{events.PLAYER_PLAY_PAUSE, nil}
-					}
-				},
 			},
 		},
 	}.Create()); err != nil {

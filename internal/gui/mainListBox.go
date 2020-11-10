@@ -124,6 +124,9 @@ func (mlb *MainListBox) WndProc(hwnd win.HWND, msg uint32, wParam, lParam uintpt
 			case walk.KeyLeft:
 				mlb.eventCH <- rewind_5sec_back
 				return 0
+			case walk.KeySpace:
+				mlb.eventCH <- events.Event{events.PLAYER_PLAY_PAUSE, nil}
+				return 0
 			case walk.KeyMediaPlayPause:
 				mlb.eventCH <- events.Event{events.PLAYER_PLAY_PAUSE, nil}
 				return 0
