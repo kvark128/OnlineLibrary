@@ -36,7 +36,7 @@ type Service struct {
 	Name        string      `json:"name"`
 	URL         string      `json:"url"`
 	Credentials Credentials `json:"credentials"`
-	RecentBooks RecentBooks `json:"recent_books,omitempty"`
+	RecentBooks []Book      `json:"recent_books,omitempty"`
 }
 
 type Credentials struct {

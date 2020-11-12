@@ -265,7 +265,7 @@ func (m *Manager) logon(service config.Service) error {
 	m.serviceAttributes = serviceAttributes
 	m.setQuestions(daisy.UserResponse{QuestionID: daisy.Default})
 
-	book := service.RecentBooks.CurrentBook()
+	book := service.CurrentBook()
 	if book.ID == "" {
 		return nil
 	}
@@ -385,7 +385,7 @@ func (m *Manager) saveBookPosition(bookplayer *player.Player) {
 	if bookID != "" {
 		fragment, elapsedTime := bookplayer.PositionInfo()
 		service, _, _ := config.Conf.Services.CurrentService()
-		service.RecentBooks.SetBook(bookID, bookName, fragment, elapsedTime)
+		service.SetBook(bookID, bookName, fragment, elapsedTime)
 	}
 }
 
@@ -407,7 +407,7 @@ func (m *Manager) playBook(index int) {
 	}
 
 	service, _, _ := config.Conf.Services.CurrentService()
-	b := service.RecentBooks.Book(book.ID)
+	b := service.Book(book.ID)
 	gui.SetMainWindowTitle(book.Label.Text)
 	m.bookplayer = player.NewPlayer(book.ID, book.Label.Text, r.Resources)
 	m.bookplayer.SetTrack(b.Fragment)

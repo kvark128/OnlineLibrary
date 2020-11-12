@@ -4,15 +4,13 @@ import (
 	"time"
 )
 
-type RecentBooks []Book
-
-func (rb RecentBooks) SetBook(id, name string, fragment int, elapsedTime time.Duration) {
-	for i := range rb {
-		if rb[i].ID == id {
-			rb[i].Name = name
-			rb[i].Fragment = fragment
-			rb[i].ElapsedTime = elapsedTime
-			rb.SetCurrentBook(id)
+func (s *Service) SetBook(id, name string, fragment int, elapsedTime time.Duration) {
+	for i := range s.RecentBooks {
+		if s.RecentBooks[i].ID == id {
+			s.RecentBooks[i].Name = name
+			s.RecentBooks[i].Fragment = fragment
+			s.RecentBooks[i].ElapsedTime = elapsedTime
+			s.SetCurrentBook(id)
 			return
 		}
 	}
@@ -24,18 +22,16 @@ func (rb RecentBooks) SetBook(id, name string, fragment int, elapsedTime time.Du
 		ElapsedTime: elapsedTime,
 	}
 
-	rb = append(rb, book)
-	rb.SetCurrentBook(id)
+	s.RecentBooks = append(s.RecentBooks, book)
+	s.SetCurrentBook(id)
 
-	if len(rb) > 256 {
-		rb = rb[:256]
+	if len(s.RecentBooks) > 256 {
+		s.RecentBooks = s.RecentBooks[:256]
 	}
-
-	Conf.Services[0].RecentBooks = rb
 }
 
-func (rb RecentBooks) Book(id string) Book {
-	for _, b := range rb {
+func (s *Service) Book(id string) Book {
+	for _, b := range s.RecentBooks {
 		if b.ID == id {
 			return b
 		}
@@ -43,17 +39,17 @@ func (rb RecentBooks) Book(id string) Book {
 	return Book{}
 }
 
-func (rb RecentBooks) SetCurrentBook(id string) {
-	for i := range rb {
-		if rb[i].ID == id {
-			rb[0], rb[i] = rb[i], rb[0]
+func (s *Service) SetCurrentBook(id string) {
+	for i := range s.RecentBooks {
+		if s.RecentBooks[i].ID == id {
+			s.RecentBooks[0], s.RecentBooks[i] = s.RecentBooks[i], s.RecentBooks[0]
 		}
 	}
 }
 
-func (rb RecentBooks) CurrentBook() Book {
-	if len(rb) != 0 {
-		return rb[0]
+func (s *Service) CurrentBook() Book {
+	if len(s.RecentBooks) != 0 {
+		return s.RecentBooks[0]
 	}
 	return Book{}
 }
