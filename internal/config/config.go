@@ -2,6 +2,7 @@ package config
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"os"
 	"path/filepath"
@@ -39,9 +40,89 @@ type Service struct {
 	RecentBooks []Book      `json:"recent_books,omitempty"`
 }
 
+func (s *Service) SetBook(id, name string, fragment int, elapsedTime time.Duration) {
+	for i := range s.RecentBooks {
+		if s.RecentBooks[i].ID == id {
+			s.RecentBooks[i].Name = name
+			s.RecentBooks[i].Fragment = fragment
+			s.RecentBooks[i].ElapsedTime = elapsedTime
+			s.SetCurrentBook(id)
+			return
+		}
+	}
+
+	book := Book{
+		Name:        name,
+		ID:          id,
+		Fragment:    fragment,
+		ElapsedTime: elapsedTime,
+	}
+
+	s.RecentBooks = append(s.RecentBooks, book)
+	s.SetCurrentBook(id)
+
+	if len(s.RecentBooks) > 256 {
+		s.RecentBooks = s.RecentBooks[:256]
+	}
+}
+
+func (s *Service) Book(id string) Book {
+	for _, b := range s.RecentBooks {
+		if b.ID == id {
+			return b
+		}
+	}
+	return Book{}
+}
+
+func (s *Service) SetCurrentBook(id string) {
+	for i, b := range s.RecentBooks {
+		if b.ID == id {
+			copy(s.RecentBooks[1:i+1], s.RecentBooks[0:i])
+			s.RecentBooks[0] = b
+			break
+		}
+	}
+}
+
+func (s *Service) CurrentBook() Book {
+	if len(s.RecentBooks) != 0 {
+		return s.RecentBooks[0]
+	}
+	return Book{}
+}
+
 type Credentials struct {
 	Username string `json:"username"`
 	Password string `json:"password"`
+}
+
+type Services []Service
+
+func (s Services) SetService(service Service) {
+	s = append(s, service)
+	s.SetCurrentService(len(s) - 1)
+	Conf.Services = s
+}
+
+func (s Services) Service(index int) Service {
+	return s[index]
+}
+
+func (s Services) RemoveService(index int) {
+	copy(s[index:], s[index+1:])
+	Conf.Services = Conf.Services[:len(Conf.Services)-1]
+}
+
+func (s Services) SetCurrentService(index int) {
+	s[0], s[index] = s[index], s[0]
+}
+
+func (s Services) CurrentService() (Service, int, error) {
+	if len(s) > 0 {
+		return s[0], 0, nil
+	}
+	return Service{}, 0, fmt.Errorf("services list is empty")
 }
 
 type Config struct {
