@@ -40,9 +40,11 @@ func (s *Service) Book(id string) Book {
 }
 
 func (s *Service) SetCurrentBook(id string) {
-	for i := range s.RecentBooks {
-		if s.RecentBooks[i].ID == id {
-			s.RecentBooks[0], s.RecentBooks[i] = s.RecentBooks[i], s.RecentBooks[0]
+	for i, b := range s.RecentBooks {
+		if b.ID == id {
+			copy(s.RecentBooks[1:i+1], s.RecentBooks[0:i])
+			s.RecentBooks[0] = b
+			break
 		}
 	}
 }
