@@ -78,15 +78,43 @@ type WAVEOUTCAPS struct {
 	dwSupport      uint32
 }
 
-func OutputDevices() map[int]string {
+func OutputDevices() func() (int, string, error) {
 	caps := &WAVEOUTCAPS{}
 	numDevs, _, _ := procWaveOutGetNumDevs.Call()
-	devs := make(map[int]string, int(numDevs))
-	for devID := WAVE_MAPPER; devID < int(numDevs); devID++ {
+	devID := WAVE_MAPPER
+	return func() (int, string, error) {
+		if devID == int(numDevs) {
+			return 0, "", errors.New("no output device")
+		}
 		procWaveOutGetDevCapsW.Call(uintptr(devID), uintptr(unsafe.Pointer(caps)), unsafe.Sizeof(*caps))
-		devs[devID] = windows.UTF16ToString(caps.szPname[:MAXPNAMELEN])
+		devID++
+		return devID - 1, windows.UTF16ToString(caps.szPname[:MAXPNAMELEN]), nil
 	}
-	return devs
+}
+
+func OutputDeviceNames() []string {
+	names := make([]string, 0)
+	device := OutputDevices()
+	for {
+		_, name, err := device()
+		if err != nil {
+			return names
+		}
+		names = append(names, name)
+	}
+}
+
+func OutputDeviceNameToID(devName string) (int, error) {
+	device := OutputDevices()
+	for {
+		id, name, err := device()
+		if err != nil {
+			return 0, errors.New("no device name")
+		}
+		if devName == name {
+			return id, nil
+		}
+	}
 }
 
 type WavePlayer struct {

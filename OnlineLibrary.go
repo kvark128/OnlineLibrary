@@ -45,7 +45,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	gui.SetOutputDeviceMenu(eventCH, winmm.OutputDevices(), config.Conf.General.OutputDevice)
+	gui.SetOutputDeviceMenu(eventCH, winmm.OutputDeviceNames(), config.Conf.General.OutputDevice)
 
 	mng := manager.NewManager(&readingSystemAttributes)
 	go mng.Start(eventCH)

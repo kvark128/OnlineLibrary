@@ -358,20 +358,19 @@ func SetLibraryMenu(eventCH chan events.Event, services []config.Service, curren
 	})
 }
 
-func SetOutputDeviceMenu(eventCH chan events.Event, devices map[int]string, current string) {
+func SetOutputDeviceMenu(eventCH chan events.Event, deviceNames []string, current string) {
 	mainWindow.Synchronize(func() {
 		actions := outputDeviceMenu.Actions()
 		// Delete all elements
 		actions.Clear()
 
 		// Filling the menu with devices
-		for devID := -1; devID < len(devices)-1; devID++ {
-			device := devices[devID]
+		for i, name := range deviceNames {
 			a := walk.NewAction()
-			if device == current || (current == "" && devID == -1) {
+			if name == current || (current == "" && i == 0) {
 				a.SetChecked(true)
 			}
-			a.SetText(device)
+			a.SetText(name)
 			a.Triggered().Attach(func() {
 				for index := 0; index < actions.Len(); index++ {
 					actions.At(index).SetChecked(false)
@@ -379,7 +378,7 @@ func SetOutputDeviceMenu(eventCH chan events.Event, devices map[int]string, curr
 				a.SetChecked(true)
 				eventCH <- events.Event{events.PLAYER_OUTPUT_DEVICE, a.Text()}
 			})
-			actions.Insert(devID+1, a) // devID starts with -1
+			actions.Insert(i, a)
 		}
 	})
 }

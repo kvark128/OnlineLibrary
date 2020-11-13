@@ -70,11 +70,8 @@ func NewPlayer(bookID, bookName string, resources []daisy.Resource, outputDevice
 		}
 	}
 
-	for devID, device := range winmm.OutputDevices() {
-		if outputDevice == device {
-			p.outputDeviceID = devID
-			break
-		}
+	if devID, err := winmm.OutputDeviceNameToID(outputDevice); err == nil {
+		p.outputDeviceID = devID
 	}
 
 	return p
@@ -107,18 +104,18 @@ func (p *Player) SetOutputDevice(outputDevice string) {
 		return
 	}
 
-	for devID, device := range winmm.OutputDevices() {
-		if outputDevice == device && p.outputDeviceID != devID {
-			_, offset := p.PositionInfo()
-			p.Stop()
-			p.Lock()
-			p.outputDeviceID = devID
-			p.Unlock()
-			p.ChangeOffset(offset)
-			p.PlayPause()
-			break
-		}
+	devID, err := winmm.OutputDeviceNameToID(outputDevice)
+	if err != nil || p.outputDeviceID == devID {
+		return
 	}
+
+	_, offset := p.PositionInfo()
+	p.Stop()
+	p.Lock()
+	p.outputDeviceID = devID
+	p.Unlock()
+	p.ChangeOffset(offset)
+	p.PlayPause()
 }
 
 func (p *Player) ChangeSpeed(offset float64) {
