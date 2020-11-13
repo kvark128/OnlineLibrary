@@ -126,7 +126,7 @@ func (s Services) CurrentService() (Service, int, error) {
 }
 
 type General struct {
-	OutputDevice string `json:"outputDevice"`
+	OutputDevice string `json:"output_device"`
 }
 
 type Config struct {
