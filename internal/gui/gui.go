@@ -32,6 +32,7 @@ var (
 	mainWindow                       *walk.MainWindow
 	MainList                         *MainListBox
 	libraryMenu                      *walk.Menu
+	outputDeviceMenu                 *walk.Menu
 	elapseTime, totalTime, fragments *walk.StatusBarItem
 )
 
@@ -249,6 +250,10 @@ func Initialize(eventCH chan events.Event) error {
 							},
 						},
 					},
+					Menu{
+						Text:     "Устройство вывода",
+						AssignTo: &outputDeviceMenu,
+					},
 				},
 			},
 			Menu{
@@ -349,6 +354,32 @@ func SetLibraryMenu(eventCH chan events.Event, services []config.Service, curren
 				eventCH <- events.Event{events.LIBRARY_LOGON, actions.Index(a)}
 			})
 			actions.Insert(i, a)
+		}
+	})
+}
+
+func SetOutputDeviceMenu(eventCH chan events.Event, devices map[int]string, current string) {
+	mainWindow.Synchronize(func() {
+		actions := outputDeviceMenu.Actions()
+		// Delete all elements
+		actions.Clear()
+
+		// Filling the menu with devices
+		for devID := -1; devID < len(devices)-1; devID++ {
+			device := devices[devID]
+			a := walk.NewAction()
+			if device == current || (current == "" && devID == -1) {
+				a.SetChecked(true)
+			}
+			a.SetText(device)
+			a.Triggered().Attach(func() {
+				for index := 0; index < actions.Len(); index++ {
+					actions.At(index).SetChecked(false)
+				}
+				a.SetChecked(true)
+				eventCH <- events.Event{events.PLAYER_OUTPUT_DEVICE, a.Text()}
+			})
+			actions.Insert(devID+1, a) // devID starts with -1
 		}
 	})
 }

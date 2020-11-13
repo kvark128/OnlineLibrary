@@ -28,7 +28,7 @@ type track struct {
 	trackSize   int64
 }
 
-func newTrack(mp3 io.Reader, speed, pitch float64, size int64) (*track, error) {
+func newTrack(mp3 io.Reader, speed, pitch float64, size int64, outputDeviceID int) (*track, error) {
 	trk := &track{}
 	trk.dec = minimp3.NewDecoder(mp3)
 	trk.buffer = make([]byte, 1024*16)
@@ -44,7 +44,7 @@ func newTrack(mp3 io.Reader, speed, pitch float64, size int64) (*track, error) {
 	trk.stream.SetSpeed(speed)
 	trk.stream.SetPitch(pitch)
 	trk.stream.Write(trk.buffer[:n])
-	trk.wp = winmm.NewWavePlayer(trk.channels, trk.sampleRate, 16, len(trk.buffer), winmm.WAVE_MAPPER)
+	trk.wp = winmm.NewWavePlayer(trk.channels, trk.sampleRate, 16, len(trk.buffer), outputDeviceID)
 	trk.trackSize = size
 	return trk, nil
 }

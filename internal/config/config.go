@@ -125,7 +125,12 @@ func (s Services) CurrentService() (Service, int, error) {
 	return Service{}, 0, fmt.Errorf("services list is empty")
 }
 
+type General struct {
+	OutputDevice string `json:"outputDevice"`
+}
+
 type Config struct {
+	General  General  `json:"general,omitempty"`
 	Services Services `json:"services,omitempty"`
 }
 

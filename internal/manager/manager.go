@@ -216,6 +216,15 @@ func (m *Manager) Start(eventCH chan events.Event) {
 			}
 			m.bookplayer.SetTrack(fragment - 1) // Requires an index of fragment
 
+		case events.PLAYER_OUTPUT_DEVICE:
+			device, ok := evt.Data.(string)
+			if !ok {
+				log.Printf("set output device: invalid device")
+				break
+			}
+			config.Conf.General.OutputDevice = device
+			m.bookplayer.SetOutputDevice(device)
+
 		default:
 			log.Printf("Unknown event: %v", evt.EventCode)
 
@@ -277,7 +286,7 @@ func (m *Manager) logon(service config.Service) error {
 	}
 
 	gui.SetMainWindowTitle(book.Name)
-	m.bookplayer = player.NewPlayer(book.ID, book.Name, r.Resources)
+	m.bookplayer = player.NewPlayer(book.ID, book.Name, r.Resources, config.Conf.General.OutputDevice)
 	m.bookplayer.SetTrack(book.Fragment)
 	m.bookplayer.ChangeOffset(book.ElapsedTime)
 	return nil
@@ -409,7 +418,7 @@ func (m *Manager) playBook(index int) {
 	service, _, _ := config.Conf.Services.CurrentService()
 	b := service.Book(book.ID)
 	gui.SetMainWindowTitle(book.Label.Text)
-	m.bookplayer = player.NewPlayer(book.ID, book.Label.Text, r.Resources)
+	m.bookplayer = player.NewPlayer(book.ID, book.Label.Text, r.Resources, config.Conf.General.OutputDevice)
 	m.bookplayer.SetTrack(b.Fragment)
 	m.bookplayer.ChangeOffset(b.ElapsedTime)
 	m.bookplayer.PlayPause()

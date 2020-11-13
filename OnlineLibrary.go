@@ -9,6 +9,7 @@ import (
 	"github.com/kvark128/OnlineLibrary/internal/events"
 	"github.com/kvark128/OnlineLibrary/internal/gui"
 	"github.com/kvark128/OnlineLibrary/internal/manager"
+	"github.com/kvark128/OnlineLibrary/internal/winmm"
 	daisy "github.com/kvark128/daisyonline"
 )
 
@@ -43,6 +44,8 @@ func main() {
 	if err := gui.Initialize(eventCH); err != nil {
 		log.Fatal(err)
 	}
+
+	gui.SetOutputDeviceMenu(eventCH, winmm.OutputDevices(), config.Conf.General.OutputDevice)
 
 	mng := manager.NewManager(&readingSystemAttributes)
 	go mng.Start(eventCH)
