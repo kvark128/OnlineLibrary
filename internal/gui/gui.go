@@ -131,6 +131,11 @@ func Initialize(eventCH chan events.Event) error {
 						OnTriggered: func() { eventCH <- events.Event{events.PLAYER_PLAY_PAUSE, nil} },
 					},
 					Action{
+						Text:        "Остановить",
+						Shortcut:    Shortcut{walk.ModControl, walk.KeySpace},
+						OnTriggered: func() { eventCH <- events.Event{events.PLAYER_STOP, nil} },
+					},
+					Action{
 						Text:        "У&величить громкость",
 						Shortcut:    Shortcut{walk.ModControl, walk.KeyUp},
 						OnTriggered: func() { eventCH <- events.Event{events.PLAYER_VOLUME_UP, nil} },
