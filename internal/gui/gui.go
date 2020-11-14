@@ -250,6 +250,11 @@ func Initialize(eventCH chan events.Event) error {
 							},
 						},
 					},
+				},
+			},
+			Menu{
+				Text: "&Настройки",
+				Items: []MenuItem{
 					Menu{
 						Text:     "Устройство вывода",
 						AssignTo: &outputDeviceMenu,
