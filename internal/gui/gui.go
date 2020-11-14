@@ -11,23 +11,6 @@ import (
 	. "github.com/lxn/walk/declarative"
 )
 
-const (
-	DlgCmdOK     = walk.DlgCmdOK
-	DlgCmdCancel = walk.DlgCmdCancel
-	DlgCmdYes    = walk.DlgCmdYes
-	DlgCmdNo     = walk.DlgCmdNo
-)
-
-const (
-	MsgBoxOK              = walk.MsgBoxOK
-	MsgBoxIconInformation = walk.MsgBoxIconInformation
-	MsgBoxIconError       = walk.MsgBoxIconError
-	MsgBoxIconWarning     = walk.MsgBoxIconWarning
-	MsgBoxIconExclamation = walk.MsgBoxIconExclamation
-	MsgBoxIconAsterisk    = walk.MsgBoxIconAsterisk
-	MsgBoxUserIcon        = walk.MsgBoxUserIcon
-)
-
 var (
 	mainWindow                       *walk.MainWindow
 	MainList                         *MainListBox
@@ -273,7 +256,7 @@ func Initialize(eventCH chan events.Event) error {
 						Text: "О программе",
 						OnTriggered: func() {
 							text := fmt.Sprintf("%v версия %v", config.ProgramName, config.ProgramVersion)
-							walk.MsgBox(mainWindow, "О программе", text, MsgBoxOK|MsgBoxIconInformation)
+							walk.MsgBox(mainWindow, "О программе", text, walk.MsgBoxOK|walk.MsgBoxIconInformation)
 						},
 					},
 				},
@@ -512,14 +495,14 @@ func TextEntryDialog(title, msg string, text *string) int {
 						Text:     "OK",
 						OnClicked: func() {
 							*text = textLE.Text()
-							dlg.Close(DlgCmdOK)
+							dlg.Close(walk.DlgCmdOK)
 						},
 					},
 					PushButton{
 						AssignTo: &CancelPB,
 						Text:     "Отмена",
 						OnClicked: func() {
-							dlg.Close(DlgCmdCancel)
+							dlg.Close(walk.DlgCmdCancel)
 						},
 					},
 				},
@@ -535,54 +518,10 @@ func TextEntryDialog(title, msg string, text *string) int {
 	return <-result
 }
 
-func QuestionDialog(title, msg string) int {
-	var (
-		dlg         *walk.Dialog
-		yesPB, noPB *walk.PushButton
-	)
-
-	var layout = Dialog{
-		Title:         title,
-		AssignTo:      &dlg,
-		Layout:        VBox{},
-		CancelButton:  &noPB,
-		DefaultButton: &yesPB,
-		Children: []Widget{
-
-			TextLabel{Text: msg},
-
-			Composite{
-				Layout: HBox{},
-				Children: []Widget{
-					HSpacer{},
-					PushButton{
-						AssignTo:  &yesPB,
-						Text:      "Да",
-						OnClicked: func() { dlg.Close(DlgCmdYes) },
-					},
-					PushButton{
-						AssignTo:  &noPB,
-						Text:      "Нет",
-						OnClicked: func() { dlg.Close(DlgCmdNo) },
-					},
-				},
-			},
-		},
-	}
-
+func MessageBox(title, text string, style walk.MsgBoxStyle) int {
 	result := make(chan int)
 	mainWindow.Synchronize(func() {
-		layout.Run(mainWindow)
-		result <- dlg.Result()
+		result <- walk.MsgBox(mainWindow, title, text, style)
 	})
 	return <-result
-}
-
-func MessageBox(title, text string, style walk.MsgBoxStyle) {
-	done := make(chan bool)
-	mainWindow.Synchronize(func() {
-		walk.MsgBox(mainWindow, title, text, style)
-		done <- true
-	})
-	<-done
 }

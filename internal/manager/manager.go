@@ -18,6 +18,7 @@ import (
 	"github.com/kvark128/OnlineLibrary/internal/player"
 	"github.com/kvark128/OnlineLibrary/internal/util"
 	daisy "github.com/kvark128/daisyonline"
+	"github.com/lxn/walk"
 )
 
 type Manager struct {
@@ -93,7 +94,7 @@ func (m *Manager) Start(eventCH chan events.Event) {
 			}
 			if err := m.logon(service); err != nil {
 				log.Printf("logon: %v", err)
-				gui.MessageBox("Ошибка", fmt.Sprintf("logon: %v", err), gui.MsgBoxOK|gui.MsgBoxIconError)
+				gui.MessageBox("Ошибка", fmt.Sprintf("logon: %v", err), walk.MsgBoxOK|walk.MsgBoxIconError)
 				break
 			}
 			config.Conf.Services.SetCurrentService(index)
@@ -102,13 +103,13 @@ func (m *Manager) Start(eventCH chan events.Event) {
 
 		case events.LIBRARY_ADD:
 			var service config.Service
-			if gui.Credentials(&service) != gui.DlgCmdOK || service.Name == "" {
+			if gui.Credentials(&service) != walk.DlgCmdOK || service.Name == "" {
 				log.Printf("adding library: pressed Cancel button or len(service.Name) == 0")
 				break
 			}
 			if err := m.logon(service); err != nil {
 				log.Printf("logon: %v", err)
-				gui.MessageBox("Ошибка", fmt.Sprintf("logon: %v", err), gui.MsgBoxOK|gui.MsgBoxIconError)
+				gui.MessageBox("Ошибка", fmt.Sprintf("logon: %v", err), walk.MsgBoxOK|walk.MsgBoxIconError)
 				break
 			}
 			config.Conf.Services.SetService(service)
@@ -125,7 +126,7 @@ func (m *Manager) Start(eventCH chan events.Event) {
 				break
 			}
 			msg := fmt.Sprintf("Вы действительно хотите удалить учётную запись %v?\nТакже будут удалены сохранённые позиции всех книг этой библиотеки.\nЭто действие не может быть отменено.", service.Name)
-			if gui.QuestionDialog("Удаление учётной записи", msg) != gui.DlgCmdYes {
+			if gui.MessageBox("Удаление учётной записи", msg, walk.MsgBoxYesNo|walk.MsgBoxIconQuestion) != walk.DlgCmdYes {
 				break
 			}
 			m.logoff()
@@ -207,7 +208,7 @@ func (m *Manager) Start(eventCH chan events.Event) {
 
 		case events.PLAYER_GOTO:
 			var text string
-			if gui.TextEntryDialog("Переход к фрагменту", "Введите номер фрагмента:", &text) != gui.DlgCmdOK {
+			if gui.TextEntryDialog("Переход к фрагменту", "Введите номер фрагмента:", &text) != walk.DlgCmdOK {
 				break
 			}
 			fragment, err := strconv.Atoi(text)
@@ -305,14 +306,14 @@ func (m *Manager) setQuestions(response ...daisy.UserResponse) {
 	if err != nil {
 		msg := fmt.Sprintf("GetQuestions: %s", err)
 		log.Printf(msg)
-		gui.MessageBox("Ошибка", msg, gui.MsgBoxOK|gui.MsgBoxIconError)
+		gui.MessageBox("Ошибка", msg, walk.MsgBoxOK|walk.MsgBoxIconError)
 		m.questions = nil
 		gui.MainList.SetItems([]string{}, "")
 		return
 	}
 
 	if questions.Label.Text != "" {
-		gui.MessageBox("Предупреждение", questions.Label.Text, gui.MsgBoxOK|gui.MsgBoxIconWarning)
+		gui.MessageBox("Предупреждение", questions.Label.Text, walk.MsgBoxOK|walk.MsgBoxIconWarning)
 		// Return to the main menu of the library
 		m.setQuestions(daisy.UserResponse{QuestionID: daisy.Default})
 		return
@@ -349,7 +350,7 @@ func (m *Manager) setMultipleChoiceQuestion(index int) {
 func (m *Manager) setInputQuestion() {
 	for _, inputQuestion := range m.questions.InputQuestion {
 		var text string
-		if gui.TextEntryDialog("Поиск", inputQuestion.Label.Text, &text) != gui.DlgCmdOK {
+		if gui.TextEntryDialog("Поиск", inputQuestion.Label.Text, &text) != walk.DlgCmdOK {
 			// Return to the main menu of the library
 			m.setQuestions(daisy.UserResponse{QuestionID: daisy.Default})
 			return
@@ -366,14 +367,14 @@ func (m *Manager) setContent(contentID string) {
 	if err != nil {
 		msg := fmt.Sprintf("GetContentList: %s", err)
 		log.Printf(msg)
-		gui.MessageBox("Ошибка", msg, gui.MsgBoxOK|gui.MsgBoxIconError)
+		gui.MessageBox("Ошибка", msg, walk.MsgBoxOK|walk.MsgBoxIconError)
 		m.questions = nil
 		gui.MainList.SetItems([]string{}, "")
 		return
 	}
 
 	if len(contentList.ContentItems) == 0 {
-		gui.MessageBox("Предупреждение", "Список книг пуст", gui.MsgBoxOK|gui.MsgBoxIconWarning)
+		gui.MessageBox("Предупреждение", "Список книг пуст", walk.MsgBoxOK|walk.MsgBoxIconWarning)
 		// Return to the main menu of the library
 		m.setQuestions(daisy.UserResponse{QuestionID: daisy.Default})
 		return
@@ -411,7 +412,7 @@ func (m *Manager) playBook(index int) {
 	if err != nil {
 		msg := fmt.Sprintf("GetContentResources: %s", err)
 		log.Printf(msg)
-		gui.MessageBox("Ошибка", msg, gui.MsgBoxOK|gui.MsgBoxIconError)
+		gui.MessageBox("Ошибка", msg, walk.MsgBoxOK|walk.MsgBoxIconError)
 		return
 	}
 
@@ -431,7 +432,7 @@ func (m *Manager) downloadBook(index int) {
 	if err != nil {
 		msg := fmt.Sprintf("GetContentResources: %s", err)
 		log.Printf(msg)
-		gui.MessageBox("Ошибка", msg, gui.MsgBoxOK|gui.MsgBoxIconError)
+		gui.MessageBox("Ошибка", msg, walk.MsgBoxOK|walk.MsgBoxIconError)
 		return
 	}
 
@@ -498,15 +499,15 @@ func (m *Manager) downloadBook(index int) {
 
 		dlg.Cancel()
 		if stop {
-			gui.MessageBox("Предупреждение", "Загрузка отменена пользователем", gui.MsgBoxOK|gui.MsgBoxIconWarning)
+			gui.MessageBox("Предупреждение", "Загрузка отменена пользователем", walk.MsgBoxOK|walk.MsgBoxIconWarning)
 			return
 		}
 
 		if err != nil {
-			gui.MessageBox("Ошибка", err.Error(), gui.MsgBoxOK|gui.MsgBoxIconWarning)
+			gui.MessageBox("Ошибка", err.Error(), walk.MsgBoxOK|walk.MsgBoxIconWarning)
 			return
 		}
-		gui.MessageBox("Уведомление", "Книга успешно загружена", gui.MsgBoxOK|gui.MsgBoxIconWarning)
+		gui.MessageBox("Уведомление", "Книга успешно загружена", walk.MsgBoxOK|walk.MsgBoxIconWarning)
 	}()
 }
 
@@ -516,10 +517,10 @@ func (m *Manager) removeBook(index int) {
 	if err != nil {
 		msg := fmt.Sprintf("ReturnContent: %s", err)
 		log.Printf(msg)
-		gui.MessageBox("Ошибка", msg, gui.MsgBoxOK|gui.MsgBoxIconError)
+		gui.MessageBox("Ошибка", msg, walk.MsgBoxOK|walk.MsgBoxIconError)
 		return
 	}
-	gui.MessageBox("Уведомление", fmt.Sprintf("%s удалена с книжной полки", book.Label.Text), gui.MsgBoxOK|gui.MsgBoxIconWarning)
+	gui.MessageBox("Уведомление", fmt.Sprintf("%s удалена с книжной полки", book.Label.Text), walk.MsgBoxOK|walk.MsgBoxIconWarning)
 }
 
 func (m *Manager) issueBook(index int) {
@@ -528,10 +529,10 @@ func (m *Manager) issueBook(index int) {
 	if err != nil {
 		msg := fmt.Sprintf("IssueContent: %s", err)
 		log.Printf(msg)
-		gui.MessageBox("Ошибка", msg, gui.MsgBoxOK|gui.MsgBoxIconError)
+		gui.MessageBox("Ошибка", msg, walk.MsgBoxOK|walk.MsgBoxIconError)
 		return
 	}
-	gui.MessageBox("Уведомление", fmt.Sprintf("%s добавлена на книжную полку", book.Label.Text), gui.MsgBoxOK|gui.MsgBoxIconWarning)
+	gui.MessageBox("Уведомление", fmt.Sprintf("%s добавлена на книжную полку", book.Label.Text), walk.MsgBoxOK|walk.MsgBoxIconWarning)
 }
 
 func (m *Manager) showBookDescription(index int) {
@@ -540,15 +541,15 @@ func (m *Manager) showBookDescription(index int) {
 	if err != nil {
 		msg := fmt.Sprintf("GetContentMetadata: %v", err)
 		log.Printf(msg)
-		gui.MessageBox("Ошибка", msg, gui.MsgBoxOK|gui.MsgBoxIconError)
+		gui.MessageBox("Ошибка", msg, walk.MsgBoxOK|walk.MsgBoxIconError)
 		return
 	}
 
 	text := fmt.Sprintf("%v", strings.Join(md.Metadata.Description, "\r\n"))
 	if text == "" {
-		gui.MessageBox("Ошибка", "Нет доступной информации о книге", gui.MsgBoxOK|gui.MsgBoxIconError)
+		gui.MessageBox("Ошибка", "Нет доступной информации о книге", walk.MsgBoxOK|walk.MsgBoxIconError)
 		return
 	}
 
-	gui.MessageBox("Информация о книге", text, gui.MsgBoxOK|gui.MsgBoxIconWarning)
+	gui.MessageBox("Информация о книге", text, walk.MsgBoxOK|walk.MsgBoxIconWarning)
 }
