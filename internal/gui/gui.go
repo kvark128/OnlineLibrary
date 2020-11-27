@@ -459,7 +459,10 @@ func Credentials(service *config.Service) int {
 
 	result := make(chan int)
 	mainWindow.Synchronize(func() {
-		layout.Run(mainWindow)
+		layout.Create(mainWindow)
+		NewFixedPushButton(OkPB)
+		NewFixedPushButton(CancelPB)
+		dlg.Run()
 		result <- dlg.Result()
 	})
 	return <-result
@@ -512,7 +515,10 @@ func TextEntryDialog(title, msg string, text *string) int {
 
 	result := make(chan int)
 	mainWindow.Synchronize(func() {
-		layout.Run(mainWindow)
+		layout.Create(mainWindow)
+		NewFixedPushButton(OkPB)
+		NewFixedPushButton(CancelPB)
+		dlg.Run()
 		result <- dlg.Result()
 	})
 	return <-result
