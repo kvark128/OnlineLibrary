@@ -208,7 +208,7 @@ func (m *Manager) Start(eventCH chan events.Event) {
 
 		case events.PLAYER_GOTO:
 			var text string
-			if gui.TextEntryDialog("Переход к фрагменту", "Введите номер фрагмента:", &text) != walk.DlgCmdOK {
+			if gui.TextEntryDialog("Переход к фрагменту", "Введите номер фрагмента:", "", &text) != walk.DlgCmdOK {
 				break
 			}
 			fragment, err := strconv.Atoi(text)
@@ -216,6 +216,22 @@ func (m *Manager) Start(eventCH chan events.Event) {
 				break
 			}
 			m.bookplayer.SetFragment(fragment - 1) // Requires an index of fragment
+
+		case events.PLAYER_GOTO_OFFSET:
+			var text string
+			_, pos := m.bookplayer.PositionInfo()
+			if gui.TextEntryDialog("Переход к времени фрагмента", "Введите время фрагмента:", util.FmtDuration(pos), &text) != walk.DlgCmdOK {
+				break
+			}
+			var hours, minutes, seconds time.Duration
+			_, err := fmt.Sscanf(text, "%d:%d:%d", &hours, &minutes, &seconds)
+			if err != nil {
+				log.Printf("goto offset: %v", err)
+				break
+			}
+			offset := time.Hour*hours + time.Minute*minutes + time.Second*seconds
+			_, pos = m.bookplayer.PositionInfo() // While requesting a new position, playback can continue. We need to get an up-to-date position
+			m.bookplayer.ChangeOffset(offset - pos)
 
 		case events.PLAYER_OUTPUT_DEVICE:
 			device, ok := evt.Data.(string)
@@ -350,7 +366,7 @@ func (m *Manager) setMultipleChoiceQuestion(index int) {
 func (m *Manager) setInputQuestion() {
 	for _, inputQuestion := range m.questions.InputQuestion {
 		var text string
-		if gui.TextEntryDialog("Поиск", inputQuestion.Label.Text, &text) != walk.DlgCmdOK {
+		if gui.TextEntryDialog("Поиск", inputQuestion.Label.Text, "", &text) != walk.DlgCmdOK {
 			// Return to the main menu of the library
 			m.setQuestions(daisy.UserResponse{QuestionID: daisy.Default})
 			return

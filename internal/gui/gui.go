@@ -157,6 +157,11 @@ func Initialize(eventCH chan events.Event) error {
 						Text: "Переход по фрагменту",
 						Items: []MenuItem{
 							Action{
+								Text:        "На указанное время",
+								Shortcut:    Shortcut{walk.ModShift, walk.KeyG},
+								OnTriggered: func() { eventCH <- events.Event{events.PLAYER_GOTO_OFFSET, nil} },
+							},
+							Action{
 								Text:        "На 5 сек. вперёд",
 								Shortcut:    Shortcut{0, walk.KeyRight},
 								OnTriggered: func() { eventCH <- rewind_5sec_forward },
@@ -468,7 +473,7 @@ func Credentials(service *config.Service) int {
 	return <-result
 }
 
-func TextEntryDialog(title, msg string, text *string) int {
+func TextEntryDialog(title, msg, value string, text *string) int {
 	var (
 		dlg            *walk.Dialog
 		textLE         *walk.LineEdit
@@ -486,6 +491,7 @@ func TextEntryDialog(title, msg string, text *string) int {
 			TextLabel{Text: msg},
 			LineEdit{
 				Accessibility: Accessibility{Name: msg},
+				Text:          value,
 				AssignTo:      &textLE,
 			},
 
