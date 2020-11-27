@@ -87,15 +87,6 @@ func (mlb *MainListBox) WndProc(hwnd win.HWND, msg uint32, wParam, lParam uintpt
 			case walk.KeyRight:
 				mlb.eventCH <- rewind_1min_forward
 				return 0
-			case walk.KeyC:
-				mlb.eventCH <- events.Event{events.PLAYER_PITCH_UP, nil}
-				return 0
-			case walk.KeyX:
-				mlb.eventCH <- events.Event{events.PLAYER_PITCH_DOWN, nil}
-				return 0
-			case walk.KeyZ:
-				mlb.eventCH <- events.Event{events.PLAYER_PITCH_RESET, nil}
-				return 0
 			}
 		}
 

@@ -206,7 +206,7 @@ func (m *Manager) Start(eventCH chan events.Event) {
 		case events.PLAYER_FIRST:
 			m.bookplayer.SetFragment(0)
 
-		case events.PLAYER_GOTO:
+		case events.PLAYER_GOTO_FRAGMENT:
 			var text string
 			if gui.TextEntryDialog("Переход к фрагменту", "Введите номер фрагмента:", "", &text) != walk.DlgCmdOK {
 				break
