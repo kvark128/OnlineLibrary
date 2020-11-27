@@ -176,17 +176,17 @@ func (p *Player) SetPitch(pitch float64) {
 	}
 }
 
-func (p *Player) ChangeTrack(offset int) {
+func (p *Player) ChangeFragment(offset int) {
 	if p == nil {
 		return
 	}
 	p.Lock()
 	newFragment := p.fragment + offset
 	p.Unlock()
-	p.SetTrack(newFragment)
+	p.SetFragment(newFragment)
 }
 
-func (p *Player) SetTrack(fragment int) {
+func (p *Player) SetFragment(fragment int) {
 	if p == nil {
 		return
 	}
@@ -278,13 +278,14 @@ func (p *Player) start(startFragment int) {
 		uri = filepath.Join(config.UserData(), util.ReplaceProhibitCharacters(p.bookName), r.LocalURI)
 		if info, e := os.Stat(uri); e == nil {
 			if !info.IsDir() && info.Size() == r.Size {
-				// track already exist
+				// fragment already exists on disk
+				// we use it to reduce the load on the server
 				src, _ = os.Open(uri)
 			}
 		}
 
 		if src == nil {
-			// There is no track on the disc. Trying to get it from the network
+			// There is no fragment on the disc. Trying to get it from the network
 			uri = r.URI
 			src, err = connection.NewConnection(uri)
 			if err != nil {

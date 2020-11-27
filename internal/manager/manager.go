@@ -166,10 +166,10 @@ func (m *Manager) Start(eventCH chan events.Event) {
 			m.bookplayer.Stop()
 
 		case events.PLAYER_NEXT_TRACK:
-			m.bookplayer.ChangeTrack(+1)
+			m.bookplayer.ChangeFragment(+1)
 
 		case events.PLAYER_PREVIOUS_TRACK:
-			m.bookplayer.ChangeTrack(-1)
+			m.bookplayer.ChangeFragment(-1)
 
 		case events.PLAYER_SPEED_RESET:
 			m.bookplayer.SetSpeed(player.DEFAULT_SPEED)
@@ -204,7 +204,7 @@ func (m *Manager) Start(eventCH chan events.Event) {
 			m.bookplayer.ChangeOffset(offset)
 
 		case events.PLAYER_FIRST:
-			m.bookplayer.SetTrack(0)
+			m.bookplayer.SetFragment(0)
 
 		case events.PLAYER_GOTO:
 			var text string
@@ -215,7 +215,7 @@ func (m *Manager) Start(eventCH chan events.Event) {
 			if err != nil {
 				break
 			}
-			m.bookplayer.SetTrack(fragment - 1) // Requires an index of fragment
+			m.bookplayer.SetFragment(fragment - 1) // Requires an index of fragment
 
 		case events.PLAYER_OUTPUT_DEVICE:
 			device, ok := evt.Data.(string)
@@ -288,7 +288,7 @@ func (m *Manager) logon(service config.Service) error {
 
 	gui.SetMainWindowTitle(book.Name)
 	m.bookplayer = player.NewPlayer(book.ID, book.Name, r.Resources, config.Conf.General.OutputDevice)
-	m.bookplayer.SetTrack(book.Fragment)
+	m.bookplayer.SetFragment(book.Fragment)
 	m.bookplayer.ChangeOffset(book.ElapsedTime)
 	return nil
 }
@@ -420,7 +420,7 @@ func (m *Manager) playBook(index int) {
 	b := service.Book(book.ID)
 	gui.SetMainWindowTitle(book.Label.Text)
 	m.bookplayer = player.NewPlayer(book.ID, book.Label.Text, r.Resources, config.Conf.General.OutputDevice)
-	m.bookplayer.SetTrack(b.Fragment)
+	m.bookplayer.SetFragment(b.Fragment)
 	m.bookplayer.ChangeOffset(b.ElapsedTime)
 	m.bookplayer.PlayPause()
 }
