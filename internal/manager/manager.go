@@ -208,7 +208,8 @@ func (m *Manager) Start(eventCH chan events.Event) {
 
 		case events.PLAYER_GOTO_FRAGMENT:
 			var text string
-			if gui.TextEntryDialog("Переход к фрагменту", "Введите номер фрагмента:", "", &text) != walk.DlgCmdOK {
+			fragment, _ := m.bookplayer.PositionInfo()
+			if gui.TextEntryDialog("Переход к фрагменту", "Введите номер фрагмента:", strconv.Itoa(fragment+1), &text) != walk.DlgCmdOK {
 				break
 			}
 			fragment, err := strconv.Atoi(text)
@@ -217,10 +218,10 @@ func (m *Manager) Start(eventCH chan events.Event) {
 			}
 			m.bookplayer.SetFragment(fragment - 1) // Requires an index of fragment
 
-		case events.PLAYER_GOTO_OFFSET:
+		case events.PLAYER_GOTO_POSITION:
 			var text string
 			_, pos := m.bookplayer.PositionInfo()
-			if gui.TextEntryDialog("Переход к времени фрагмента", "Введите время фрагмента:", util.FmtDuration(pos), &text) != walk.DlgCmdOK {
+			if gui.TextEntryDialog("Переход к позиции", "Введите позицию фрагмента:", util.FmtDuration(pos), &text) != walk.DlgCmdOK {
 				break
 			}
 			var hours, minutes, seconds time.Duration

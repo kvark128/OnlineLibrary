@@ -157,9 +157,9 @@ func Initialize(eventCH chan events.Event) error {
 						Text: "Переход по фрагменту",
 						Items: []MenuItem{
 							Action{
-								Text:        "На указанное время",
+								Text:        "На указанную позицию",
 								Shortcut:    Shortcut{walk.ModShift, walk.KeyG},
-								OnTriggered: func() { eventCH <- events.Event{events.PLAYER_GOTO_OFFSET, nil} },
+								OnTriggered: func() { eventCH <- events.Event{events.PLAYER_GOTO_POSITION, nil} },
 							},
 							Action{
 								Text:        "На 5 сек. вперёд",
