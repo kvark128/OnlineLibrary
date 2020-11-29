@@ -3,6 +3,7 @@ package player
 import (
 	"fmt"
 	"io"
+	"log"
 	"sync"
 	"time"
 
@@ -70,7 +71,12 @@ func (trk *track) play(playing *util.Flag) {
 			}
 			n, _ := trk.stream.Read(trk.buffer)
 			trk.Unlock()
-			trk.wp.Write(trk.buffer[:n])
+			if _, err := trk.wp.Write(trk.buffer[:n]); err != nil {
+				log.Printf("wavePlayer: %v", err)
+				trk.wp.Close()
+				trk.wp = winmm.NewWavePlayer(trk.channels, trk.sampleRate, 16, len(trk.buffer), winmm.WAVE_MAPPER)
+				trk.wp.Write(trk.buffer[:n])
+			}
 		}
 		if err != nil {
 			break

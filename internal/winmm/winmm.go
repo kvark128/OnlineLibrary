@@ -2,6 +2,7 @@ package winmm
 
 import (
 	"errors"
+	"fmt"
 	"sync"
 	"unsafe"
 
@@ -9,11 +10,12 @@ import (
 )
 
 const (
-	WAVE_FORMAT_PCM = 1
-	WAVE_MAPPER     = -1
-	WHDR_DONE       = 1
-	CALLBACK_EVENT  = 0x50000
-	MAXPNAMELEN     = 32
+	WAVE_FORMAT_PCM  = 1
+	WAVE_MAPPER      = -1
+	WHDR_DONE        = 1
+	CALLBACK_EVENT   = 0x50000
+	MAXPNAMELEN      = 32
+	MMSYSERR_NOERROR = 0
 )
 
 var winmm = windows.NewLazySystemDLL("winmm.dll")
@@ -32,6 +34,7 @@ var (
 	procWaveOutReset           = winmm.NewProc("waveOutReset")
 	procWaveOutGetVolume       = winmm.NewProc("waveOutGetVolume")
 	procWaveOutSetVolume       = winmm.NewProc("waveOutSetVolume")
+	procWaveOutGetErrorTextW   = winmm.NewProc("waveOutGetErrorTextW")
 	procWaveOutClose           = winmm.NewProc("waveOutClose")
 )
 
@@ -124,14 +127,13 @@ type WavePlayer struct {
 	waveout       uintptr
 	waveout_event windows.Handle
 	prev_whdr     *WAVEHDR
-	buffer        []byte
-	chanBuffers   chan []byte
+	buffers       chan []byte
 }
 
 func NewWavePlayer(channels, samplesPerSec, bitsPerSample, buffSize, outputDevice int) *WavePlayer {
 	wp := &WavePlayer{
 		outputDevice: outputDevice,
-		chanBuffers:  make(chan []byte, 2),
+		buffers:      make(chan []byte, 2),
 	}
 
 	wp.wfx = &WAVEFORMATEX{
@@ -143,33 +145,50 @@ func NewWavePlayer(channels, samplesPerSec, bitsPerSample, buffSize, outputDevic
 		nAvgBytesPerSec: uint32(bitsPerSample) / 8 * uint32(channels) * uint32(samplesPerSec),
 	}
 
-	wp.chanBuffers <- make([]byte, buffSize)
-	wp.chanBuffers <- make([]byte, buffSize)
+	wp.buffers <- make([]byte, buffSize)
+	wp.buffers <- make([]byte, buffSize)
 
 	wp.waveout_event, _ = windows.CreateEvent(nil, 0, 0, nil)
 	procWaveOutOpen.Call(uintptr(unsafe.Pointer(&wp.waveout)), uintptr(wp.outputDevice), uintptr(unsafe.Pointer(wp.wfx)), uintptr(wp.waveout_event), 0, CALLBACK_EVENT)
 	return wp
 }
 
+func (wp *WavePlayer) error(mmrError uintptr) error {
+	buf := make([]uint16, 256)
+	wp.callMutex.Lock()
+	r, _, _ := procWaveOutGetErrorTextW.Call(mmrError, uintptr(unsafe.Pointer(&buf[0])), uintptr(len(buf)))
+	wp.callMutex.Unlock()
+	if r != MMSYSERR_NOERROR {
+		return fmt.Errorf("unknown error: %v", mmrError)
+	}
+	return errors.New(windows.UTF16PtrToString(&buf[0]))
+}
+
 func (wp *WavePlayer) Write(data []byte) (int, error) {
-	wp.buffer = <-wp.chanBuffers
-	length := copy(wp.buffer, data)
+	buffer := <-wp.buffers
+	defer func() { wp.buffers <- buffer }()
+	length := copy(buffer, data)
 	if length == 0 {
 		return 0, nil
 	}
 
 	whdr := &WAVEHDR{
-		lpData:         uintptr(unsafe.Pointer(&wp.buffer[0])),
+		lpData:         uintptr(unsafe.Pointer(&buffer[0])),
 		dwBufferLength: uint32(length),
 	}
 
 	wp.callMutex.Lock()
-	procWaveOutPrepareHeader.Call(wp.waveout, uintptr(unsafe.Pointer(whdr)), unsafe.Sizeof(*whdr))
-	procWaveOutWrite.Call(wp.waveout, uintptr(unsafe.Pointer(whdr)), unsafe.Sizeof(*whdr))
+	r, _, _ := procWaveOutPrepareHeader.Call(wp.waveout, uintptr(unsafe.Pointer(whdr)), unsafe.Sizeof(*whdr))
+	if r == MMSYSERR_NOERROR {
+		r, _, _ = procWaveOutWrite.Call(wp.waveout, uintptr(unsafe.Pointer(whdr)), unsafe.Sizeof(*whdr))
+	}
 	wp.callMutex.Unlock()
 
 	wp.Sync()
-	wp.chanBuffers <- wp.buffer
+
+	if r != MMSYSERR_NOERROR {
+		return 0, wp.error(r)
+	}
 
 	wp.prev_whdr = whdr
 	return length, nil
