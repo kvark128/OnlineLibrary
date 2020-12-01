@@ -12,7 +12,7 @@ import (
 const (
 	ProgramAuthor  = "Kvark <kvark128@yandex.ru>"
 	ProgramName    = "OnlineLibrary"
-	ProgramVersion = "2020.11.30"
+	ProgramVersion = "2020.12.01"
 	ConfigFile     = "config.json"
 	LogFile        = "session.log"
 )
@@ -97,41 +97,38 @@ type Credentials struct {
 	Password string `json:"password"`
 }
 
-type Services []Service
-
-func (s Services) SetService(service Service) {
-	s = append(s, service)
-	s.SetCurrentService(len(s) - 1)
-	Conf.Services = s
-}
-
-func (s Services) Service(index int) Service {
-	return s[index]
-}
-
-func (s Services) RemoveService(index int) {
-	copy(s[index:], s[index+1:])
-	Conf.Services = Conf.Services[:len(Conf.Services)-1]
-}
-
-func (s Services) SetCurrentService(index int) {
-	s[0], s[index] = s[index], s[0]
-}
-
-func (s Services) CurrentService() (Service, int, error) {
-	if len(s) > 0 {
-		return s[0], 0, nil
-	}
-	return Service{}, 0, fmt.Errorf("services list is empty")
-}
-
 type General struct {
 	OutputDevice string `json:"output_device"`
 }
 
 type Config struct {
-	General  General  `json:"general,omitempty"`
-	Services Services `json:"services,omitempty"`
+	General  General   `json:"general,omitempty"`
+	Services []Service `json:"services,omitempty"`
+}
+
+func (cfg *Config) SetService(service *Service) {
+	cfg.Services = append(cfg.Services, *service)
+	cfg.SetCurrentService(len(cfg.Services) - 1)
+}
+
+func (cfg *Config) Service(index int) *Service {
+	return &cfg.Services[index]
+}
+
+func (cfg *Config) RemoveService(index int) {
+	copy(cfg.Services[index:], cfg.Services[index+1:])
+	cfg.Services = cfg.Services[:len(cfg.Services)-1]
+}
+
+func (cfg *Config) SetCurrentService(index int) {
+	cfg.Services[0], cfg.Services[index] = cfg.Services[index], cfg.Services[0]
+}
+
+func (cfg *Config) CurrentService() (*Service, int, error) {
+	if len(cfg.Services) > 0 {
+		return &cfg.Services[0], 0, nil
+	}
+	return &Service{}, 0, fmt.Errorf("services list is empty")
 }
 
 func UserData() string {

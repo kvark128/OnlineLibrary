@@ -78,7 +78,7 @@ func (m *Manager) Start(eventCH chan events.Event) {
 			m.setQuestions(daisy.UserResponse{QuestionID: daisy.Back})
 
 		case events.LIBRARY_LOGON:
-			service, index, err := config.Conf.Services.CurrentService()
+			service, index, err := config.Conf.CurrentService()
 			if err != nil {
 				break
 			}
@@ -90,20 +90,20 @@ func (m *Manager) Start(eventCH chan events.Event) {
 					log.Printf("logon: invalid index")
 					break
 				}
-				service = config.Conf.Services.Service(index)
+				service = config.Conf.Service(index)
 			}
 			if err := m.logon(service); err != nil {
 				log.Printf("logon: %v", err)
 				gui.MessageBox("Ошибка", fmt.Sprintf("logon: %v", err), walk.MsgBoxOK|walk.MsgBoxIconError)
 				break
 			}
-			config.Conf.Services.SetCurrentService(index)
-			_, index, _ = config.Conf.Services.CurrentService()
+			config.Conf.SetCurrentService(index)
+			_, index, _ = config.Conf.CurrentService()
 			gui.SetLibraryMenu(eventCH, config.Conf.Services, index)
 
 		case events.LIBRARY_ADD:
-			var service config.Service
-			if gui.Credentials(&service) != walk.DlgCmdOK || service.Name == "" {
+			service := new(config.Service)
+			if gui.Credentials(service) != walk.DlgCmdOK || service.Name == "" {
 				log.Printf("adding library: pressed Cancel button or len(service.Name) == 0")
 				break
 			}
@@ -112,15 +112,15 @@ func (m *Manager) Start(eventCH chan events.Event) {
 				gui.MessageBox("Ошибка", fmt.Sprintf("logon: %v", err), walk.MsgBoxOK|walk.MsgBoxIconError)
 				break
 			}
-			config.Conf.Services.SetService(service)
-			_, index, _ := config.Conf.Services.CurrentService()
+			config.Conf.SetService(service)
+			_, index, _ := config.Conf.CurrentService()
 			gui.SetLibraryMenu(eventCH, config.Conf.Services, index)
 
 		case events.LIBRARY_LOGOFF:
 			m.logoff()
 
 		case events.LIBRARY_REMOVE:
-			service, index, err := config.Conf.Services.CurrentService()
+			service, index, err := config.Conf.CurrentService()
 			if err != nil {
 				log.Printf("removing of service: %v", err)
 				break
@@ -130,8 +130,8 @@ func (m *Manager) Start(eventCH chan events.Event) {
 				break
 			}
 			m.logoff()
-			config.Conf.Services.RemoveService(index)
-			_, index, _ = config.Conf.Services.CurrentService()
+			config.Conf.RemoveService(index)
+			_, index, _ = config.Conf.CurrentService()
 			gui.SetLibraryMenu(eventCH, config.Conf.Services, index)
 
 		case events.ISSUE_BOOK:
@@ -266,7 +266,7 @@ func (m *Manager) logoff() {
 	gui.MainList.SetItems([]string{}, "")
 }
 
-func (m *Manager) logon(service config.Service) error {
+func (m *Manager) logon(service *config.Service) error {
 	client := daisy.NewClient(service.URL, time.Second*5)
 	if ok, err := client.LogOn(service.Credentials.Username, service.Credentials.Password); err != nil {
 		return err
@@ -411,7 +411,7 @@ func (m *Manager) saveBookPosition(bookplayer *player.Player) {
 	bookName, bookID := bookplayer.BookInfo()
 	if bookID != "" {
 		fragment, elapsedTime := bookplayer.PositionInfo()
-		service, _, _ := config.Conf.Services.CurrentService()
+		service, _, _ := config.Conf.CurrentService()
 		service.SetBook(bookID, bookName, fragment, elapsedTime)
 	}
 }
@@ -433,7 +433,7 @@ func (m *Manager) playBook(index int) {
 		return
 	}
 
-	service, _, _ := config.Conf.Services.CurrentService()
+	service, _, _ := config.Conf.CurrentService()
 	b := service.Book(book.ID)
 	gui.SetMainWindowTitle(book.Label.Text)
 	m.bookplayer = player.NewPlayer(book.ID, book.Label.Text, r.Resources, config.Conf.General.OutputDevice)
