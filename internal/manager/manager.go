@@ -115,7 +115,7 @@ func (m *Manager) Start(eventCH chan events.Event) {
 			}
 
 			if _, err := config.Conf.ServiceByName(service.Name); err == nil {
-				gui.MessageBox("Ошибка", fmt.Sprintf("Библиотека %v уже существует", service.Name), walk.MsgBoxOK|walk.MsgBoxIconError)
+				gui.MessageBox("Ошибка", fmt.Sprintf("Учётная запись «%v» уже существует", service.Name), walk.MsgBoxOK|walk.MsgBoxIconError)
 				break
 			}
 
@@ -132,21 +132,13 @@ func (m *Manager) Start(eventCH chan events.Event) {
 			m.logoff()
 
 		case events.LIBRARY_REMOVE:
-			if m.service == nil {
-				break
-			}
 			msg := fmt.Sprintf("Вы действительно хотите удалить учётную запись %v?\nТакже будут удалены сохранённые позиции всех книг этой библиотеки.\nЭто действие не может быть отменено.", m.service.Name)
 			if gui.MessageBox("Удаление учётной записи", msg, walk.MsgBoxYesNo|walk.MsgBoxIconQuestion) != walk.DlgCmdYes {
 				break
 			}
 			config.Conf.RemoveService(m.service)
 			m.logoff()
-
-			service, err := config.Conf.CurrentService()
-			if err != nil {
-				break
-			}
-			gui.SetLibraryMenu(eventCH, config.Conf.Services, service.Name)
+			gui.SetLibraryMenu(eventCH, config.Conf.Services, "")
 
 		case events.ISSUE_BOOK:
 			if m.books != nil {
