@@ -276,7 +276,7 @@ func (m *Manager) logoff() {
 }
 
 func (m *Manager) logon(service *config.Service) error {
-	client := daisy.NewClient(service.URL, time.Second*5)
+	client := daisy.NewClient(service.URL, time.Second*10)
 	if ok, err := client.LogOn(service.Credentials.Username, service.Credentials.Password); err != nil {
 		return err
 	} else if !ok {
