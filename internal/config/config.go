@@ -2,7 +2,7 @@ package config
 
 import (
 	"encoding/json"
-	"fmt"
+	"errors"
 	"log"
 	"os"
 	"path/filepath"
@@ -102,33 +102,51 @@ type General struct {
 }
 
 type Config struct {
-	General  General   `json:"general,omitempty"`
-	Services []Service `json:"services,omitempty"`
+	General  General    `json:"general,omitempty"`
+	Services []*Service `json:"services,omitempty"`
 }
 
 func (cfg *Config) SetService(service *Service) {
-	cfg.Services = append(cfg.Services, *service)
-	cfg.SetCurrentService(len(cfg.Services) - 1)
+	cfg.Services = append(cfg.Services, service)
+	cfg.SetCurrentService(service)
 }
 
-func (cfg *Config) Service(index int) *Service {
-	return &cfg.Services[index]
-}
-
-func (cfg *Config) RemoveService(index int) {
-	copy(cfg.Services[index:], cfg.Services[index+1:])
-	cfg.Services = cfg.Services[:len(cfg.Services)-1]
-}
-
-func (cfg *Config) SetCurrentService(index int) {
-	cfg.Services[0], cfg.Services[index] = cfg.Services[index], cfg.Services[0]
-}
-
-func (cfg *Config) CurrentService() (*Service, int, error) {
-	if len(cfg.Services) > 0 {
-		return &cfg.Services[0], 0, nil
+func (cfg *Config) ServiceByName(name string) (*Service, error) {
+	for _, srv := range cfg.Services {
+		if name == srv.Name {
+			return srv, nil
+		}
 	}
-	return &Service{}, 0, fmt.Errorf("services list is empty")
+	return nil, errors.New("service with this name does not exist")
+}
+
+func (cfg *Config) RemoveService(service *Service) bool {
+	for i, srv := range cfg.Services {
+		if service == srv {
+			copy(cfg.Services[i:], cfg.Services[i+1:])
+			cfg.Services = cfg.Services[:len(cfg.Services)-1]
+			return true
+		}
+	}
+	return false
+}
+
+func (cfg *Config) SetCurrentService(service *Service) bool {
+	for i, srv := range cfg.Services {
+		if service == srv {
+			cfg.Services[0], cfg.Services[i] = cfg.Services[i], cfg.Services[0]
+			return true
+		}
+	}
+	return false
+}
+
+func (cfg *Config) CurrentService() (*Service, error) {
+	if len(cfg.Services) > 0 {
+		// the current service is first in the list
+		return cfg.Services[0], nil
+	}
+	return nil, errors.New("services list is empty")
 }
 
 func UserData() string {

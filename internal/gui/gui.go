@@ -329,7 +329,7 @@ func SetFragments(current, length int) {
 	})
 }
 
-func SetLibraryMenu(eventCH chan events.Event, services []config.Service, current int) {
+func SetLibraryMenu(eventCH chan events.Event, services []*config.Service, current string) {
 	mainWindow.Synchronize(func() {
 		actions := libraryMenu.Actions()
 		// Delete all elements except the last one
@@ -340,7 +340,7 @@ func SetLibraryMenu(eventCH chan events.Event, services []config.Service, curren
 		// Filling the menu with services
 		for i, service := range services {
 			a := walk.NewAction()
-			if i == current {
+			if service.Name == current {
 				a.SetChecked(true)
 			}
 			a.SetText(service.Name)
@@ -349,7 +349,7 @@ func SetLibraryMenu(eventCH chan events.Event, services []config.Service, curren
 					actions.At(index).SetChecked(false)
 				}
 				a.SetChecked(true)
-				eventCH <- events.Event{events.LIBRARY_LOGON, actions.Index(a)}
+				eventCH <- events.Event{events.LIBRARY_LOGON, a.Text()}
 			})
 			actions.Insert(i, a)
 		}

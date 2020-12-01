@@ -23,6 +23,7 @@ import (
 
 type Manager struct {
 	sync.WaitGroup
+	service                 *config.Service
 	client                  *daisy.Client
 	readingSystemAttributes *daisy.ReadingSystemAttributes
 	serviceAttributes       *daisy.ServiceAttributes
@@ -78,28 +79,33 @@ func (m *Manager) Start(eventCH chan events.Event) {
 			m.setQuestions(daisy.UserResponse{QuestionID: daisy.Back})
 
 		case events.LIBRARY_LOGON:
-			service, index, err := config.Conf.CurrentService()
+			service, err := config.Conf.CurrentService()
 			if err != nil {
 				break
 			}
-			gui.SetLibraryMenu(eventCH, config.Conf.Services, index)
+			gui.SetLibraryMenu(eventCH, config.Conf.Services, service.Name)
+
 			if evt.Data != nil {
-				var ok bool
-				index, ok = evt.Data.(int)
+				name, ok := evt.Data.(string)
 				if !ok {
-					log.Printf("logon: invalid index")
+					log.Printf("logon: invalid service name")
 					break
 				}
-				service = config.Conf.Service(index)
+				service, err = config.Conf.ServiceByName(name)
+				if err != nil {
+					log.Printf("logon: %v", err)
+					break
+				}
 			}
+
 			if err := m.logon(service); err != nil {
 				log.Printf("logon: %v", err)
 				gui.MessageBox("Ошибка", fmt.Sprintf("logon: %v", err), walk.MsgBoxOK|walk.MsgBoxIconError)
 				break
 			}
-			config.Conf.SetCurrentService(index)
-			_, index, _ = config.Conf.CurrentService()
-			gui.SetLibraryMenu(eventCH, config.Conf.Services, index)
+
+			config.Conf.SetCurrentService(service)
+			gui.SetLibraryMenu(eventCH, config.Conf.Services, service.Name)
 
 		case events.LIBRARY_ADD:
 			service := new(config.Service)
@@ -112,27 +118,29 @@ func (m *Manager) Start(eventCH chan events.Event) {
 				gui.MessageBox("Ошибка", fmt.Sprintf("logon: %v", err), walk.MsgBoxOK|walk.MsgBoxIconError)
 				break
 			}
+
 			config.Conf.SetService(service)
-			_, index, _ := config.Conf.CurrentService()
-			gui.SetLibraryMenu(eventCH, config.Conf.Services, index)
+			gui.SetLibraryMenu(eventCH, config.Conf.Services, service.Name)
 
 		case events.LIBRARY_LOGOFF:
 			m.logoff()
 
 		case events.LIBRARY_REMOVE:
-			service, index, err := config.Conf.CurrentService()
-			if err != nil {
-				log.Printf("removing of service: %v", err)
+			if m.service == nil {
 				break
 			}
-			msg := fmt.Sprintf("Вы действительно хотите удалить учётную запись %v?\nТакже будут удалены сохранённые позиции всех книг этой библиотеки.\nЭто действие не может быть отменено.", service.Name)
+			msg := fmt.Sprintf("Вы действительно хотите удалить учётную запись %v?\nТакже будут удалены сохранённые позиции всех книг этой библиотеки.\nЭто действие не может быть отменено.", m.service.Name)
 			if gui.MessageBox("Удаление учётной записи", msg, walk.MsgBoxYesNo|walk.MsgBoxIconQuestion) != walk.DlgCmdYes {
 				break
 			}
+			config.Conf.RemoveService(m.service)
 			m.logoff()
-			config.Conf.RemoveService(index)
-			_, index, _ = config.Conf.CurrentService()
-			gui.SetLibraryMenu(eventCH, config.Conf.Services, index)
+
+			service, err := config.Conf.CurrentService()
+			if err != nil {
+				break
+			}
+			gui.SetLibraryMenu(eventCH, config.Conf.Services, service.Name)
 
 		case events.ISSUE_BOOK:
 			if m.books != nil {
@@ -261,6 +269,7 @@ func (m *Manager) logoff() {
 	m.books = nil
 	m.questions = nil
 	m.client = nil
+	m.service = nil
 	m.serviceAttributes = nil
 	m.userResponses = nil
 	gui.MainList.SetItems([]string{}, "")
@@ -288,6 +297,7 @@ func (m *Manager) logon(service *config.Service) error {
 		m.logoff()
 	}
 
+	m.service = service
 	m.client = client
 	m.serviceAttributes = serviceAttributes
 	m.setQuestions(daisy.UserResponse{QuestionID: daisy.Default})
@@ -411,8 +421,7 @@ func (m *Manager) saveBookPosition(bookplayer *player.Player) {
 	bookName, bookID := bookplayer.BookInfo()
 	if bookID != "" {
 		fragment, elapsedTime := bookplayer.PositionInfo()
-		service, _, _ := config.Conf.CurrentService()
-		service.SetBook(bookID, bookName, fragment, elapsedTime)
+		m.service.SetBook(bookID, bookName, fragment, elapsedTime)
 	}
 }
 
@@ -433,8 +442,7 @@ func (m *Manager) playBook(index int) {
 		return
 	}
 
-	service, _, _ := config.Conf.CurrentService()
-	b := service.Book(book.ID)
+	b := m.service.Book(book.ID)
 	gui.SetMainWindowTitle(book.Label.Text)
 	m.bookplayer = player.NewPlayer(book.ID, book.Label.Text, r.Resources, config.Conf.General.OutputDevice)
 	m.bookplayer.SetFragment(b.Fragment)
