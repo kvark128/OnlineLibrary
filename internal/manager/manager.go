@@ -113,6 +113,12 @@ func (m *Manager) Start(eventCH chan events.Event) {
 				log.Printf("adding library: pressed Cancel button or len(service.Name) == 0")
 				break
 			}
+
+			if _, err := config.Conf.ServiceByName(service.Name); err == nil {
+				gui.MessageBox("Ошибка", fmt.Sprintf("Библиотека %v уже существует", service.Name), walk.MsgBoxOK|walk.MsgBoxIconError)
+				break
+			}
+
 			if err := m.logon(service); err != nil {
 				log.Printf("logon: %v", err)
 				gui.MessageBox("Ошибка", fmt.Sprintf("logon: %v", err), walk.MsgBoxOK|walk.MsgBoxIconError)

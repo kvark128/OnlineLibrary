@@ -107,6 +107,13 @@ type Config struct {
 }
 
 func (cfg *Config) SetService(service *Service) {
+	for _, srv := range cfg.Services {
+		if service == srv {
+			// The service already exists. Don't need to do anything
+			return
+		}
+	}
+
 	cfg.Services = append(cfg.Services, service)
 	cfg.SetCurrentService(service)
 }
@@ -131,14 +138,14 @@ func (cfg *Config) RemoveService(service *Service) bool {
 	return false
 }
 
-func (cfg *Config) SetCurrentService(service *Service) bool {
+func (cfg *Config) SetCurrentService(service *Service) error {
 	for i, srv := range cfg.Services {
 		if service == srv {
 			cfg.Services[0], cfg.Services[i] = cfg.Services[i], cfg.Services[0]
-			return true
+			return nil
 		}
 	}
-	return false
+	return errors.New("service does not exist")
 }
 
 func (cfg *Config) CurrentService() (*Service, error) {
