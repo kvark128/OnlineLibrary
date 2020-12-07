@@ -26,37 +26,30 @@ type track struct {
 	channels    int
 	buffer      []byte
 	wp          *winmm.WavePlayer
-	trackSize   int64
 }
 
-func newTrack(mp3 io.Reader, speed, pitch float64, size int64, outputDeviceID int) (*track, error) {
+func newTrack(mp3 io.Reader, speed, pitch float64, outputDeviceID int) (*track, int, error) {
 	trk := &track{}
 	trk.dec = minimp3.NewDecoder(mp3)
 	trk.buffer = make([]byte, 1024*16)
 	n, err := trk.dec.Read(trk.buffer)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
-	trk.sampleRate, trk.channels, _, _, _, _ = trk.dec.LastFrameInfo()
-	if trk.sampleRate == 0 || trk.channels == 0 {
-		return nil, fmt.Errorf("invalid mp3: sampleRate=%v, channels=%v", trk.sampleRate, trk.channels)
+	var kbps int
+	trk.sampleRate, trk.channels, kbps, _, _, _ = trk.dec.LastFrameInfo()
+	if trk.sampleRate == 0 || trk.channels == 0 || kbps == 0 {
+		return nil, 0, fmt.Errorf("invalid mp3 format")
 	}
 	trk.stream = sonic.NewStream(trk.sampleRate, trk.channels)
 	trk.stream.SetSpeed(speed)
 	trk.stream.SetPitch(pitch)
 	trk.stream.Write(trk.buffer[:n])
 	trk.wp = winmm.NewWavePlayer(trk.channels, trk.sampleRate, 16, len(trk.buffer), outputDeviceID)
-	trk.trackSize = size
-	return trk, nil
+	return trk, kbps, nil
 }
 
 func (trk *track) play(playing *util.Flag) {
-	sampleRate, _, _, _, frameSize, samples := trk.dec.LastFrameInfo()
-	if sampleRate > 0 && frameSize > 0 {
-		seconds := time.Duration(trk.trackSize) / time.Duration(frameSize) * time.Duration(samples) / time.Duration(sampleRate)
-		gui.SetTotalTime(time.Second * seconds)
-	}
-
 	var n int
 	var err error
 	trk.start = time.Now()

@@ -305,7 +305,7 @@ func (p *Player) start(startFragment int) {
 		outputDeviceID := p.outputDeviceID
 		p.Unlock()
 
-		trk, err := newTrack(src, speed, pitch, r.Size, outputDeviceID)
+		trk, kbps, err := newTrack(src, speed, pitch, outputDeviceID)
 		if err != nil {
 			log.Printf("new track for %v: %v", uri, err)
 			src.Close()
@@ -327,6 +327,7 @@ func (p *Player) start(startFragment int) {
 		p.trk = trk
 		p.fragment = startFragment + index
 		gui.SetFragments(p.fragment, len(p.playList))
+		gui.SetTotalTime(time.Second * time.Duration(r.Size/int64(kbps*1000/8)))
 		p.offset = 0
 		p.Unlock()
 
