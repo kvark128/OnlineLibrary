@@ -165,9 +165,9 @@ func (trk *track) stop() {
 	trk.wp.Stop()
 }
 
-func (trk *track) rewind(offset time.Duration) error {
-	if offset == 0 {
-		return nil
+func (trk *track) setPosition(position time.Duration) error {
+	if position < 0 {
+		position = 0
 	}
 
 	if trk.pause(true) {
@@ -177,11 +177,10 @@ func (trk *track) rewind(offset time.Duration) error {
 	trk.Lock()
 	defer trk.Unlock()
 
-	elapsedTime := trk.elapsedTime + offset
-	if elapsedTime < 0 {
-		elapsedTime = 0
+	if position == trk.elapsedTime {
+		return nil
 	}
-	offsetInBytes := int64(float64(trk.sampleRate*trk.channels*2) * elapsedTime.Seconds())
+	offsetInBytes := int64(float64(trk.sampleRate*trk.channels*2) * position.Seconds())
 
 	if _, err := trk.dec.Seek(offsetInBytes, io.SeekStart); err != nil {
 		return err
@@ -192,8 +191,8 @@ func (trk *track) rewind(offset time.Duration) error {
 		trk.stream.Read(trk.buffer)
 	}
 
-	trk.elapsedTime = elapsedTime
-	gui.SetElapsedTime(elapsedTime)
+	trk.elapsedTime = position
+	gui.SetElapsedTime(position)
 	trk.beRewind = true
 	return nil
 }

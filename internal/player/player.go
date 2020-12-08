@@ -113,8 +113,8 @@ func (p *Player) SetOutputDevice(outputDevice string) {
 	p.Stop()
 	p.Lock()
 	p.outputDeviceID = devID
+	p.offset = offset
 	p.Unlock()
-	p.ChangeOffset(offset)
 	p.PlayPause()
 }
 
@@ -218,19 +218,20 @@ func (p *Player) ChangeVolume(offset int) {
 	}
 }
 
-func (p *Player) ChangeOffset(offset time.Duration) {
+func (p *Player) SetPosition(position time.Duration) {
 	if p == nil {
 		return
 	}
+
 	p.Lock()
 	defer p.Unlock()
 	if !p.playing.IsSet() {
-		p.offset += offset
+		p.offset = position
 		return
 	}
 	if p.trk != nil {
-		if err := p.trk.rewind(offset); err != nil {
-			log.Printf("rewind: %v", err)
+		if err := p.trk.setPosition(position); err != nil {
+			log.Printf("set fragment position: %v", err)
 		}
 	}
 }
@@ -312,8 +313,8 @@ func (p *Player) start(startFragment int) {
 			continue
 		}
 
-		if err := trk.rewind(offset); err != nil {
-			log.Printf("track rewind: %v", err)
+		if err := trk.setPosition(offset); err != nil {
+			log.Printf("set fragment position: %v", err)
 			src.Close()
 			continue
 		}

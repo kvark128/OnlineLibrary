@@ -207,7 +207,8 @@ func (m *Manager) Start(eventCH chan events.Event) {
 				log.Printf("manager.rewind: invalid evt.Data")
 				break
 			}
-			m.bookplayer.ChangeOffset(offset)
+			_, pos := m.bookplayer.PositionInfo()
+			m.bookplayer.SetPosition(pos + offset)
 
 		case events.PLAYER_FIRST:
 			m.bookplayer.SetFragment(0)
@@ -233,12 +234,11 @@ func (m *Manager) Start(eventCH chan events.Event) {
 			var hours, minutes, seconds time.Duration
 			_, err := fmt.Sscanf(text, "%d:%d:%d", &hours, &minutes, &seconds)
 			if err != nil {
-				log.Printf("goto offset: %v", err)
+				log.Printf("goto position: %v", err)
 				break
 			}
-			offset := time.Hour*hours + time.Minute*minutes + time.Second*seconds
-			_, pos = m.bookplayer.PositionInfo() // While requesting a new position, playback can continue. We need to get an up-to-date position
-			m.bookplayer.ChangeOffset(offset - pos)
+			position := time.Hour*hours + time.Minute*minutes + time.Second*seconds
+			m.bookplayer.SetPosition(position)
 
 		case events.PLAYER_OUTPUT_DEVICE:
 			device, ok := evt.Data.(string)
@@ -314,7 +314,7 @@ func (m *Manager) logon(service *config.Service) error {
 	gui.SetMainWindowTitle(book.Name)
 	m.bookplayer = player.NewPlayer(book.ID, book.Name, r.Resources, config.Conf.General.OutputDevice)
 	m.bookplayer.SetFragment(book.Fragment)
-	m.bookplayer.ChangeOffset(book.ElapsedTime)
+	m.bookplayer.SetPosition(book.ElapsedTime)
 	return nil
 }
 
@@ -444,7 +444,7 @@ func (m *Manager) playBook(index int) {
 	gui.SetMainWindowTitle(book.Label.Text)
 	m.bookplayer = player.NewPlayer(book.ID, book.Label.Text, r.Resources, config.Conf.General.OutputDevice)
 	m.bookplayer.SetFragment(b.Fragment)
-	m.bookplayer.ChangeOffset(b.ElapsedTime)
+	m.bookplayer.SetPosition(b.ElapsedTime)
 	m.bookplayer.PlayPause()
 }
 
