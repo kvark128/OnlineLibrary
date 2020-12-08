@@ -52,7 +52,14 @@ func (m *Manager) Start(eventCH chan events.Event) {
 		case events.ACTIVATE_MENU:
 			index := gui.MainList.CurrentIndex()
 			if m.books != nil {
-				m.playBook(index)
+				book := m.books.ContentItems[index]
+				if _, id := m.bookplayer.BookInfo(); book.ID != id {
+					if err := m.setBookplayer(book.ID, book.Label.Text); err != nil {
+						gui.MessageBox("Ошибка", err.Error(), walk.MsgBoxOK|walk.MsgBoxIconError)
+						break
+					}
+				}
+				m.bookplayer.PlayPause()
 			} else if m.questions != nil {
 				questionIndex := len(m.userResponses)
 				questionID := m.questions.MultipleChoiceQuestion[questionIndex].ID
@@ -305,16 +312,7 @@ func (m *Manager) logon(service *config.Service) error {
 		return nil
 	}
 
-	r, err := m.client.GetContentResources(book.ID)
-	if err != nil {
-		log.Printf("GetContentResources: %v", err)
-		return nil
-	}
-
-	gui.SetMainWindowTitle(book.Name)
-	m.bookplayer = player.NewPlayer(book.ID, book.Name, r.Resources, config.Conf.General.OutputDevice)
-	m.bookplayer.SetFragment(book.Fragment)
-	m.bookplayer.SetPosition(book.ElapsedTime)
+	m.setBookplayer(book.ID, book.Name)
 	return nil
 }
 
@@ -423,29 +421,23 @@ func (m *Manager) saveBookPosition(bookplayer *player.Player) {
 	}
 }
 
-func (m *Manager) playBook(index int) {
-	book := m.books.ContentItems[index]
-	if _, id := m.bookplayer.BookInfo(); book.ID == id {
-		m.bookplayer.PlayPause()
-		return
-	}
+func (m *Manager) setBookplayer(id, name string) error {
 	m.saveBookPosition(m.bookplayer)
 	m.bookplayer.Stop()
 
-	r, err := m.client.GetContentResources(book.ID)
+	r, err := m.client.GetContentResources(id)
 	if err != nil {
-		msg := fmt.Sprintf("GetContentResources: %s", err)
-		log.Printf(msg)
-		gui.MessageBox("Ошибка", msg, walk.MsgBoxOK|walk.MsgBoxIconError)
-		return
+		err = fmt.Errorf("GetContentResources: %v", err)
+		log.Printf(err.Error())
+		return err
 	}
 
-	b := m.service.Book(book.ID)
-	gui.SetMainWindowTitle(book.Label.Text)
-	m.bookplayer = player.NewPlayer(book.ID, book.Label.Text, r.Resources, config.Conf.General.OutputDevice)
-	m.bookplayer.SetFragment(b.Fragment)
-	m.bookplayer.SetPosition(b.ElapsedTime)
-	m.bookplayer.PlayPause()
+	gui.SetMainWindowTitle(name)
+	m.bookplayer = player.NewPlayer(id, name, r.Resources, config.Conf.General.OutputDevice)
+	book := m.service.Book(id)
+	m.bookplayer.SetFragment(book.Fragment)
+	m.bookplayer.SetPosition(book.ElapsedTime)
+	return nil
 }
 
 func (m *Manager) downloadBook(index int) {
