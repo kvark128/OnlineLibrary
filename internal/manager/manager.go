@@ -307,11 +307,12 @@ func (m *Manager) logon(service *config.Service) error {
 	m.serviceAttributes = serviceAttributes
 	m.setQuestions(daisy.UserResponse{QuestionID: daisy.Default})
 
-	book := service.CurrentBook()
-	if book.ID == "" {
+	id := service.CurrentBook()
+	if id == "" {
 		return nil
 	}
 
+	book, _ := service.Book(id)
 	m.setBookplayer(book.ID, book.Name)
 	return nil
 }
@@ -409,6 +410,10 @@ func (m *Manager) setContent(contentID string) {
 	var booksName []string
 	for _, book := range m.books.ContentItems {
 		booksName = append(booksName, book.Label.Text)
+		// books positions on the bookshelf must always be saved
+		if contentID == daisy.Issued {
+			m.service.AddBook(book.ID, book.Label.Text)
+		}
 	}
 	gui.MainList.SetItems(booksName, m.books.Label.Text)
 }
@@ -417,7 +422,7 @@ func (m *Manager) saveBookPosition(bookplayer *player.Player) {
 	bookName, bookID := bookplayer.BookInfo()
 	if bookID != "" {
 		fragment, elapsedTime := bookplayer.PositionInfo()
-		m.service.SetBook(bookID, bookName, fragment, elapsedTime)
+		m.service.UpdateBook(bookID, bookName, fragment, elapsedTime)
 	}
 }
 
@@ -434,9 +439,10 @@ func (m *Manager) setBookplayer(id, name string) error {
 
 	gui.SetMainWindowTitle(name)
 	m.bookplayer = player.NewPlayer(id, name, r.Resources, config.Conf.General.OutputDevice)
-	book := m.service.Book(id)
-	m.bookplayer.SetFragment(book.Fragment)
-	m.bookplayer.SetPosition(book.ElapsedTime)
+	if book, err := m.service.Book(id); err == nil {
+		m.bookplayer.SetFragment(book.Fragment)
+		m.bookplayer.SetPosition(book.ElapsedTime)
+	}
 	return nil
 }
 
@@ -535,6 +541,8 @@ func (m *Manager) removeBook(index int) {
 		gui.MessageBox("Ошибка", msg, walk.MsgBoxOK|walk.MsgBoxIconError)
 		return
 	}
+
+	m.service.RemoveBook(book.ID)
 	gui.MessageBox("Уведомление", fmt.Sprintf("%s удалена с книжной полки", book.Label.Text), walk.MsgBoxOK|walk.MsgBoxIconWarning)
 }
 
@@ -547,6 +555,8 @@ func (m *Manager) issueBook(index int) {
 		gui.MessageBox("Ошибка", msg, walk.MsgBoxOK|walk.MsgBoxIconError)
 		return
 	}
+
+	m.service.AddBook(book.ID, book.Label.Text)
 	gui.MessageBox("Уведомление", fmt.Sprintf("%s добавлена на книжную полку", book.Label.Text), walk.MsgBoxOK|walk.MsgBoxIconWarning)
 }
 

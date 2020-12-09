@@ -40,39 +40,50 @@ type Service struct {
 	RecentBooks []Book      `json:"recent_books,omitempty"`
 }
 
-func (s *Service) SetBook(id, name string, fragment int, elapsedTime time.Duration) {
+func (s *Service) UpdateBook(id, name string, fragment int, elapsedTime time.Duration) {
 	for i := range s.RecentBooks {
 		if s.RecentBooks[i].ID == id {
 			s.RecentBooks[i].Name = name
 			s.RecentBooks[i].Fragment = fragment
 			s.RecentBooks[i].ElapsedTime = elapsedTime
 			s.SetCurrentBook(id)
+		}
+	}
+}
+
+func (s *Service) AddBook(id, name string) {
+	for _, b := range s.RecentBooks {
+		if b.ID == id {
+			// Book already exists. Do nothing
 			return
 		}
 	}
 
 	book := Book{
-		Name:        name,
-		ID:          id,
-		Fragment:    fragment,
-		ElapsedTime: elapsedTime,
+		Name: name,
+		ID:   id,
 	}
 
 	s.RecentBooks = append(s.RecentBooks, book)
-	s.SetCurrentBook(id)
+}
 
-	if len(s.RecentBooks) > 256 {
-		s.RecentBooks = s.RecentBooks[:256]
+func (s *Service) RemoveBook(id string) {
+	for i, b := range s.RecentBooks {
+		if b.ID == id {
+			copy(s.RecentBooks[i:], s.RecentBooks[i+1:])
+			s.RecentBooks = s.RecentBooks[:len(s.RecentBooks)-1]
+			break
+		}
 	}
 }
 
-func (s *Service) Book(id string) Book {
+func (s *Service) Book(id string) (Book, error) {
 	for _, b := range s.RecentBooks {
 		if b.ID == id {
-			return b
+			return b, nil
 		}
 	}
-	return Book{}
+	return Book{}, errors.New("book not found")
 }
 
 func (s *Service) SetCurrentBook(id string) {
@@ -85,11 +96,11 @@ func (s *Service) SetCurrentBook(id string) {
 	}
 }
 
-func (s *Service) CurrentBook() Book {
+func (s *Service) CurrentBook() string {
 	if len(s.RecentBooks) != 0 {
-		return s.RecentBooks[0]
+		return s.RecentBooks[0].ID
 	}
-	return Book{}
+	return ""
 }
 
 type Credentials struct {
