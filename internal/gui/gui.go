@@ -277,6 +277,22 @@ func Initialize(eventCH chan events.Event) error {
 				OnItemActivated: func() { eventCH <- events.Event{events.ACTIVATE_MENU, nil} },
 			},
 		},
+		StatusBarItems: []StatusBarItem{
+			StatusBarItem{
+				AssignTo: &elapseTime,
+				Text:     "00:00:00",
+			},
+			StatusBarItem{
+				Text: "/",
+			},
+			StatusBarItem{
+				AssignTo: &totalTime,
+				Text:     "00:00:00",
+			},
+			StatusBarItem{
+				AssignTo: &fragments,
+			},
+		},
 	}.Create()); err != nil {
 		return err
 	}
@@ -287,24 +303,6 @@ func Initialize(eventCH chan events.Event) error {
 		return err
 	}
 
-	statusBar, err := walk.NewStatusBar(mainWindow)
-	if err != nil {
-		return err
-	}
-
-	elapseTime = walk.NewStatusBarItem()
-	elapseTime.SetText("00:00:00")
-	totalTime = walk.NewStatusBarItem()
-	totalTime.SetText("00:00:00")
-	separator := walk.NewStatusBarItem()
-	separator.SetText("/")
-	fragments = walk.NewStatusBarItem()
-
-	statusBar.Items().Add(elapseTime)
-	statusBar.Items().Add(separator)
-	statusBar.Items().Add(totalTime)
-	statusBar.Items().Add(fragments)
-	statusBar.SetVisible(true)
 	return nil
 }
 
