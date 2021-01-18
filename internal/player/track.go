@@ -53,6 +53,7 @@ func (trk *track) play(playing *util.Flag) {
 	var n int
 	var err error
 	trk.start = time.Now()
+
 	for playing.IsSet() {
 		for playing.IsSet() {
 			gui.SetElapsedTime(trk.getElapsedTime())
@@ -64,6 +65,7 @@ func (trk *track) play(playing *util.Flag) {
 			}
 			n, _ := trk.stream.Read(trk.buffer)
 			trk.Unlock()
+
 			if _, err := trk.wp.Write(trk.buffer[:n]); err != nil {
 				log.Printf("wavePlayer: %v", err)
 				trk.wp.Close()
@@ -71,9 +73,11 @@ func (trk *track) play(playing *util.Flag) {
 				trk.wp.Write(trk.buffer[:n])
 			}
 		}
+
 		if err != nil {
 			break
 		}
+
 		trk.Lock()
 		n, err = trk.dec.Read(trk.buffer)
 		trk.stream.Write(trk.buffer[:n])
@@ -84,8 +88,8 @@ func (trk *track) play(playing *util.Flag) {
 	}
 
 	trk.wp.Sync()
-	gui.SetElapsedTime(0)
 	trk.wp.Close()
+	gui.SetElapsedTime(0)
 }
 
 func (trk *track) setSpeed(speed float64) {
@@ -166,10 +170,6 @@ func (trk *track) stop() {
 }
 
 func (trk *track) setPosition(position time.Duration) error {
-	if position < 0 {
-		position = 0
-	}
-
 	if trk.pause(true) {
 		defer trk.pause(false)
 	}
@@ -177,22 +177,26 @@ func (trk *track) setPosition(position time.Duration) error {
 	trk.Lock()
 	defer trk.Unlock()
 
+	if position < 0 {
+		position = 0
+	}
+
 	if position == trk.elapsedTime {
 		return nil
 	}
-	offsetInBytes := int64(float64(trk.sampleRate*trk.channels*2) * position.Seconds())
 
-	if _, err := trk.dec.Seek(offsetInBytes, io.SeekStart); err != nil {
-		return err
-	}
-
+	trk.beRewind = true
 	trk.stream.Flush()
 	for trk.stream.SamplesAvailable() > 0 {
 		trk.stream.Read(trk.buffer)
 	}
 
+	offsetInBytes := int64(float64(trk.sampleRate*trk.channels*2) * position.Seconds())
+	if _, err := trk.dec.Seek(offsetInBytes, io.SeekStart); err != nil {
+		return err
+	}
+
 	trk.elapsedTime = position
 	gui.SetElapsedTime(position)
-	trk.beRewind = true
 	return nil
 }
