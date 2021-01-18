@@ -16,6 +16,7 @@ const (
 	CALLBACK_EVENT   = 0x50000
 	MAXPNAMELEN      = 32
 	MMSYSERR_NOERROR = 0
+	TIME_BYTES       = 4
 )
 
 var winmm = windows.NewLazySystemDLL("winmm.dll")
@@ -34,6 +35,7 @@ var (
 	procWaveOutReset           = winmm.NewProc("waveOutReset")
 	procWaveOutGetVolume       = winmm.NewProc("waveOutGetVolume")
 	procWaveOutSetVolume       = winmm.NewProc("waveOutSetVolume")
+	procWaveOutGetPosition     = winmm.NewProc("waveOutGetPosition")
 	procWaveOutGetErrorTextW   = winmm.NewProc("waveOutGetErrorTextW")
 	procWaveOutClose           = winmm.NewProc("waveOutClose")
 )
@@ -79,6 +81,11 @@ type WAVEOUTCAPS struct {
 	wChannels      uint16
 	wReserved1     uint16
 	dwSupport      uint32
+}
+
+type MMTIME struct {
+	WType uint
+	Cb    uint32
 }
 
 func OutputDevices() func() (int, string, error) {
@@ -217,6 +224,19 @@ func (wp *WavePlayer) Pause(pauseState bool) {
 		procWaveOutRestart.Call(wp.waveout)
 	}
 	wp.callMutex.Unlock()
+}
+
+func (wp *WavePlayer) Position() (uint32, error) {
+	pmmt := &MMTIME{WType: TIME_BYTES}
+	wp.callMutex.Lock()
+	procWaveOutGetPosition.Call(wp.waveout, uintptr(unsafe.Pointer(pmmt)), unsafe.Sizeof(*pmmt))
+	wp.callMutex.Unlock()
+
+	if pmmt.WType != TIME_BYTES {
+		return 0, errors.New("waveOutGetPosition: TIME_BYTES is not supported")
+	}
+
+	return pmmt.Cb, nil
 }
 
 func (wp *WavePlayer) Stop() {
