@@ -12,35 +12,41 @@ type Reader struct {
 	buf       []byte
 	bufLength int
 	c         *lkf.Cryptor
-	lastErr   error
+	lastError error
 }
 
 func NewReader(src io.ReadCloser) *Reader {
 	return &Reader{
 		src: src,
-		buf: make([]byte, lkf.BlockSize*64),
+		buf: make([]byte, lkf.BlockSize*32), // 16 Kb
 		c:   new(lkf.Cryptor),
 	}
 }
 
 func (r *Reader) Read(p []byte) (int, error) {
-	var n, n2 int
-	for {
-		n2 = copy(p[n:], r.buf[:r.bufLength])
-		n += n2
-		if n == len(p) {
-			r.bufLength = copy(r.buf, r.buf[n2:r.bufLength])
-			return n, nil
+	if len(p) == 0 {
+		return 0, nil
+	}
+
+	if r.bufLength == 0 {
+		for r.bufLength < len(r.buf) && r.lastError == nil {
+			var nRead int
+			nRead, r.lastError = r.src.Read(r.buf[r.bufLength:])
+			r.bufLength += nRead
 		}
 
-		if r.lastErr != nil {
-			return n, r.lastErr
+		if r.bufLength == 0 && r.lastError != nil {
+			return 0, r.lastError
 		}
 
-		r.bufLength, r.lastErr = r.src.Read(r.buf)
 		t := r.buf[:r.bufLength]
 		r.c.Decrypt(t, t)
 	}
+
+	n := copy(p, r.buf[:r.bufLength])
+	copy(r.buf, r.buf[n:r.bufLength])
+	r.bufLength -= n
+	return n, nil
 }
 
 func (r *Reader) Seek(offset int64, whence int) (int64, error) {
@@ -54,7 +60,7 @@ func (r *Reader) Seek(offset int64, whence int) (int64, error) {
 	}
 
 	r.bufLength = 0
-	r.lastErr = nil
+	r.lastError = nil
 
 	blockOffset := offset % lkf.BlockSize
 	pos, err := seeker.Seek(offset-blockOffset, whence)
@@ -66,7 +72,7 @@ func (r *Reader) Seek(offset int64, whence int) (int64, error) {
 		return pos, nil
 	}
 
-	n, err := r.Read(make([]byte, blockOffset))
+	n, err := io.ReadFull(r, make([]byte, blockOffset))
 	return pos + int64(n), err
 }
 
