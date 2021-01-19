@@ -86,6 +86,7 @@ type WAVEOUTCAPS struct {
 type MMTIME struct {
 	WType uint
 	Cb    uint32
+	pad   uint32
 }
 
 func OutputDevices() func() (int, string, error) {
@@ -229,8 +230,12 @@ func (wp *WavePlayer) Pause(pauseState bool) {
 func (wp *WavePlayer) Position() (uint32, error) {
 	pmmt := &MMTIME{WType: TIME_BYTES}
 	wp.callMutex.Lock()
-	procWaveOutGetPosition.Call(wp.waveout, uintptr(unsafe.Pointer(pmmt)), unsafe.Sizeof(*pmmt))
+	r, _, _ := procWaveOutGetPosition.Call(wp.waveout, uintptr(unsafe.Pointer(pmmt)), unsafe.Sizeof(*pmmt))
 	wp.callMutex.Unlock()
+
+	if r != MMSYSERR_NOERROR {
+		return 0, wp.error(r)
+	}
 
 	if pmmt.WType != TIME_BYTES {
 		return 0, errors.New("waveOutGetPosition: TIME_BYTES is not supported")
