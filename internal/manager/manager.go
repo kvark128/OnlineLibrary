@@ -237,13 +237,11 @@ func (m *Manager) Start(eventCH chan events.Event) {
 			if gui.TextEntryDialog("Переход к позиции", "Введите позицию фрагмента:", util.FmtDuration(pos), &text) != walk.DlgCmdOK {
 				break
 			}
-			var hours, minutes, seconds time.Duration
-			_, err := fmt.Sscanf(text, "%d:%d:%d", &hours, &minutes, &seconds)
+			position, err := util.ParseDuration(text)
 			if err != nil {
 				log.Printf("goto position: %v", err)
 				break
 			}
-			position := time.Hour*hours + time.Minute*minutes + time.Second*seconds
 			m.bookplayer.SetPosition(position)
 
 		case events.PLAYER_OUTPUT_DEVICE:
@@ -477,7 +475,7 @@ func (m *Manager) downloadBook(index int) {
 		dlg.Show()
 
 		for _, v := range r.Resources {
-			path := filepath.Join(config.UserData(), util.ReplaceProhibitCharacters(book.Label.Text), v.LocalURI)
+			path := filepath.Join(config.UserData(), util.ReplaceForbiddenCharacters(book.Label.Text), v.LocalURI)
 			if info, e := os.Stat(path); e == nil {
 				if !info.IsDir() && info.Size() == v.Size {
 					// v.LocalURI already exist

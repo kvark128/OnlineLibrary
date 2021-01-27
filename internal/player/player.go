@@ -266,7 +266,7 @@ func (p *Player) start(startFragment int) {
 		var uri string
 		var err error
 
-		uri = filepath.Join(config.UserData(), util.ReplaceProhibitCharacters(p.bookName), r.LocalURI)
+		uri = filepath.Join(config.UserData(), util.ReplaceForbiddenCharacters(p.bookName), r.LocalURI)
 		if info, e := os.Stat(uri); e == nil {
 			if !info.IsDir() && info.Size() == r.Size {
 				// fragment already exists on disk
