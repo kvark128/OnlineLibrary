@@ -173,11 +173,13 @@ func (m *Manager) Start(eventCH chan events.Event) {
 			m.saveBookPosition(m.bookplayer)
 			m.bookplayer.Stop()
 
-		case events.PLAYER_NEXT_TRACK:
-			m.bookplayer.ChangeFragment(+1)
-
-		case events.PLAYER_PREVIOUS_TRACK:
-			m.bookplayer.ChangeFragment(-1)
+		case events.PLAYER_OFFSET_FRAGMENT:
+			offset, ok := evt.Data.(int)
+			if !ok {
+				log.Printf("invalid offset fragment")
+				break
+			}
+			m.bookplayer.ChangeFragment(offset)
 
 		case events.PLAYER_SPEED_RESET:
 			m.bookplayer.SetSpeed(player.DEFAULT_SPEED)
@@ -203,10 +205,10 @@ func (m *Manager) Start(eventCH chan events.Event) {
 		case events.PLAYER_VOLUME_DOWN:
 			m.bookplayer.ChangeVolume(-1)
 
-		case events.PLAYER_REWIND:
+		case events.PLAYER_OFFSET_POSITION:
 			offset, ok := evt.Data.(time.Duration)
 			if !ok {
-				log.Printf("manager.rewind: invalid evt.Data")
+				log.Printf("invalid offset position")
 				break
 			}
 			_, pos := m.bookplayer.PositionInfo()

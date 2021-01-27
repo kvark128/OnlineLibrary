@@ -144,12 +144,12 @@ func Initialize(eventCH chan events.Event) error {
 							Action{
 								Text:        "На следующий фрагмент",
 								Shortcut:    Shortcut{walk.ModControl, walk.KeyL},
-								OnTriggered: func() { eventCH <- events.Event{events.PLAYER_NEXT_TRACK, nil} },
+								OnTriggered: func() { eventCH <- next_fragment },
 							},
 							Action{
 								Text:        "На предыдущий фрагмент",
 								Shortcut:    Shortcut{walk.ModControl, walk.KeyJ},
-								OnTriggered: func() { eventCH <- events.Event{events.PLAYER_PREVIOUS_TRACK, nil} },
+								OnTriggered: func() { eventCH <- previous_fragment },
 							},
 						},
 					},

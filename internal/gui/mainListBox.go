@@ -8,16 +8,22 @@ import (
 	"github.com/lxn/win"
 )
 
+// Events for switching fragments
+var (
+	next_fragment     = events.Event{events.PLAYER_OFFSET_FRAGMENT, +1}
+	previous_fragment = events.Event{events.PLAYER_OFFSET_FRAGMENT, -1}
+)
+
 // Events for rewinding a fragment
 var (
-	rewind_5sec_forward  = events.Event{events.PLAYER_REWIND, time.Second * 5}
-	rewind_5sec_back     = events.Event{events.PLAYER_REWIND, time.Second * -5}
-	rewind_30sec_forward = events.Event{events.PLAYER_REWIND, time.Second * 30}
-	rewind_30sec_back    = events.Event{events.PLAYER_REWIND, time.Second * -30}
-	rewind_1min_forward  = events.Event{events.PLAYER_REWIND, time.Minute}
-	rewind_1min_back     = events.Event{events.PLAYER_REWIND, -time.Minute}
-	rewind_5min_forward  = events.Event{events.PLAYER_REWIND, time.Minute * 5}
-	rewind_5min_back     = events.Event{events.PLAYER_REWIND, time.Minute * -5}
+	rewind_5sec_forward  = events.Event{events.PLAYER_OFFSET_POSITION, time.Second * 5}
+	rewind_5sec_back     = events.Event{events.PLAYER_OFFSET_POSITION, time.Second * -5}
+	rewind_30sec_forward = events.Event{events.PLAYER_OFFSET_POSITION, time.Second * 30}
+	rewind_30sec_back    = events.Event{events.PLAYER_OFFSET_POSITION, time.Second * -30}
+	rewind_1min_forward  = events.Event{events.PLAYER_OFFSET_POSITION, time.Minute}
+	rewind_1min_back     = events.Event{events.PLAYER_OFFSET_POSITION, -time.Minute}
+	rewind_5min_forward  = events.Event{events.PLAYER_OFFSET_POSITION, time.Minute * 5}
+	rewind_5min_back     = events.Event{events.PLAYER_OFFSET_POSITION, time.Minute * -5}
 )
 
 type MainListBox struct {
@@ -125,10 +131,10 @@ func (mlb *MainListBox) WndProc(hwnd win.HWND, msg uint32, wParam, lParam uintpt
 				mlb.eventCH <- events.Event{events.PLAYER_STOP, nil}
 				return 0
 			case walk.KeyMediaNextTrack:
-				mlb.eventCH <- events.Event{events.PLAYER_NEXT_TRACK, nil}
+				mlb.eventCH <- next_fragment
 				return 0
 			case walk.KeyMediaPrevTrack:
-				mlb.eventCH <- events.Event{events.PLAYER_PREVIOUS_TRACK, nil}
+				mlb.eventCH <- previous_fragment
 				return 0
 			}
 		}
