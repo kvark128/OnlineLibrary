@@ -134,7 +134,7 @@ func Initialize(eventCH chan events.Event) error {
 							Action{
 								Text:        "На первый фрагмент",
 								Shortcut:    Shortcut{walk.ModControl, walk.KeyBack},
-								OnTriggered: func() { eventCH <- events.Event{events.PLAYER_FIRST, nil} },
+								OnTriggered: func() { eventCH <- events.Event{events.PLAYER_GOTO_FRAGMENT, 0} },
 							},
 							Action{
 								Text:        "На указанный фрагмент",

@@ -217,20 +217,21 @@ func (m *Manager) Start(eventCH chan events.Event) {
 			_, pos := m.bookplayer.PositionInfo()
 			m.bookplayer.SetPosition(pos + offset)
 
-		case events.PLAYER_FIRST:
-			m.bookplayer.SetFragment(0)
-
 		case events.PLAYER_GOTO_FRAGMENT:
-			var text string
-			fragment, _ := m.bookplayer.PositionInfo()
-			if gui.TextEntryDialog("Переход к фрагменту", "Введите номер фрагмента:", strconv.Itoa(fragment+1), &text) != walk.DlgCmdOK {
-				break
+			fragment, ok := evt.Data.(int)
+			if !ok {
+				var text string
+				curFragment, _ := m.bookplayer.PositionInfo()
+				if gui.TextEntryDialog("Переход к фрагменту", "Введите номер фрагмента:", strconv.Itoa(curFragment+1), &text) != walk.DlgCmdOK {
+					break
+				}
+				newFragment, err := strconv.Atoi(text)
+				if err != nil {
+					break
+				}
+				fragment = newFragment - 1 // Requires an index of fragment
 			}
-			fragment, err := strconv.Atoi(text)
-			if err != nil {
-				break
-			}
-			m.bookplayer.SetFragment(fragment - 1) // Requires an index of fragment
+			m.bookplayer.SetFragment(fragment)
 
 		case events.PLAYER_GOTO_POSITION:
 			var text string
