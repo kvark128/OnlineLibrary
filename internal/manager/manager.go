@@ -92,12 +92,7 @@ func (m *Manager) Start(eventCH chan events.Event) {
 			}
 			gui.SetLibraryMenu(eventCH, config.Conf.Services, service.Name)
 
-			if evt.Data != nil {
-				name, ok := evt.Data.(string)
-				if !ok {
-					log.Printf("logon: invalid service name")
-					break
-				}
+			if name, ok := evt.Data.(string); ok {
 				service, err = config.Conf.ServiceByName(name)
 				if err != nil {
 					log.Printf("logon: %v", err)
