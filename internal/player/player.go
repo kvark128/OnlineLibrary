@@ -176,16 +176,6 @@ func (p *Player) SetPitch(pitch float64) {
 	}
 }
 
-func (p *Player) ChangeFragment(offset int) {
-	if p == nil {
-		return
-	}
-	p.Lock()
-	newFragment := p.fragment + offset
-	p.Unlock()
-	p.SetFragment(newFragment)
-}
-
 func (p *Player) SetFragment(fragment int) {
 	if p == nil {
 		return

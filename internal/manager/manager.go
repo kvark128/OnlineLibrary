@@ -179,7 +179,8 @@ func (m *Manager) Start(eventCH chan events.Event) {
 				log.Printf("invalid offset fragment")
 				break
 			}
-			m.bookplayer.ChangeFragment(offset)
+			fragment, _ := m.bookplayer.PositionInfo()
+			m.bookplayer.SetFragment(fragment + offset)
 
 		case events.PLAYER_SPEED_RESET:
 			m.bookplayer.SetSpeed(player.DEFAULT_SPEED)
