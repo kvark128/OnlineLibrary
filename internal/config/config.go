@@ -7,6 +7,8 @@ import (
 	"os"
 	"path/filepath"
 	"time"
+
+	daisy "github.com/kvark128/daisyonline"
 )
 
 const (
@@ -23,6 +25,22 @@ const (
 	LKF_FORMAT = "audio/x-lkf"
 	LGK_FORMAT = "application/lgk"
 )
+
+// General client configuration of DAISY-online
+var ReadingSystemAttributes = daisy.ReadingSystemAttributes{
+	Manufacturer: ProgramAuthor,
+	Model:        ProgramName,
+	Version:      ProgramVersion,
+	Config: daisy.Config{
+		SupportsMultipleSelections:        false,
+		PreferredUILanguage:               "ru-RU",
+		SupportedContentFormats:           daisy.SupportedContentFormats{},
+		SupportedContentProtectionFormats: daisy.SupportedContentProtectionFormats{},
+		SupportedMimeTypes:                daisy.SupportedMimeTypes{MimeType: []daisy.MimeType{daisy.MimeType{Type: LKF_FORMAT}, daisy.MimeType{Type: LGK_FORMAT}, daisy.MimeType{Type: MP3_FORMAT}}},
+		SupportedInputTypes:               daisy.SupportedInputTypes{Input: []daisy.Input{daisy.Input{Type: daisy.TEXT_ALPHANUMERIC}, daisy.Input{Type: daisy.AUDIO}}},
+		RequiresAudioLabels:               false,
+	},
+}
 
 var Conf Config
 
