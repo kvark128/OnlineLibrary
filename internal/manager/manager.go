@@ -21,11 +21,18 @@ import (
 	"github.com/lxn/walk"
 )
 
+type ContentList interface {
+	Label() daisy.Label
+	Len() int
+	Item(int) daisy.ContentItem
+	ItemResources(int) ([]daisy.Resource, error)
+}
+
 type Manager struct {
 	sync.WaitGroup
 	library       *Library
 	bookplayer    *player.Player
-	books         *daisy.ContentList
+	contentList   ContentList
 	questions     *daisy.Questions
 	userResponses []daisy.UserResponse
 }
@@ -44,8 +51,8 @@ func (m *Manager) Start(eventCH chan events.Event) {
 		switch evt.EventCode {
 		case events.ACTIVATE_MENU:
 			index := gui.MainList.CurrentIndex()
-			if m.books != nil {
-				book := m.books.ContentItems[index]
+			if m.contentList != nil {
+				book := m.contentList.Item(index)
 				if _, id := m.bookplayer.BookInfo(); book.ID != id {
 					if err := m.setBookplayer(book.ID, book.Label.Text); err != nil {
 						gui.MessageBox("Ошибка", err.Error(), walk.MsgBoxOK|walk.MsgBoxIconError)
@@ -136,25 +143,25 @@ func (m *Manager) Start(eventCH chan events.Event) {
 			gui.SetLibraryMenu(eventCH, config.Conf.Services, "")
 
 		case events.ISSUE_BOOK:
-			if m.books != nil {
+			if m.contentList != nil {
 				index := gui.MainList.CurrentIndex()
 				m.issueBook(index)
 			}
 
 		case events.REMOVE_BOOK:
-			if m.books != nil {
+			if m.contentList != nil {
 				index := gui.MainList.CurrentIndex()
 				m.removeBook(index)
 			}
 
 		case events.DOWNLOAD_BOOK:
-			if m.books != nil {
+			if m.contentList != nil {
 				index := gui.MainList.CurrentIndex()
 				m.downloadBook(index)
 			}
 
 		case events.BOOK_DESCRIPTION:
-			if m.books != nil {
+			if m.contentList != nil {
 				index := gui.MainList.CurrentIndex()
 				m.showBookDescription(index)
 			}
@@ -263,7 +270,7 @@ func (m *Manager) logoff() {
 	}
 
 	m.bookplayer = nil
-	m.books = nil
+	m.contentList = nil
 	m.questions = nil
 	m.library = nil
 	m.userResponses = nil
@@ -337,7 +344,7 @@ func (m *Manager) setQuestions(response ...daisy.UserResponse) {
 
 func (m *Manager) setMultipleChoiceQuestion(index int) {
 	choiceQuestion := m.questions.MultipleChoiceQuestion[index]
-	m.books = nil
+	m.contentList = nil
 
 	var items []string
 	for _, c := range choiceQuestion.Choices.Choice {
@@ -363,7 +370,7 @@ func (m *Manager) setInputQuestion() {
 
 func (m *Manager) setContent(contentID string) {
 	log.Printf("Content set: %s", contentID)
-	contentList, err := m.library.GetContentList(contentID, 0, -1)
+	contentList, err := NewLibraryContentList(m.library, contentID)
 	if err != nil {
 		msg := fmt.Sprintf("GetContentList: %s", err)
 		log.Printf(msg)
@@ -373,25 +380,26 @@ func (m *Manager) setContent(contentID string) {
 		return
 	}
 
-	if len(contentList.ContentItems) == 0 {
+	if contentList.Len() == 0 {
 		gui.MessageBox("Предупреждение", "Список книг пуст", walk.MsgBoxOK|walk.MsgBoxIconWarning)
 		// Return to the main menu of the library
 		m.setQuestions(daisy.UserResponse{QuestionID: daisy.Default})
 		return
 	}
 
-	m.books = contentList
+	m.contentList = contentList
 	m.questions = nil
 
-	var booksName []string
-	for _, book := range m.books.ContentItems {
-		booksName = append(booksName, book.Label.Text)
+	names := make([]string, m.contentList.Len())
+	for i := range names {
+		book := m.contentList.Item(i)
+		names[i] = book.Label.Text
 		// books positions on the bookshelf must always be saved
 		if contentID == daisy.Issued {
 			m.library.service.AddBook(book.ID, book.Label.Text)
 		}
 	}
-	gui.MainList.SetItems(booksName, m.books.Label.Text)
+	gui.MainList.SetItems(names, m.contentList.Label().Text)
 }
 
 func (m *Manager) saveBookPosition(bookplayer *player.Player) {
@@ -423,7 +431,7 @@ func (m *Manager) setBookplayer(id, name string) error {
 }
 
 func (m *Manager) downloadBook(index int) {
-	book := m.books.ContentItems[index]
+	book := m.contentList.Item(index)
 
 	r, err := m.library.GetContentResources(book.ID)
 	if err != nil {
@@ -509,7 +517,7 @@ func (m *Manager) downloadBook(index int) {
 }
 
 func (m *Manager) removeBook(index int) {
-	book := m.books.ContentItems[index]
+	book := m.contentList.Item(index)
 	_, err := m.library.ReturnContent(book.ID)
 	if err != nil {
 		msg := fmt.Sprintf("ReturnContent: %s", err)
@@ -523,7 +531,7 @@ func (m *Manager) removeBook(index int) {
 }
 
 func (m *Manager) issueBook(index int) {
-	book := m.books.ContentItems[index]
+	book := m.contentList.Item(index)
 	_, err := m.library.IssueContent(book.ID)
 	if err != nil {
 		msg := fmt.Sprintf("IssueContent: %s", err)
@@ -537,7 +545,7 @@ func (m *Manager) issueBook(index int) {
 }
 
 func (m *Manager) showBookDescription(index int) {
-	book := m.books.ContentItems[index]
+	book := m.contentList.Item(index)
 	md, err := m.library.GetContentMetadata(book.ID)
 	if err != nil {
 		msg := fmt.Sprintf("GetContentMetadata: %v", err)
