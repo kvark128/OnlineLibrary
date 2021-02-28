@@ -57,9 +57,11 @@ func (cl *LibraryContentList) Label() daisy.Label {
 	return cl.books.Label
 }
 
-func (cl *LibraryContentList) Items() (items []ContentItem) {
-	for _, book := range cl.books.ContentItems {
-		items = append(items, NewLibraryContentItem(cl.library, book.ID, book.Label.Text))
-	}
-	return items
+func (cl *LibraryContentList) Len() int {
+	return len(cl.books.ContentItems)
+}
+
+func (cl *LibraryContentList) Item(index int) ContentItem {
+	book := cl.books.ContentItems[index]
+	return NewLibraryContentItem(cl.library, book.ID, book.Label.Text)
 }
