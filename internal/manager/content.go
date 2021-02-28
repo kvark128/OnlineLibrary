@@ -4,6 +4,36 @@ import (
 	daisy "github.com/kvark128/daisyonline"
 )
 
+type LibraryContentItem struct {
+	library *Library
+	id      string
+	label   daisy.Label
+}
+
+func NewLibraryContentItem(library *Library, id, name string) *LibraryContentItem {
+	return &LibraryContentItem{
+		library: library,
+		id:      id,
+		label:   daisy.Label{Text: name},
+	}
+}
+
+func (ci *LibraryContentItem) ID() string {
+	return ci.id
+}
+
+func (ci *LibraryContentItem) Label() daisy.Label {
+	return ci.label
+}
+
+func (ci *LibraryContentItem) Resources() ([]daisy.Resource, error) {
+	r, err := ci.library.GetContentResources(ci.id)
+	if err != nil {
+		return nil, err
+	}
+	return r.Resources, nil
+}
+
 type LibraryContentList struct {
 	library *Library
 	books   *daisy.ContentList
@@ -27,19 +57,9 @@ func (cl *LibraryContentList) Label() daisy.Label {
 	return cl.books.Label
 }
 
-func (cl *LibraryContentList) Len() int {
-	return len(cl.books.ContentItems)
-}
-
-func (cl *LibraryContentList) Item(index int) daisy.ContentItem {
-	return cl.books.ContentItems[index]
-}
-
-func (cl *LibraryContentList) ItemResources(index int) ([]daisy.Resource, error) {
-	book := cl.books.ContentItems[index]
-	r, err := cl.library.GetContentResources(book.ID)
-	if err != nil {
-		return nil, err
+func (cl *LibraryContentList) Items() (items []ContentItem) {
+	for _, book := range cl.books.ContentItems {
+		items = append(items, NewLibraryContentItem(cl.library, book.ID, book.Label.Text))
 	}
-	return r.Resources, nil
+	return items
 }

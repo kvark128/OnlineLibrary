@@ -21,11 +21,15 @@ import (
 	"github.com/lxn/walk"
 )
 
+type ContentItem interface {
+	Label() daisy.Label
+	ID() string
+	Resources() ([]daisy.Resource, error)
+}
+
 type ContentList interface {
 	Label() daisy.Label
-	Len() int
-	Item(int) daisy.ContentItem
-	ItemResources(int) ([]daisy.Resource, error)
+	Items() []ContentItem
 }
 
 type Manager struct {
@@ -52,9 +56,9 @@ func (m *Manager) Start(eventCH chan events.Event) {
 		case events.ACTIVATE_MENU:
 			index := gui.MainList.CurrentIndex()
 			if m.contentList != nil {
-				book := m.contentList.Item(index)
-				if _, id := m.bookplayer.BookInfo(); book.ID != id {
-					if err := m.setBookplayer(book.ID, book.Label.Text); err != nil {
+				book := m.contentList.Items()[index]
+				if _, id := m.bookplayer.BookInfo(); book.ID() != id {
+					if err := m.setBookplayer(book); err != nil {
 						gui.MessageBox("Ошибка", err.Error(), walk.MsgBoxOK|walk.MsgBoxIconError)
 						break
 					}
@@ -296,7 +300,7 @@ func (m *Manager) logon(service *config.Service) error {
 	}
 
 	book, _ := m.library.service.Book(id)
-	m.setBookplayer(book.ID, book.Name)
+	m.setBookplayer(NewLibraryContentItem(m.library, book.ID, book.Name))
 	return nil
 }
 
@@ -380,7 +384,7 @@ func (m *Manager) setContent(contentID string) {
 		return
 	}
 
-	if contentList.Len() == 0 {
+	if len(contentList.Items()) == 0 {
 		gui.MessageBox("Предупреждение", "Список книг пуст", walk.MsgBoxOK|walk.MsgBoxIconWarning)
 		// Return to the main menu of the library
 		m.setQuestions(daisy.UserResponse{QuestionID: daisy.Default})
@@ -390,13 +394,12 @@ func (m *Manager) setContent(contentID string) {
 	m.contentList = contentList
 	m.questions = nil
 
-	names := make([]string, m.contentList.Len())
-	for i := range names {
-		book := m.contentList.Item(i)
-		names[i] = book.Label.Text
+	var names []string
+	for _, item := range m.contentList.Items() {
+		names = append(names, item.Label().Text)
 		// books positions on the bookshelf must always be saved
 		if contentID == daisy.Issued {
-			m.library.service.AddBook(book.ID, book.Label.Text)
+			m.library.service.AddBook(item.ID(), item.Label().Text)
 		}
 	}
 	gui.MainList.SetItems(names, m.contentList.Label().Text)
@@ -410,20 +413,20 @@ func (m *Manager) saveBookPosition(bookplayer *player.Player) {
 	}
 }
 
-func (m *Manager) setBookplayer(id, name string) error {
+func (m *Manager) setBookplayer(item ContentItem) error {
 	m.saveBookPosition(m.bookplayer)
 	m.bookplayer.Stop()
 
-	r, err := m.library.GetContentResources(id)
+	rsrc, err := item.Resources()
 	if err != nil {
 		err = fmt.Errorf("GetContentResources: %v", err)
 		log.Printf(err.Error())
 		return err
 	}
 
-	gui.SetMainWindowTitle(name)
-	m.bookplayer = player.NewPlayer(id, name, r.Resources, config.Conf.General.OutputDevice)
-	if book, err := m.library.service.Book(id); err == nil {
+	gui.SetMainWindowTitle(item.Label().Text)
+	m.bookplayer = player.NewPlayer(item.ID(), item.Label().Text, rsrc, config.Conf.General.OutputDevice)
+	if book, err := m.library.service.Book(item.ID()); err == nil {
 		m.bookplayer.SetFragment(book.Fragment)
 		m.bookplayer.SetPosition(book.ElapsedTime)
 	}
@@ -431,9 +434,9 @@ func (m *Manager) setBookplayer(id, name string) error {
 }
 
 func (m *Manager) downloadBook(index int) {
-	book := m.contentList.Item(index)
+	book := m.contentList.Items()[index]
 
-	r, err := m.library.GetContentResources(book.ID)
+	rsrc, err := book.Resources()
 	if err != nil {
 		msg := fmt.Sprintf("GetContentResources: %s", err)
 		log.Printf(msg)
@@ -458,20 +461,20 @@ func (m *Manager) downloadBook(index int) {
 			me.Unlock()
 		}
 
-		dlg := gui.NewProgressDialog("Загрузка книги", fmt.Sprintf("Загрузка %s", book.Label.Text), len(r.Resources), cancelFN)
+		dlg := gui.NewProgressDialog("Загрузка книги", fmt.Sprintf("Загрузка %s", book.Label().Text), len(rsrc), cancelFN)
 		dlg.Show()
 
-		for _, v := range r.Resources {
-			path := filepath.Join(config.UserData(), util.ReplaceForbiddenCharacters(book.Label.Text), v.LocalURI)
+		for _, r := range rsrc {
+			path := filepath.Join(config.UserData(), util.ReplaceForbiddenCharacters(book.Label().Text), r.LocalURI)
 			if info, e := os.Stat(path); e == nil {
-				if !info.IsDir() && info.Size() == v.Size {
+				if !info.IsDir() && info.Size() == r.Size {
 					// v.LocalURI already exist
 					dlg.IncreaseValue(1)
 					continue
 				}
 			}
 
-			conn, err = connection.NewConnection(v.URI)
+			conn, err = connection.NewConnection(r.URI)
 			if err != nil {
 				break
 			}
@@ -517,8 +520,8 @@ func (m *Manager) downloadBook(index int) {
 }
 
 func (m *Manager) removeBook(index int) {
-	book := m.contentList.Item(index)
-	_, err := m.library.ReturnContent(book.ID)
+	book := m.contentList.Items()[index]
+	_, err := m.library.ReturnContent(book.ID())
 	if err != nil {
 		msg := fmt.Sprintf("ReturnContent: %s", err)
 		log.Printf(msg)
@@ -526,13 +529,13 @@ func (m *Manager) removeBook(index int) {
 		return
 	}
 
-	m.library.service.RemoveBook(book.ID)
-	gui.MessageBox("Уведомление", fmt.Sprintf("%s удалена с книжной полки", book.Label.Text), walk.MsgBoxOK|walk.MsgBoxIconWarning)
+	m.library.service.RemoveBook(book.ID())
+	gui.MessageBox("Уведомление", fmt.Sprintf("%s удалена с книжной полки", book.Label().Text), walk.MsgBoxOK|walk.MsgBoxIconWarning)
 }
 
 func (m *Manager) issueBook(index int) {
-	book := m.contentList.Item(index)
-	_, err := m.library.IssueContent(book.ID)
+	book := m.contentList.Items()[index]
+	_, err := m.library.IssueContent(book.ID())
 	if err != nil {
 		msg := fmt.Sprintf("IssueContent: %s", err)
 		log.Printf(msg)
@@ -540,13 +543,13 @@ func (m *Manager) issueBook(index int) {
 		return
 	}
 
-	m.library.service.AddBook(book.ID, book.Label.Text)
-	gui.MessageBox("Уведомление", fmt.Sprintf("%s добавлена на книжную полку", book.Label.Text), walk.MsgBoxOK|walk.MsgBoxIconWarning)
+	m.library.service.AddBook(book.ID(), book.Label().Text)
+	gui.MessageBox("Уведомление", fmt.Sprintf("%s добавлена на книжную полку", book.Label().Text), walk.MsgBoxOK|walk.MsgBoxIconWarning)
 }
 
 func (m *Manager) showBookDescription(index int) {
-	book := m.contentList.Item(index)
-	md, err := m.library.GetContentMetadata(book.ID)
+	book := m.contentList.Items()[index]
+	md, err := m.library.GetContentMetadata(book.ID())
 	if err != nil {
 		msg := fmt.Sprintf("GetContentMetadata: %v", err)
 		log.Printf(msg)
