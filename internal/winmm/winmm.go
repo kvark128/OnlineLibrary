@@ -148,6 +148,7 @@ type WavePlayer struct {
 	wfx                           *WAVEFORMATEX
 	preferredDevice               int
 	preferredDeviceIsNotAvailable bool
+	pause                         bool
 	callMutex                     sync.Mutex
 	waveout                       uintptr
 	waveout_event                 windows.Handle
@@ -196,6 +197,9 @@ func (wp *WavePlayer) open(outputDevice int) error {
 	}
 
 	wp.waveout = waveout
+	if wp.pause {
+		mmcall(procWaveOutPause, wp.waveout)
+	}
 	return nil
 }
 
@@ -282,7 +286,8 @@ func (wp *WavePlayer) Pause(pauseState bool) {
 	wp.callMutex.Lock()
 	defer wp.callMutex.Unlock()
 
-	if pauseState {
+	wp.pause = pauseState
+	if wp.pause {
 		mmcall(procWaveOutPause, wp.waveout)
 	} else {
 		mmcall(procWaveOutRestart, wp.waveout)
