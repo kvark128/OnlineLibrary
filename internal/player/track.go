@@ -165,6 +165,10 @@ func (trk *track) changeVolume(offset int) {
 	trk.wp.SetVolume(uint16(newL), uint16(newR))
 }
 
+func (trk *track) SetOutputDevice(outputDevice int) {
+	trk.wp.SetOutputDevice(outputDevice)
+}
+
 func (trk *track) stop() {
 	trk.wp.Stop()
 }

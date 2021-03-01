@@ -109,13 +109,12 @@ func (p *Player) SetOutputDevice(outputDevice string) {
 		return
 	}
 
-	_, offset := p.PositionInfo()
-	p.Stop()
 	p.Lock()
 	p.outputDeviceID = devID
-	p.offset = offset
+	if p.trk != nil {
+		p.trk.SetOutputDevice(p.outputDeviceID)
+	}
 	p.Unlock()
-	p.PlayPause()
 }
 
 func (p *Player) ChangeSpeed(offset float64) {

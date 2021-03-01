@@ -161,6 +161,20 @@ func NewWavePlayer(channels, samplesPerSec, bitsPerSample, buffSize, outputDevic
 	return wp
 }
 
+func (wp *WavePlayer) SetOutputDevice(outputDevice int) error {
+	wp.callMutex.Lock()
+	defer wp.callMutex.Unlock()
+
+	if wp.waveout != 0 {
+		procWaveOutClose.Call(wp.waveout)
+		wp.waveout = 0
+	}
+
+	wp.outputDevice = outputDevice
+	procWaveOutOpen.Call(uintptr(unsafe.Pointer(&wp.waveout)), uintptr(wp.outputDevice), uintptr(unsafe.Pointer(wp.wfx)), uintptr(wp.waveout_event), 0, CALLBACK_EVENT)
+	return nil
+}
+
 func (wp *WavePlayer) error(mmrError uintptr) error {
 	buf := make([]uint16, 256)
 	wp.callMutex.Lock()
