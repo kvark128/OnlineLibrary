@@ -128,20 +128,38 @@ func OutputDeviceNameToID(devName string) (int, error) {
 	}
 }
 
-type WavePlayer struct {
-	wfx           *WAVEFORMATEX
-	outputDevice  int
-	callMutex     sync.Mutex
-	waveout       uintptr
-	waveout_event windows.Handle
-	prev_whdr     *WAVEHDR
-	buffers       chan []byte
+func mmcall(p *windows.LazyProc, args ...uintptr) error {
+	mmrError, _, _ := p.Call(args...)
+	if mmrError == MMSYSERR_NOERROR {
+		return nil
+	}
+
+	// Buffer for description the error that occurred
+	buf := make([]uint16, 256)
+
+	r, _, _ := procWaveOutGetErrorTextW.Call(mmrError, uintptr(unsafe.Pointer(&buf[0])), uintptr(len(buf)))
+	if r != MMSYSERR_NOERROR {
+		return fmt.Errorf("%v: unknown error: code %v", p.Name, mmrError)
+	}
+	return fmt.Errorf("%v: %v", p.Name, windows.UTF16PtrToString(&buf[0]))
 }
 
-func NewWavePlayer(channels, samplesPerSec, bitsPerSample, buffSize, outputDevice int) *WavePlayer {
+type WavePlayer struct {
+	wfx                           *WAVEFORMATEX
+	preferredDevice               int
+	preferredDeviceIsNotAvailable bool
+	callMutex                     sync.Mutex
+	waveout                       uintptr
+	waveout_event                 windows.Handle
+	waitMutex                     sync.Mutex
+	prev_whdr                     *WAVEHDR
+	buffers                       chan []byte
+}
+
+func NewWavePlayer(channels, samplesPerSec, bitsPerSample, buffSize, preferredDevice int) *WavePlayer {
 	wp := &WavePlayer{
-		outputDevice: outputDevice,
-		buffers:      make(chan []byte, 2),
+		preferredDevice: preferredDevice,
+		buffers:         make(chan []byte, 2),
 	}
 
 	wp.wfx = &WAVEFORMATEX{
@@ -157,33 +175,49 @@ func NewWavePlayer(channels, samplesPerSec, bitsPerSample, buffSize, outputDevic
 	wp.buffers <- make([]byte, buffSize)
 
 	wp.waveout_event, _ = windows.CreateEvent(nil, 0, 0, nil)
-	procWaveOutOpen.Call(uintptr(unsafe.Pointer(&wp.waveout)), uintptr(wp.outputDevice), uintptr(unsafe.Pointer(wp.wfx)), uintptr(wp.waveout_event), 0, CALLBACK_EVENT)
+	if wp.open(wp.preferredDevice) != nil {
+		wp.preferredDeviceIsNotAvailable = true
+		wp.open(WAVE_MAPPER)
+	}
+
 	return wp
+}
+
+func (wp *WavePlayer) open(outputDevice int) error {
+	var waveout uintptr
+	err := mmcall(procWaveOutOpen, uintptr(unsafe.Pointer(&waveout)), uintptr(outputDevice), uintptr(unsafe.Pointer(wp.wfx)), uintptr(wp.waveout_event), 0, CALLBACK_EVENT)
+	if err != nil {
+		return err
+	}
+
+	if wp.waveout != 0 {
+		mmcall(procWaveOutReset, wp.waveout)
+		mmcall(procWaveOutClose, wp.waveout)
+	}
+
+	wp.waveout = waveout
+	return nil
 }
 
 func (wp *WavePlayer) SetOutputDevice(outputDevice int) error {
 	wp.callMutex.Lock()
 	defer wp.callMutex.Unlock()
 
-	if wp.waveout != 0 {
-		procWaveOutClose.Call(wp.waveout)
-		wp.waveout = 0
+	if err := wp.open(outputDevice); err != nil {
+		return err
 	}
 
-	wp.outputDevice = outputDevice
-	procWaveOutOpen.Call(uintptr(unsafe.Pointer(&wp.waveout)), uintptr(wp.outputDevice), uintptr(unsafe.Pointer(wp.wfx)), uintptr(wp.waveout_event), 0, CALLBACK_EVENT)
+	wp.preferredDevice = outputDevice
+	wp.preferredDeviceIsNotAvailable = false
 	return nil
 }
 
-func (wp *WavePlayer) error(mmrError uintptr) error {
-	buf := make([]uint16, 256)
-	wp.callMutex.Lock()
-	r, _, _ := procWaveOutGetErrorTextW.Call(mmrError, uintptr(unsafe.Pointer(&buf[0])), uintptr(len(buf)))
-	wp.callMutex.Unlock()
-	if r != MMSYSERR_NOERROR {
-		return fmt.Errorf("unknown error: %v", mmrError)
+func (wp *WavePlayer) feed(whdr *WAVEHDR) error {
+	err := mmcall(procWaveOutPrepareHeader, wp.waveout, uintptr(unsafe.Pointer(whdr)), unsafe.Sizeof(*whdr))
+	if err != nil {
+		return err
 	}
-	return errors.New(windows.UTF16PtrToString(&buf[0]))
+	return mmcall(procWaveOutWrite, wp.waveout, uintptr(unsafe.Pointer(whdr)), unsafe.Sizeof(*whdr))
 }
 
 func (wp *WavePlayer) Write(data []byte) (int, error) {
@@ -200,55 +234,69 @@ func (wp *WavePlayer) Write(data []byte) (int, error) {
 	}
 
 	wp.callMutex.Lock()
-	r, _, _ := procWaveOutPrepareHeader.Call(wp.waveout, uintptr(unsafe.Pointer(whdr)), unsafe.Sizeof(*whdr))
-	if r == MMSYSERR_NOERROR {
-		r, _, _ = procWaveOutWrite.Call(wp.waveout, uintptr(unsafe.Pointer(whdr)), unsafe.Sizeof(*whdr))
+
+	if wp.preferredDeviceIsNotAvailable {
+		if wp.open(wp.preferredDevice) == nil {
+			wp.preferredDeviceIsNotAvailable = false
+		}
 	}
+
+	err := wp.feed(whdr)
+	if err != nil && !wp.preferredDeviceIsNotAvailable && wp.preferredDevice != WAVE_MAPPER {
+		wp.preferredDeviceIsNotAvailable = true
+		wp.open(WAVE_MAPPER)
+		err = wp.feed(whdr)
+	}
+
 	wp.callMutex.Unlock()
 
-	wp.Sync()
-
-	if r != MMSYSERR_NOERROR {
-		return 0, wp.error(r)
+	if err != nil {
+		return 0, err
 	}
 
-	wp.prev_whdr = whdr
+	wp.wait(whdr)
 	return length, nil
 }
 
 func (wp *WavePlayer) Sync() {
-	if wp.prev_whdr == nil {
-		return
-	}
+	wp.wait(nil)
+}
 
-	for wp.prev_whdr.dwFlags&WHDR_DONE == 0 {
-		windows.WaitForSingleObject(wp.waveout_event, windows.INFINITE)
-	}
+func (wp *WavePlayer) wait(whdr *WAVEHDR) {
+	wp.waitMutex.Lock()
+	defer wp.waitMutex.Unlock()
 
-	wp.callMutex.Lock()
-	procWaveOutUnprepareHeader.Call(wp.waveout, uintptr(unsafe.Pointer(wp.prev_whdr)), unsafe.Sizeof(*wp.prev_whdr))
-	wp.callMutex.Unlock()
-	wp.prev_whdr = nil
+	if wp.prev_whdr != nil {
+		for wp.prev_whdr.dwFlags&WHDR_DONE == 0 {
+			windows.WaitForSingleObject(wp.waveout_event, windows.INFINITE)
+		}
+
+		wp.callMutex.Lock()
+		mmcall(procWaveOutUnprepareHeader, wp.waveout, uintptr(unsafe.Pointer(wp.prev_whdr)), unsafe.Sizeof(*wp.prev_whdr))
+		wp.callMutex.Unlock()
+	}
+	wp.prev_whdr = whdr
 }
 
 func (wp *WavePlayer) Pause(pauseState bool) {
 	wp.callMutex.Lock()
+	defer wp.callMutex.Unlock()
+
 	if pauseState {
-		procWaveOutPause.Call(wp.waveout)
+		mmcall(procWaveOutPause, wp.waveout)
 	} else {
-		procWaveOutRestart.Call(wp.waveout)
+		mmcall(procWaveOutRestart, wp.waveout)
 	}
-	wp.callMutex.Unlock()
 }
 
 func (wp *WavePlayer) Position() (uint32, error) {
-	pmmt := &MMTIME{WType: TIME_BYTES}
 	wp.callMutex.Lock()
-	r, _, _ := procWaveOutGetPosition.Call(wp.waveout, uintptr(unsafe.Pointer(pmmt)), unsafe.Sizeof(*pmmt))
-	wp.callMutex.Unlock()
+	defer wp.callMutex.Unlock()
 
-	if r != MMSYSERR_NOERROR {
-		return 0, wp.error(r)
+	pmmt := &MMTIME{WType: TIME_BYTES}
+	err := mmcall(procWaveOutGetPosition, wp.waveout, uintptr(unsafe.Pointer(pmmt)), unsafe.Sizeof(*pmmt))
+	if err != nil {
+		return 0, err
 	}
 
 	if pmmt.WType != TIME_BYTES {
@@ -259,37 +307,40 @@ func (wp *WavePlayer) Position() (uint32, error) {
 }
 
 func (wp *WavePlayer) Stop() {
-	// Pausing first seems to make waveOutReset respond faster on some systems.
 	wp.callMutex.Lock()
-	procWaveOutPause.Call(wp.waveout)
-	procWaveOutReset.Call(wp.waveout)
-	wp.callMutex.Unlock()
+	defer wp.callMutex.Unlock()
+
+	// Pausing first seems to make waveOutReset respond faster on some systems.
+	mmcall(procWaveOutPause, wp.waveout)
+	mmcall(procWaveOutReset, wp.waveout)
 }
 
 func (wp *WavePlayer) GetVolume() (uint16, uint16) {
-	var volume uint32
 	wp.callMutex.Lock()
-	procWaveOutGetVolume.Call(wp.waveout, uintptr(unsafe.Pointer(&volume)))
-	wp.callMutex.Unlock()
+	defer wp.callMutex.Unlock()
+
+	var volume uint32
+	mmcall(procWaveOutGetVolume, wp.waveout, uintptr(unsafe.Pointer(&volume)))
 	return uint16(volume), uint16(volume >> 16)
 }
 
 func (wp *WavePlayer) SetVolume(l, r uint16) {
-	volume := uint32(r)<<16 + uint32(l)
 	wp.callMutex.Lock()
-	procWaveOutSetVolume.Call(wp.waveout, uintptr(volume))
-	wp.callMutex.Unlock()
+	defer wp.callMutex.Unlock()
+
+	volume := uint32(r)<<16 + uint32(l)
+	mmcall(procWaveOutSetVolume, wp.waveout, uintptr(volume))
 }
 
 func (wp *WavePlayer) Close() error {
 	wp.callMutex.Lock()
-	procWaveOutClose.Call(wp.waveout)
-	wp.callMutex.Unlock()
+	defer wp.callMutex.Unlock()
 
+	err := mmcall(procWaveOutClose, wp.waveout)
 	windows.CloseHandle(wp.waveout_event)
 	wp.waveout = 0
 	wp.waveout_event = 0
-	return nil
+	return err
 }
 
 type WaveRecorder struct {
