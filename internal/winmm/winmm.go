@@ -145,22 +145,22 @@ func mmcall(p *windows.LazyProc, args ...uintptr) error {
 }
 
 type WavePlayer struct {
-	wfx             *WAVEFORMATEX
-	preferredDevice string
-	pause           bool
-	callMutex       sync.Mutex
-	currentDeviceID int
-	waveout         uintptr
-	waveout_event   windows.Handle
-	waitMutex       sync.Mutex
-	prev_whdr       *WAVEHDR
-	buffers         chan []byte
+	wfx                 *WAVEFORMATEX
+	preferredDeviceName string
+	pause               bool
+	callMutex           sync.Mutex
+	currentDeviceID     int
+	waveout             uintptr
+	waveout_event       windows.Handle
+	waitMutex           sync.Mutex
+	prev_whdr           *WAVEHDR
+	buffers             chan []byte
 }
 
-func NewWavePlayer(channels, samplesPerSec, bitsPerSample, buffSize int, preferredDevice string) (*WavePlayer, error) {
+func NewWavePlayer(channels, samplesPerSec, bitsPerSample, bufSize int, preferredDeviceName string) (*WavePlayer, error) {
 	wp := &WavePlayer{
-		preferredDevice: preferredDevice,
-		buffers:         make(chan []byte, 2),
+		preferredDeviceName: preferredDeviceName,
+		buffers:             make(chan []byte, 2),
 	}
 
 	wp.wfx = &WAVEFORMATEX{
@@ -172,19 +172,26 @@ func NewWavePlayer(channels, samplesPerSec, bitsPerSample, buffSize int, preferr
 		nAvgBytesPerSec: uint32(bitsPerSample) / 8 * uint32(channels) * uint32(samplesPerSec),
 	}
 
-	wp.buffers <- make([]byte, buffSize)
-	wp.buffers <- make([]byte, buffSize)
+	// Completely fill the buffer channel
+	for i := 0; i < cap(wp.buffers); i++ {
+		wp.buffers <- make([]byte, bufSize)
+	}
 
-	wp.waveout_event, _ = windows.CreateEvent(nil, 0, 0, nil)
+	event, err := windows.CreateEvent(nil, 0, 0, nil)
+	if err != nil {
+		return nil, err
+	}
+	wp.waveout_event = event
 
-	if wp.openByName(wp.preferredDevice) != nil {
+	if wp.openByName(wp.preferredDeviceName) != nil {
 		if err := wp.openByID(WAVE_MAPPER); err != nil {
 			return nil, err
 		}
 	}
 
+	// WAVE_MAPPER cannot be the preferred device
 	if wp.currentDeviceID == WAVE_MAPPER {
-		wp.preferredDevice = ""
+		wp.preferredDeviceName = ""
 	}
 
 	return wp, nil
@@ -227,9 +234,10 @@ func (wp *WavePlayer) SetOutputDevice(devName string) error {
 		return err
 	}
 
-	wp.preferredDevice = devName
+	wp.preferredDeviceName = devName
+	// WAVE_MAPPER cannot be the preferred device
 	if wp.currentDeviceID == WAVE_MAPPER {
-		wp.preferredDevice = ""
+		wp.preferredDeviceName = ""
 	}
 	return nil
 }
@@ -257,14 +265,17 @@ func (wp *WavePlayer) Write(data []byte) (int, error) {
 
 	wp.callMutex.Lock()
 
-	if wp.currentDeviceID == WAVE_MAPPER && wp.preferredDevice != "" {
-		wp.openByName(wp.preferredDevice)
+	// Using WAVE_MAPPER instead of the preferred device means that it was previously disabled. Trying to restore it
+	if wp.currentDeviceID == WAVE_MAPPER && wp.preferredDeviceName != "" {
+		wp.openByName(wp.preferredDeviceName)
 	}
 
 	err := wp.feed(whdr)
 	if err != nil && wp.currentDeviceID != WAVE_MAPPER {
-		wp.openByID(WAVE_MAPPER)
-		err = wp.feed(whdr)
+		// Device was probably disconnected. Switch to WAVE_MAPPER and try again
+		if wp.openByID(WAVE_MAPPER) == nil {
+			err = wp.feed(whdr)
+		}
 	}
 
 	wp.callMutex.Unlock()
