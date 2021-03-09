@@ -36,17 +36,17 @@ const (
 
 type Player struct {
 	sync.Mutex
-	playList     []daisy.Resource
-	bookID       string
-	bookName     string
-	playing      *util.Flag
-	wg           *sync.WaitGroup
-	trk          *track
-	outputDevice string
-	speed        float64
-	pitch        float64
-	fragment     int
-	offset       time.Duration
+	playList      []daisy.Resource
+	bookID        string
+	bookName      string
+	playing       *util.Flag
+	wg            *sync.WaitGroup
+	fragment      *Fragment
+	outputDevice  string
+	speed         float64
+	pitch         float64
+	fragmentIndex int
+	offset        time.Duration
 }
 
 func NewPlayer(bookID, bookName string, resources []daisy.Resource, outputDevice string) *Player {
@@ -88,10 +88,10 @@ func (p *Player) PositionInfo() (int, time.Duration) {
 	p.Lock()
 	defer p.Unlock()
 	elapsedTime := p.offset
-	if p.trk != nil {
-		elapsedTime = p.trk.getElapsedTime()
+	if p.fragment != nil {
+		elapsedTime = p.fragment.getElapsedTime()
 	}
-	return p.fragment, elapsedTime
+	return p.fragmentIndex, elapsedTime
 }
 
 func (p *Player) SetOutputDevice(outputDevice string) {
@@ -105,8 +105,8 @@ func (p *Player) SetOutputDevice(outputDevice string) {
 
 	p.Lock()
 	p.outputDevice = outputDevice
-	if p.trk != nil {
-		p.trk.SetOutputDevice(p.outputDevice)
+	if p.fragment != nil {
+		p.fragment.SetOutputDevice(p.outputDevice)
 	}
 	p.Unlock()
 }
@@ -135,8 +135,8 @@ func (p *Player) SetSpeed(speed float64) {
 	default:
 		p.speed = speed
 	}
-	if p.trk != nil {
-		p.trk.setSpeed(p.speed)
+	if p.fragment != nil {
+		p.fragment.setSpeed(p.speed)
 	}
 }
 
@@ -164,8 +164,8 @@ func (p *Player) SetPitch(pitch float64) {
 	default:
 		p.pitch = pitch
 	}
-	if p.trk != nil {
-		p.trk.setPitch(p.pitch)
+	if p.fragment != nil {
+		p.fragment.setPitch(p.pitch)
 	}
 }
 
@@ -176,12 +176,12 @@ func (p *Player) SetFragment(fragment int) {
 	p.Lock()
 	switch {
 	case fragment < 0:
-		p.fragment = 0
+		p.fragmentIndex = 0
 	case fragment >= len(p.playList):
 		p.Unlock()
 		return
 	default:
-		p.fragment = fragment
+		p.fragmentIndex = fragment
 	}
 	p.Unlock()
 	if p.playing.IsSet() {
@@ -196,8 +196,8 @@ func (p *Player) ChangeVolume(offset int) {
 	}
 	p.Lock()
 	defer p.Unlock()
-	if p.trk != nil {
-		p.trk.changeVolume(offset)
+	if p.fragment != nil {
+		p.fragment.changeVolume(offset)
 	}
 }
 
@@ -212,8 +212,8 @@ func (p *Player) SetPosition(position time.Duration) {
 		p.offset = position
 		return
 	}
-	if p.trk != nil {
-		if err := p.trk.setPosition(position); err != nil {
+	if p.fragment != nil {
+		if err := p.fragment.setPosition(position); err != nil {
 			log.Printf("set fragment position: %v", err)
 		}
 	}
@@ -228,10 +228,10 @@ func (p *Player) PlayPause() {
 	if !p.playing.IsSet() {
 		p.playing.Set()
 		p.wg.Add(1)
-		go p.start(p.fragment)
-	} else if p.trk != nil {
-		if !p.trk.pause(true) {
-			p.trk.pause(false)
+		go p.start(p.fragmentIndex)
+	} else if p.fragment != nil {
+		if !p.fragment.pause(true) {
+			p.fragment.pause(false)
 		}
 	}
 }
@@ -245,8 +245,8 @@ func (p *Player) Stop() {
 	defer p.Unlock()
 	p.playing.Clear()
 	p.offset = 0
-	if p.trk != nil {
-		p.trk.stop()
+	if p.fragment != nil {
+		p.fragment.stop()
 	}
 }
 
@@ -289,14 +289,14 @@ func (p *Player) start(startFragment int) {
 		outputDevice := p.outputDevice
 		p.Unlock()
 
-		trk, kbps, err := newTrack(src, speed, pitch, outputDevice)
+		fragment, kbps, err := NewFragment(src, speed, pitch, outputDevice)
 		if err != nil {
-			log.Printf("new track for %v: %v", uri, err)
+			log.Printf("new fragment for %v: %v", uri, err)
 			src.Close()
 			continue
 		}
 
-		if err := trk.setPosition(offset); err != nil {
+		if err := fragment.setPosition(offset); err != nil {
 			log.Printf("set fragment position: %v", err)
 			src.Close()
 			continue
@@ -308,18 +308,18 @@ func (p *Player) start(startFragment int) {
 		}
 
 		p.Lock()
-		p.trk = trk
-		p.fragment = startFragment + index
-		gui.SetFragments(p.fragment, len(p.playList))
+		p.fragment = fragment
+		p.fragmentIndex = startFragment + index
+		gui.SetFragments(p.fragmentIndex, len(p.playList))
 		gui.SetTotalTime(time.Second * time.Duration(r.Size/int64(kbps*1000/8)))
 		p.offset = 0
 		p.Unlock()
 
-		trk.play(p.playing)
+		fragment.play(p.playing)
 		src.Close()
 
 		p.Lock()
-		p.trk = nil
+		p.fragment = nil
 		p.Unlock()
 
 		if !p.playing.IsSet() {
