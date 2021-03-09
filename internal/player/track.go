@@ -28,7 +28,7 @@ type track struct {
 	wp          *winmm.WavePlayer
 }
 
-func newTrack(mp3 io.Reader, speed, pitch float64, outputDeviceID int) (*track, int, error) {
+func newTrack(mp3 io.Reader, speed, pitch float64, devName string) (*track, int, error) {
 	trk := &track{}
 	trk.dec = minimp3.NewDecoder(mp3)
 	trk.buffer = make([]byte, 1024*16)
@@ -45,7 +45,7 @@ func newTrack(mp3 io.Reader, speed, pitch float64, outputDeviceID int) (*track, 
 	trk.stream.SetSpeed(speed)
 	trk.stream.SetPitch(pitch)
 	trk.stream.Write(trk.buffer[:n])
-	trk.wp = winmm.NewWavePlayer(trk.channels, trk.sampleRate, 16, len(trk.buffer), outputDeviceID)
+	trk.wp, _ = winmm.NewWavePlayer(trk.channels, trk.sampleRate, 16, len(trk.buffer), devName)
 	return trk, kbps, nil
 }
 
@@ -68,9 +68,6 @@ func (trk *track) play(playing *util.Flag) {
 
 			if _, err := trk.wp.Write(trk.buffer[:n]); err != nil {
 				log.Printf("wavePlayer: %v", err)
-				trk.wp.Close()
-				trk.wp = winmm.NewWavePlayer(trk.channels, trk.sampleRate, 16, len(trk.buffer), winmm.WAVE_MAPPER)
-				trk.wp.Write(trk.buffer[:n])
 			}
 		}
 
@@ -165,8 +162,8 @@ func (trk *track) changeVolume(offset int) {
 	trk.wp.SetVolume(uint16(newL), uint16(newR))
 }
 
-func (trk *track) SetOutputDevice(outputDevice int) {
-	trk.wp.SetOutputDevice(outputDevice)
+func (trk *track) SetOutputDevice(devName string) {
+	trk.wp.SetOutputDevice(devName)
 }
 
 func (trk *track) stop() {

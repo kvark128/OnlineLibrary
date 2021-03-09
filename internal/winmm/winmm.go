@@ -145,19 +145,19 @@ func mmcall(p *windows.LazyProc, args ...uintptr) error {
 }
 
 type WavePlayer struct {
-	wfx                           *WAVEFORMATEX
-	preferredDevice               int
-	preferredDeviceIsNotAvailable bool
-	pause                         bool
-	callMutex                     sync.Mutex
-	waveout                       uintptr
-	waveout_event                 windows.Handle
-	waitMutex                     sync.Mutex
-	prev_whdr                     *WAVEHDR
-	buffers                       chan []byte
+	wfx             *WAVEFORMATEX
+	preferredDevice string
+	pause           bool
+	callMutex       sync.Mutex
+	currentDeviceID int
+	waveout         uintptr
+	waveout_event   windows.Handle
+	waitMutex       sync.Mutex
+	prev_whdr       *WAVEHDR
+	buffers         chan []byte
 }
 
-func NewWavePlayer(channels, samplesPerSec, bitsPerSample, buffSize, preferredDevice int) *WavePlayer {
+func NewWavePlayer(channels, samplesPerSec, bitsPerSample, buffSize int, preferredDevice string) (*WavePlayer, error) {
 	wp := &WavePlayer{
 		preferredDevice: preferredDevice,
 		buffers:         make(chan []byte, 2),
@@ -176,17 +176,31 @@ func NewWavePlayer(channels, samplesPerSec, bitsPerSample, buffSize, preferredDe
 	wp.buffers <- make([]byte, buffSize)
 
 	wp.waveout_event, _ = windows.CreateEvent(nil, 0, 0, nil)
-	if wp.open(wp.preferredDevice) != nil {
-		wp.preferredDeviceIsNotAvailable = true
-		wp.open(WAVE_MAPPER)
+
+	if wp.openByName(wp.preferredDevice) != nil {
+		if err := wp.openByID(WAVE_MAPPER); err != nil {
+			return nil, err
+		}
 	}
 
-	return wp
+	if wp.currentDeviceID == WAVE_MAPPER {
+		wp.preferredDevice = ""
+	}
+
+	return wp, nil
 }
 
-func (wp *WavePlayer) open(outputDevice int) error {
+func (wp *WavePlayer) openByName(devName string) error {
+	devID, err := OutputDeviceNameToID(devName)
+	if err != nil {
+		return err
+	}
+	return wp.openByID(devID)
+}
+
+func (wp *WavePlayer) openByID(devID int) error {
 	var waveout uintptr
-	err := mmcall(procWaveOutOpen, uintptr(unsafe.Pointer(&waveout)), uintptr(outputDevice), uintptr(unsafe.Pointer(wp.wfx)), uintptr(wp.waveout_event), 0, CALLBACK_EVENT)
+	err := mmcall(procWaveOutOpen, uintptr(unsafe.Pointer(&waveout)), uintptr(devID), uintptr(unsafe.Pointer(wp.wfx)), uintptr(wp.waveout_event), 0, CALLBACK_EVENT)
 	if err != nil {
 		return err
 	}
@@ -197,22 +211,26 @@ func (wp *WavePlayer) open(outputDevice int) error {
 	}
 
 	wp.waveout = waveout
+	wp.currentDeviceID = devID
+
 	if wp.pause {
 		mmcall(procWaveOutPause, wp.waveout)
 	}
 	return nil
 }
 
-func (wp *WavePlayer) SetOutputDevice(outputDevice int) error {
+func (wp *WavePlayer) SetOutputDevice(devName string) error {
 	wp.callMutex.Lock()
 	defer wp.callMutex.Unlock()
 
-	if err := wp.open(outputDevice); err != nil {
+	if err := wp.openByName(devName); err != nil {
 		return err
 	}
 
-	wp.preferredDevice = outputDevice
-	wp.preferredDeviceIsNotAvailable = false
+	wp.preferredDevice = devName
+	if wp.currentDeviceID == WAVE_MAPPER {
+		wp.preferredDevice = ""
+	}
 	return nil
 }
 
@@ -239,16 +257,13 @@ func (wp *WavePlayer) Write(data []byte) (int, error) {
 
 	wp.callMutex.Lock()
 
-	if wp.preferredDeviceIsNotAvailable {
-		if wp.open(wp.preferredDevice) == nil {
-			wp.preferredDeviceIsNotAvailable = false
-		}
+	if wp.currentDeviceID == WAVE_MAPPER && wp.preferredDevice != "" {
+		wp.openByName(wp.preferredDevice)
 	}
 
 	err := wp.feed(whdr)
-	if err != nil && !wp.preferredDeviceIsNotAvailable && wp.preferredDevice != WAVE_MAPPER {
-		wp.preferredDeviceIsNotAvailable = true
-		wp.open(WAVE_MAPPER)
+	if err != nil && wp.currentDeviceID != WAVE_MAPPER {
+		wp.openByID(WAVE_MAPPER)
 		err = wp.feed(whdr)
 	}
 

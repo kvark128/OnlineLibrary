@@ -14,7 +14,6 @@ import (
 	"github.com/kvark128/OnlineLibrary/internal/gui"
 	"github.com/kvark128/OnlineLibrary/internal/lkf"
 	"github.com/kvark128/OnlineLibrary/internal/util"
-	"github.com/kvark128/OnlineLibrary/internal/winmm"
 	daisy "github.com/kvark128/daisyonline"
 	"github.com/kvark128/sonic"
 )
@@ -37,28 +36,28 @@ const (
 
 type Player struct {
 	sync.Mutex
-	playList       []daisy.Resource
-	bookID         string
-	bookName       string
-	playing        *util.Flag
-	wg             *sync.WaitGroup
-	trk            *track
-	outputDeviceID int
-	speed          float64
-	pitch          float64
-	fragment       int
-	offset         time.Duration
+	playList     []daisy.Resource
+	bookID       string
+	bookName     string
+	playing      *util.Flag
+	wg           *sync.WaitGroup
+	trk          *track
+	outputDevice string
+	speed        float64
+	pitch        float64
+	fragment     int
+	offset       time.Duration
 }
 
 func NewPlayer(bookID, bookName string, resources []daisy.Resource, outputDevice string) *Player {
 	p := &Player{
-		playing:        new(util.Flag),
-		wg:             new(sync.WaitGroup),
-		bookID:         bookID,
-		bookName:       bookName,
-		speed:          DEFAULT_SPEED,
-		pitch:          DEFAULT_PITCH,
-		outputDeviceID: winmm.WAVE_MAPPER,
+		playing:      new(util.Flag),
+		wg:           new(sync.WaitGroup),
+		bookID:       bookID,
+		bookName:     bookName,
+		speed:        DEFAULT_SPEED,
+		pitch:        DEFAULT_PITCH,
+		outputDevice: outputDevice,
 	}
 
 	// The player supports only LKF and MP3 formats. Unsupported resources must not be uploaded to the player
@@ -68,10 +67,6 @@ func NewPlayer(bookID, bookName string, resources []daisy.Resource, outputDevice
 		if ext == LKF_EXT || ext == MP3_EXT {
 			p.playList = append(p.playList, r)
 		}
-	}
-
-	if devID, err := winmm.OutputDeviceNameToID(outputDevice); err == nil {
-		p.outputDeviceID = devID
 	}
 
 	return p
@@ -104,15 +99,14 @@ func (p *Player) SetOutputDevice(outputDevice string) {
 		return
 	}
 
-	devID, err := winmm.OutputDeviceNameToID(outputDevice)
-	if err != nil || p.outputDeviceID == devID {
+	if p.outputDevice == outputDevice {
 		return
 	}
 
 	p.Lock()
-	p.outputDeviceID = devID
+	p.outputDevice = outputDevice
 	if p.trk != nil {
-		p.trk.SetOutputDevice(p.outputDeviceID)
+		p.trk.SetOutputDevice(p.outputDevice)
 	}
 	p.Unlock()
 }
@@ -292,10 +286,10 @@ func (p *Player) start(startFragment int) {
 		speed := p.speed
 		pitch := p.pitch
 		offset := p.offset
-		outputDeviceID := p.outputDeviceID
+		outputDevice := p.outputDevice
 		p.Unlock()
 
-		trk, kbps, err := newTrack(src, speed, pitch, outputDeviceID)
+		trk, kbps, err := newTrack(src, speed, pitch, outputDevice)
 		if err != nil {
 			log.Printf("new track for %v: %v", uri, err)
 			src.Close()
