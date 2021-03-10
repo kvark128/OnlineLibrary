@@ -16,16 +16,15 @@ import (
 
 type Fragment struct {
 	sync.Mutex
-	paused      bool
-	beRewind    bool
-	elapsedTime time.Duration
-	start       time.Time
-	stream      *sonic.Stream
-	dec         *minimp3.Decoder
-	sampleRate  int
-	channels    int
-	buffer      []byte
-	wp          *winmm.WavePlayer
+	paused     bool
+	beRewind   bool
+	stream     *sonic.Stream
+	dec        *minimp3.Decoder
+	sampleRate int
+	channels   int
+	buffer     []byte
+	wp         *winmm.WavePlayer
+	nWrite     int64
 }
 
 func NewFragment(mp3 io.Reader, speed, pitch float64, devName string) (*Fragment, int, error) {
@@ -61,11 +60,10 @@ func NewFragment(mp3 io.Reader, speed, pitch float64, devName string) (*Fragment
 func (f *Fragment) play(playing *util.Flag) {
 	var n int
 	var err error
-	f.start = time.Now()
 
 	for playing.IsSet() {
 		for playing.IsSet() {
-			gui.SetElapsedTime(f.getElapsedTime())
+			gui.SetElapsedTime(f.Position())
 			f.Lock()
 			nSamples := f.stream.SamplesAvailable()
 			if nSamples == 0 || (nSamples*f.channels*2 < len(f.buffer) && err == nil) {
@@ -78,6 +76,7 @@ func (f *Fragment) play(playing *util.Flag) {
 			if _, err := f.wp.Write(f.buffer[:n]); err != nil {
 				log.Printf("wavePlayer: %v", err)
 			}
+			f.nWrite += int64(float64(n) * f.stream.Speed())
 		}
 
 		if err != nil {
@@ -101,10 +100,6 @@ func (f *Fragment) play(playing *util.Flag) {
 func (f *Fragment) setSpeed(speed float64) {
 	f.Lock()
 	defer f.Unlock()
-	if !f.paused {
-		f.elapsedTime += time.Duration(float64(time.Since(f.start)) * f.stream.Speed())
-		f.start = time.Now()
-	}
 	f.stream.SetSpeed(speed)
 }
 
@@ -114,13 +109,10 @@ func (f *Fragment) setPitch(pitch float64) {
 	f.stream.SetPitch(pitch)
 }
 
-func (f *Fragment) getElapsedTime() time.Duration {
+func (f *Fragment) Position() time.Duration {
 	f.Lock()
 	defer f.Unlock()
-	if f.paused {
-		return f.elapsedTime
-	}
-	return f.elapsedTime + time.Duration(float64(time.Since(f.start))*f.stream.Speed())
+	return time.Second / time.Duration(f.sampleRate*f.channels*2) * time.Duration(f.nWrite)
 }
 
 func (f *Fragment) pause(pause bool) bool {
@@ -132,13 +124,6 @@ func (f *Fragment) pause(pause bool) bool {
 	}
 	f.paused = pause
 
-	if f.paused {
-		if !f.start.IsZero() {
-			f.elapsedTime += time.Duration(float64(time.Since(f.start)) * f.stream.Speed())
-		}
-	} else {
-		f.start = time.Now()
-	}
 	if f.beRewind {
 		f.beRewind = false
 		f.wp.Stop()
@@ -171,15 +156,15 @@ func (f *Fragment) changeVolume(offset int) {
 	f.wp.SetVolume(uint16(newL), uint16(newR))
 }
 
-func (f *Fragment) SetOutputDevice(devName string) {
-	f.wp.SetOutputDevice(devName)
+func (f *Fragment) SetOutputDevice(devName string) error {
+	return f.wp.SetOutputDevice(devName)
 }
 
 func (f *Fragment) stop() {
 	f.wp.Stop()
 }
 
-func (f *Fragment) setPosition(position time.Duration) error {
+func (f *Fragment) SetPosition(position time.Duration) error {
 	if f.pause(true) {
 		defer f.pause(false)
 	}
@@ -191,22 +176,22 @@ func (f *Fragment) setPosition(position time.Duration) error {
 		position = 0
 	}
 
-	if position == f.elapsedTime {
-		return nil
-	}
-
 	f.beRewind = true
 	f.stream.Flush()
 	for f.stream.SamplesAvailable() > 0 {
 		f.stream.Read(f.buffer)
 	}
 
-	offsetInBytes := int64(float64(f.sampleRate*f.channels*2) * position.Seconds())
+	offsetInBytes := int64(position / (time.Second / time.Duration(f.sampleRate*f.channels*2)))
+	if f.nWrite == offsetInBytes {
+		return nil
+	}
+	f.nWrite = offsetInBytes
+
 	if _, err := f.dec.Seek(offsetInBytes, io.SeekStart); err != nil {
 		return err
 	}
 
-	f.elapsedTime = position
 	gui.SetElapsedTime(position)
 	return nil
 }

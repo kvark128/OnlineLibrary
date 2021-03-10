@@ -89,7 +89,7 @@ func (p *Player) PositionInfo() (int, time.Duration) {
 	defer p.Unlock()
 	elapsedTime := p.offset
 	if p.fragment != nil {
-		elapsedTime = p.fragment.getElapsedTime()
+		elapsedTime = p.fragment.Position()
 	}
 	return p.fragmentIndex, elapsedTime
 }
@@ -213,7 +213,7 @@ func (p *Player) SetPosition(position time.Duration) {
 		return
 	}
 	if p.fragment != nil {
-		if err := p.fragment.setPosition(position); err != nil {
+		if err := p.fragment.SetPosition(position); err != nil {
 			log.Printf("set fragment position: %v", err)
 		}
 	}
@@ -296,7 +296,7 @@ func (p *Player) start(startFragment int) {
 			continue
 		}
 
-		if err := fragment.setPosition(offset); err != nil {
+		if err := fragment.SetPosition(offset); err != nil {
 			log.Printf("set fragment position: %v", err)
 			src.Close()
 			continue
