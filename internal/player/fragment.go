@@ -57,42 +57,47 @@ func NewFragment(mp3 io.Reader, speed, pitch float64, devName string) (*Fragment
 	return f, kbps, nil
 }
 
-func (f *Fragment) play(playing *util.Flag) {
-	var n int
+func (f *Fragment) fillBuf(buf []byte) (int, error) {
+	f.Lock()
+	defer f.Unlock()
+
 	var err error
+	var n int
 
-	for playing.IsSet() {
-		for playing.IsSet() {
-			gui.SetElapsedTime(f.Position())
-			f.Lock()
-			nSamples := f.stream.SamplesAvailable()
-			if nSamples == 0 || (nSamples*f.channels*2 < len(f.buffer) && err == nil) {
-				f.Unlock()
-				break
-			}
-			n, _ := f.stream.Read(f.buffer)
-			f.Unlock()
-
-			if _, err := f.wp.Write(f.buffer[:n]); err != nil {
-				log.Printf("wavePlayer: %v", err)
-			}
-			f.nWrite += int64(float64(n) * f.stream.Speed())
+	for {
+		nSamples := f.stream.SamplesAvailable()
+		if err != nil || nSamples*f.channels*2 >= len(buf) {
+			break
 		}
+		n, err = f.dec.Read(buf)
+		f.stream.Write(buf[:n])
+		if err != nil {
+			f.stream.Flush()
+		}
+	}
+
+	nRead, _ := f.stream.Read(buf)
+	return nRead, err
+}
+
+func (f *Fragment) play(playing *util.Flag) {
+	var p int
+	for playing.IsSet() {
+		gui.SetElapsedTime(f.Position())
+		n, err := f.fillBuf(f.buffer)
+		if _, err := f.wp.Write(f.buffer[:n]); err != nil {
+			log.Printf("wavePlayer: %v", err)
+		}
+		f.nWrite += int64(float64(p) * f.stream.Speed())
+		p = n
 
 		if err != nil {
 			break
 		}
-
-		f.Lock()
-		n, err = f.dec.Read(f.buffer)
-		f.stream.Write(f.buffer[:n])
-		if err != nil {
-			f.stream.Flush()
-		}
-		f.Unlock()
 	}
 
 	f.wp.Sync()
+	f.nWrite += int64(float64(p) * f.stream.Speed())
 	f.wp.Close()
 	gui.SetElapsedTime(0)
 }
