@@ -92,18 +92,15 @@ func (m *Manager) Start(eventCH chan events.Event) {
 			m.setQuestions(daisy.UserResponse{QuestionID: daisy.Back})
 
 		case events.LIBRARY_LOGON:
-			service, err := config.Conf.CurrentService()
-			if err != nil {
+			name, ok := evt.Data.(string)
+			if !ok {
 				break
 			}
-			gui.SetLibraryMenu(eventCH, config.Conf.Services, service.Name)
 
-			if name, ok := evt.Data.(string); ok {
-				service, err = config.Conf.ServiceByName(name)
-				if err != nil {
-					log.Printf("logon: %v", err)
-					break
-				}
+			service, err := config.Conf.ServiceByName(name)
+			if err != nil {
+				log.Printf("logon: %v", err)
+				break
 			}
 
 			if err := m.logon(service); err != nil {

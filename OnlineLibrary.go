@@ -28,12 +28,20 @@ func main() {
 		log.Fatal(err)
 	}
 
+	// Filling in the menu with the available audio output devices
 	gui.SetOutputDeviceMenu(eventCH, winmm.OutputDeviceNames(), config.Conf.General.OutputDevice)
+
+	// Filling in the menu with the available libraries
+	gui.SetLibraryMenu(eventCH, config.Conf.Services, "")
 
 	mng := new(manager.Manager)
 	go mng.Start(eventCH)
 
-	eventCH <- events.Event{events.LIBRARY_LOGON, nil}
+	// Trying to log in to the current library
+	if service, err := config.Conf.CurrentService(); err == nil {
+		eventCH <- events.Event{events.LIBRARY_LOGON, service.Name}
+	}
+
 	gui.RunMainWindow()
 
 	eventCH <- events.Event{events.LIBRARY_LOGOFF, nil}
