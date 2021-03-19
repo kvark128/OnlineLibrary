@@ -47,6 +47,8 @@ type Player struct {
 	pitch         float64
 	fragmentIndex int
 	offset        time.Duration
+	timerDuration time.Duration
+	pauseTimer    *time.Timer
 }
 
 func NewPlayer(bookID, bookName string, resources []daisy.Resource, outputDevice string) *Player {
@@ -70,6 +72,37 @@ func NewPlayer(bookID, bookName string, resources []daisy.Resource, outputDevice
 	}
 
 	return p
+}
+
+func (p *Player) SetTimerDuration(d time.Duration) {
+	if p == nil {
+		return
+	}
+
+	p.Lock()
+	defer p.Unlock()
+	p.timerDuration = d
+}
+
+func (p *Player) TimerDuration() time.Duration {
+	if p == nil {
+		return 0
+	}
+
+	p.Lock()
+	defer p.Unlock()
+	return p.timerDuration
+}
+
+func (p *Player) updateTimer(d time.Duration) {
+	if d == 0 {
+		if p.pauseTimer != nil {
+			p.pauseTimer.Stop()
+			p.pauseTimer = nil
+		}
+		return
+	}
+	p.pauseTimer = time.AfterFunc(d, p.PlayPause)
 }
 
 func (p *Player) BookInfo() (string, string) {
@@ -229,9 +262,12 @@ func (p *Player) PlayPause() {
 		p.playing.Set()
 		p.wg.Add(1)
 		go p.start(p.fragmentIndex)
+		p.updateTimer(p.timerDuration)
 	} else if p.fragment != nil {
+		p.updateTimer(0)
 		if !p.fragment.pause(true) {
 			p.fragment.pause(false)
+			p.updateTimer(p.timerDuration)
 		}
 	}
 }
@@ -243,6 +279,7 @@ func (p *Player) Stop() {
 	defer p.wg.Wait()
 	p.Lock()
 	defer p.Unlock()
+	defer p.updateTimer(0)
 	p.playing.Clear()
 	p.offset = 0
 	if p.fragment != nil {

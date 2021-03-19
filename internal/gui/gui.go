@@ -252,6 +252,11 @@ func Initialize(eventCH chan events.Event) error {
 						Text:     "Устройство вывода",
 						AssignTo: &outputDeviceMenu,
 					},
+					Action{
+						Text:        "Таймер паузы",
+						Shortcut:    Shortcut{walk.ModControl, walk.KeyP},
+						OnTriggered: func() { eventCH <- events.Event{events.PLAYER_SET_TIMER, nil} },
+					},
 				},
 			},
 			Menu{

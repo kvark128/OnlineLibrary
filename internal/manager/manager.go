@@ -260,6 +260,20 @@ func (m *Manager) Start(eventCH chan events.Event) {
 			config.Conf.General.OutputDevice = device
 			m.bookplayer.SetOutputDevice(device)
 
+		case events.PLAYER_SET_TIMER:
+			var text string
+			d := int(m.bookplayer.TimerDuration().Seconds())
+
+			if gui.TextEntryDialog("Установка таймера паузы", "Введите время таймера в секундах:", strconv.Itoa(d), &text) != walk.DlgCmdOK {
+				break
+			}
+
+			n, err := strconv.Atoi(text)
+			if err != nil {
+				break
+			}
+			m.bookplayer.SetTimerDuration(time.Second * time.Duration(n))
+
 		default:
 			log.Printf("Unknown event: %v", evt.EventCode)
 
