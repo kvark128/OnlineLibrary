@@ -1,14 +1,14 @@
-package events
+package msg
 
-type Event struct {
-	EventCode EventCode
-	Data      interface{}
+type Message struct {
+	Code MessageCode
+	Data interface{}
 }
 
-type EventCode uint32
+type MessageCode uint32
 
 const (
-	ACTIVATE_MENU EventCode = iota
+	ACTIVATE_MENU MessageCode = iota
 	OPEN_BOOKSHELF
 	MAIN_MENU
 	DOWNLOAD_BOOK

@@ -6,9 +6,9 @@ import (
 	"path/filepath"
 
 	"github.com/kvark128/OnlineLibrary/internal/config"
-	"github.com/kvark128/OnlineLibrary/internal/events"
 	"github.com/kvark128/OnlineLibrary/internal/gui"
 	"github.com/kvark128/OnlineLibrary/internal/manager"
+	"github.com/kvark128/OnlineLibrary/internal/msg"
 	"github.com/kvark128/OnlineLibrary/internal/winmm"
 )
 
@@ -22,30 +22,30 @@ func main() {
 
 	log.Printf("Starting OnlineLibrary version %s", config.ProgramVersion)
 	config.Conf.Load()
-	eventCH := make(chan events.Event, 16)
+	msgCH := make(chan msg.Message, 16)
 
-	if err := gui.Initialize(eventCH); err != nil {
+	if err := gui.Initialize(msgCH); err != nil {
 		log.Fatal(err)
 	}
 
 	// Filling in the menu with the available audio output devices
-	gui.SetOutputDeviceMenu(eventCH, winmm.OutputDeviceNames(), config.Conf.General.OutputDevice)
+	gui.SetOutputDeviceMenu(msgCH, winmm.OutputDeviceNames(), config.Conf.General.OutputDevice)
 
 	// Filling in the menu with the available libraries
-	gui.SetLibraryMenu(eventCH, config.Conf.Services, "")
+	gui.SetLibraryMenu(msgCH, config.Conf.Services, "")
 
 	mng := new(manager.Manager)
-	go mng.Start(eventCH)
+	go mng.Start(msgCH)
 
 	// Trying to log in to the current library
 	if service, err := config.Conf.CurrentService(); err == nil {
-		eventCH <- events.Event{events.LIBRARY_LOGON, service.Name}
+		msgCH <- msg.Message{msg.LIBRARY_LOGON, service.Name}
 	}
 
 	gui.RunMainWindow()
 
-	eventCH <- events.Event{events.LIBRARY_LOGOFF, nil}
-	close(eventCH)
+	msgCH <- msg.Message{msg.LIBRARY_LOGOFF, nil}
+	close(msgCH)
 
 	mng.Wait()
 	config.Conf.Save()

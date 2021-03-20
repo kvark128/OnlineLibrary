@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/kvark128/OnlineLibrary/internal/config"
-	"github.com/kvark128/OnlineLibrary/internal/events"
+	"github.com/kvark128/OnlineLibrary/internal/msg"
 	"github.com/kvark128/OnlineLibrary/internal/util"
 	"github.com/lxn/walk"
 	. "github.com/lxn/walk/declarative"
@@ -19,7 +19,7 @@ var (
 	elapseTime, totalTime, fragments *walk.StatusBarItem
 )
 
-func Initialize(eventCH chan events.Event) error {
+func Initialize(msgCH chan msg.Message) error {
 	if mainWindow != nil {
 		panic("GUI already initialized")
 	}
@@ -43,33 +43,33 @@ func Initialize(eventCH chan events.Event) error {
 							Action{
 								Text:        "Добавить учётную запись",
 								Shortcut:    Shortcut{walk.ModControl, walk.KeyN},
-								OnTriggered: func() { eventCH <- events.Event{events.LIBRARY_ADD, nil} },
+								OnTriggered: func() { msgCH <- msg.Message{msg.LIBRARY_ADD, nil} },
 							},
 						},
 					},
 					Action{
 						Text:        "Главное меню",
 						Shortcut:    Shortcut{walk.ModControl, walk.KeyM},
-						OnTriggered: func() { eventCH <- events.Event{events.MAIN_MENU, nil} },
+						OnTriggered: func() { msgCH <- msg.Message{msg.MAIN_MENU, nil} },
 					},
 					Action{
 						Text:        "Книжная полка",
 						Shortcut:    Shortcut{walk.ModControl, walk.KeyE},
-						OnTriggered: func() { eventCH <- events.Event{events.OPEN_BOOKSHELF, nil} },
+						OnTriggered: func() { msgCH <- msg.Message{msg.OPEN_BOOKSHELF, nil} },
 					},
 					Action{
 						Text:        "Поиск...",
 						Shortcut:    Shortcut{walk.ModControl, walk.KeyF},
-						OnTriggered: func() { eventCH <- events.Event{events.SEARCH_BOOK, nil} },
+						OnTriggered: func() { msgCH <- msg.Message{msg.SEARCH_BOOK, nil} },
 					},
 					Action{
 						Text:        "Предыдущее меню",
 						Shortcut:    Shortcut{0, walk.KeyBack},
-						OnTriggered: func() { eventCH <- events.Event{events.MENU_BACK, nil} },
+						OnTriggered: func() { msgCH <- msg.Message{msg.MENU_BACK, nil} },
 					},
 					Action{
 						Text:        "Удалить учётную запись",
-						OnTriggered: func() { eventCH <- events.Event{events.LIBRARY_REMOVE, nil} },
+						OnTriggered: func() { msgCH <- msg.Message{msg.LIBRARY_REMOVE, nil} },
 					},
 					Action{
 						Text:        "Выйти из программы",
@@ -85,22 +85,22 @@ func Initialize(eventCH chan events.Event) error {
 					Action{
 						Text:        "Загрузить книгу",
 						Shortcut:    Shortcut{walk.ModControl, walk.KeyD},
-						OnTriggered: func() { eventCH <- events.Event{events.DOWNLOAD_BOOK, nil} },
+						OnTriggered: func() { msgCH <- msg.Message{msg.DOWNLOAD_BOOK, nil} },
 					},
 					Action{
 						Text:        "Убрать книгу с полки",
 						Shortcut:    Shortcut{walk.ModShift, walk.KeyDelete},
-						OnTriggered: func() { eventCH <- events.Event{events.REMOVE_BOOK, nil} },
+						OnTriggered: func() { msgCH <- msg.Message{msg.REMOVE_BOOK, nil} },
 					},
 					Action{
 						Text:        "Поставить книгу на полку",
 						Shortcut:    Shortcut{walk.ModControl, walk.KeyA},
-						OnTriggered: func() { eventCH <- events.Event{events.ISSUE_BOOK, nil} },
+						OnTriggered: func() { msgCH <- msg.Message{msg.ISSUE_BOOK, nil} },
 					},
 					Action{
 						Text:        "Информация о книге",
 						Shortcut:    Shortcut{walk.ModControl, walk.KeyI},
-						OnTriggered: func() { eventCH <- events.Event{events.BOOK_DESCRIPTION, nil} },
+						OnTriggered: func() { msgCH <- msg.Message{msg.BOOK_DESCRIPTION, nil} },
 					},
 				},
 			},
@@ -111,22 +111,22 @@ func Initialize(eventCH chan events.Event) error {
 					Action{
 						Text:        "Воспроизвести / Приостановить",
 						Shortcut:    Shortcut{walk.ModControl, walk.KeyK},
-						OnTriggered: func() { eventCH <- events.Event{events.PLAYER_PLAY_PAUSE, nil} },
+						OnTriggered: func() { msgCH <- msg.Message{msg.PLAYER_PLAY_PAUSE, nil} },
 					},
 					Action{
 						Text:        "Остановить",
 						Shortcut:    Shortcut{walk.ModControl, walk.KeySpace},
-						OnTriggered: func() { eventCH <- events.Event{events.PLAYER_STOP, nil} },
+						OnTriggered: func() { msgCH <- msg.Message{msg.PLAYER_STOP, nil} },
 					},
 					Action{
 						Text:        "У&величить громкость",
 						Shortcut:    Shortcut{walk.ModControl, walk.KeyUp},
-						OnTriggered: func() { eventCH <- events.Event{events.PLAYER_VOLUME_UP, nil} },
+						OnTriggered: func() { msgCH <- msg.Message{msg.PLAYER_VOLUME_UP, nil} },
 					},
 					Action{
 						Text:        "У&меньшить громкость",
 						Shortcut:    Shortcut{walk.ModControl, walk.KeyDown},
-						OnTriggered: func() { eventCH <- events.Event{events.PLAYER_VOLUME_DOWN, nil} },
+						OnTriggered: func() { msgCH <- msg.Message{msg.PLAYER_VOLUME_DOWN, nil} },
 					},
 					Menu{
 						Text: "Переход по книге",
@@ -134,22 +134,22 @@ func Initialize(eventCH chan events.Event) error {
 							Action{
 								Text:        "На первый фрагмент",
 								Shortcut:    Shortcut{walk.ModControl, walk.KeyBack},
-								OnTriggered: func() { eventCH <- events.Event{events.PLAYER_GOTO_FRAGMENT, 0} },
+								OnTriggered: func() { msgCH <- msg.Message{msg.PLAYER_GOTO_FRAGMENT, 0} },
 							},
 							Action{
 								Text:        "На указанный фрагмент",
 								Shortcut:    Shortcut{walk.ModControl, walk.KeyG},
-								OnTriggered: func() { eventCH <- events.Event{events.PLAYER_GOTO_FRAGMENT, nil} },
+								OnTriggered: func() { msgCH <- msg.Message{msg.PLAYER_GOTO_FRAGMENT, nil} },
 							},
 							Action{
 								Text:        "На следующий фрагмент",
 								Shortcut:    Shortcut{walk.ModControl, walk.KeyL},
-								OnTriggered: func() { eventCH <- next_fragment },
+								OnTriggered: func() { msgCH <- next_fragment },
 							},
 							Action{
 								Text:        "На предыдущий фрагмент",
 								Shortcut:    Shortcut{walk.ModControl, walk.KeyJ},
-								OnTriggered: func() { eventCH <- previous_fragment },
+								OnTriggered: func() { msgCH <- previous_fragment },
 							},
 						},
 					},
@@ -159,47 +159,47 @@ func Initialize(eventCH chan events.Event) error {
 							Action{
 								Text:        "На указанную позицию",
 								Shortcut:    Shortcut{walk.ModShift, walk.KeyG},
-								OnTriggered: func() { eventCH <- events.Event{events.PLAYER_GOTO_POSITION, nil} },
+								OnTriggered: func() { msgCH <- msg.Message{msg.PLAYER_GOTO_POSITION, nil} },
 							},
 							Action{
 								Text:        "На 5 сек. вперёд",
 								Shortcut:    Shortcut{0, walk.KeyRight},
-								OnTriggered: func() { eventCH <- rewind_5sec_forward },
+								OnTriggered: func() { msgCH <- rewind_5sec_forward },
 							},
 							Action{
 								Text:        "На 5 сек. назад",
 								Shortcut:    Shortcut{0, walk.KeyLeft},
-								OnTriggered: func() { eventCH <- rewind_5sec_back },
+								OnTriggered: func() { msgCH <- rewind_5sec_back },
 							},
 							Action{
 								Text:        "На 30 сек. вперёд",
 								Shortcut:    Shortcut{walk.ModControl, walk.KeyRight},
-								OnTriggered: func() { eventCH <- rewind_30sec_forward },
+								OnTriggered: func() { msgCH <- rewind_30sec_forward },
 							},
 							Action{
 								Text:        "На 30 сек. назад",
 								Shortcut:    Shortcut{walk.ModControl, walk.KeyLeft},
-								OnTriggered: func() { eventCH <- rewind_30sec_back },
+								OnTriggered: func() { msgCH <- rewind_30sec_back },
 							},
 							Action{
 								Text:        "На 1 мин. вперёд",
 								Shortcut:    Shortcut{walk.ModShift, walk.KeyRight},
-								OnTriggered: func() { eventCH <- rewind_1min_forward },
+								OnTriggered: func() { msgCH <- rewind_1min_forward },
 							},
 							Action{
 								Text:        "На 1 мин. назад",
 								Shortcut:    Shortcut{walk.ModShift, walk.KeyLeft},
-								OnTriggered: func() { eventCH <- rewind_1min_back },
+								OnTriggered: func() { msgCH <- rewind_1min_back },
 							},
 							Action{
 								Text:        "На 5 мин. вперёд",
 								Shortcut:    Shortcut{walk.ModControl | walk.ModShift, walk.KeyRight},
-								OnTriggered: func() { eventCH <- rewind_5min_forward },
+								OnTriggered: func() { msgCH <- rewind_5min_forward },
 							},
 							Action{
 								Text:        "На 5 мин. назад",
 								Shortcut:    Shortcut{walk.ModControl | walk.ModShift, walk.KeyLeft},
-								OnTriggered: func() { eventCH <- rewind_5min_back },
+								OnTriggered: func() { msgCH <- rewind_5min_back },
 							},
 						},
 					},
@@ -209,17 +209,17 @@ func Initialize(eventCH chan events.Event) error {
 							Action{
 								Text:        "Увеличить скорость",
 								Shortcut:    Shortcut{walk.ModControl, walk.KeyC},
-								OnTriggered: func() { eventCH <- events.Event{events.PLAYER_SPEED_UP, nil} },
+								OnTriggered: func() { msgCH <- msg.Message{msg.PLAYER_SPEED_UP, nil} },
 							},
 							Action{
 								Text:        "Уменьшить скорость",
 								Shortcut:    Shortcut{walk.ModControl, walk.KeyX},
-								OnTriggered: func() { eventCH <- events.Event{events.PLAYER_SPEED_DOWN, nil} },
+								OnTriggered: func() { msgCH <- msg.Message{msg.PLAYER_SPEED_DOWN, nil} },
 							},
 							Action{
 								Text:        "Сбросить скорость",
 								Shortcut:    Shortcut{walk.ModControl, walk.KeyZ},
-								OnTriggered: func() { eventCH <- events.Event{events.PLAYER_SPEED_RESET, nil} },
+								OnTriggered: func() { msgCH <- msg.Message{msg.PLAYER_SPEED_RESET, nil} },
 							},
 						},
 					},
@@ -229,17 +229,17 @@ func Initialize(eventCH chan events.Event) error {
 							Action{
 								Text:        "Увеличить высоту",
 								Shortcut:    Shortcut{walk.ModShift, walk.KeyC},
-								OnTriggered: func() { eventCH <- events.Event{events.PLAYER_PITCH_UP, nil} },
+								OnTriggered: func() { msgCH <- msg.Message{msg.PLAYER_PITCH_UP, nil} },
 							},
 							Action{
 								Text:        "Уменьшить высоту",
 								Shortcut:    Shortcut{walk.ModShift, walk.KeyX},
-								OnTriggered: func() { eventCH <- events.Event{events.PLAYER_PITCH_DOWN, nil} },
+								OnTriggered: func() { msgCH <- msg.Message{msg.PLAYER_PITCH_DOWN, nil} },
 							},
 							Action{
 								Text:        "Сбросить высоту",
 								Shortcut:    Shortcut{walk.ModShift, walk.KeyZ},
-								OnTriggered: func() { eventCH <- events.Event{events.PLAYER_PITCH_RESET, nil} },
+								OnTriggered: func() { msgCH <- msg.Message{msg.PLAYER_PITCH_RESET, nil} },
 							},
 						},
 					},
@@ -255,7 +255,7 @@ func Initialize(eventCH chan events.Event) error {
 					Action{
 						Text:        "Таймер паузы",
 						Shortcut:    Shortcut{walk.ModControl, walk.KeyP},
-						OnTriggered: func() { eventCH <- events.Event{events.PLAYER_SET_TIMER, nil} },
+						OnTriggered: func() { msgCH <- msg.Message{msg.PLAYER_SET_TIMER, nil} },
 					},
 				},
 			},
@@ -279,7 +279,7 @@ func Initialize(eventCH chan events.Event) error {
 			},
 			ListBox{
 				AssignTo:        &lb,
-				OnItemActivated: func() { eventCH <- events.Event{events.ACTIVATE_MENU, nil} },
+				OnItemActivated: func() { msgCH <- msg.Message{msg.ACTIVATE_MENU, nil} },
 			},
 		},
 		StatusBarItems: []StatusBarItem{
@@ -303,7 +303,7 @@ func Initialize(eventCH chan events.Event) error {
 	}
 
 	var err error
-	MainList, err = NewMainListBox(lb, label, eventCH)
+	MainList, err = NewMainListBox(lb, label, msgCH)
 	if err != nil {
 		return err
 	}
@@ -332,7 +332,7 @@ func SetFragments(current, length int) {
 	})
 }
 
-func SetLibraryMenu(eventCH chan events.Event, services []*config.Service, current string) {
+func SetLibraryMenu(msgCH chan msg.Message, services []*config.Service, current string) {
 	mainWindow.Synchronize(func() {
 		actions := libraryMenu.Actions()
 		// Delete all elements except the last one
@@ -352,14 +352,14 @@ func SetLibraryMenu(eventCH chan events.Event, services []*config.Service, curre
 					actions.At(index).SetChecked(false)
 				}
 				a.SetChecked(true)
-				eventCH <- events.Event{events.LIBRARY_LOGON, a.Text()}
+				msgCH <- msg.Message{msg.LIBRARY_LOGON, a.Text()}
 			})
 			actions.Insert(i, a)
 		}
 	})
 }
 
-func SetOutputDeviceMenu(eventCH chan events.Event, deviceNames []string, current string) {
+func SetOutputDeviceMenu(msgCH chan msg.Message, deviceNames []string, current string) {
 	mainWindow.Synchronize(func() {
 		actions := outputDeviceMenu.Actions()
 		// Delete all elements
@@ -377,7 +377,7 @@ func SetOutputDeviceMenu(eventCH chan events.Event, deviceNames []string, curren
 					actions.At(index).SetChecked(false)
 				}
 				a.SetChecked(true)
-				eventCH <- events.Event{events.PLAYER_OUTPUT_DEVICE, a.Text()}
+				msgCH <- msg.Message{msg.PLAYER_OUTPUT_DEVICE, a.Text()}
 			})
 			actions.Insert(i, a)
 		}

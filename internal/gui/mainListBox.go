@@ -3,40 +3,40 @@ package gui
 import (
 	"time"
 
-	"github.com/kvark128/OnlineLibrary/internal/events"
+	"github.com/kvark128/OnlineLibrary/internal/msg"
 	"github.com/lxn/walk"
 	"github.com/lxn/win"
 )
 
-// Events for switching fragments
+// Messages for switching fragments
 var (
-	next_fragment     = events.Event{events.PLAYER_OFFSET_FRAGMENT, +1}
-	previous_fragment = events.Event{events.PLAYER_OFFSET_FRAGMENT, -1}
+	next_fragment     = msg.Message{msg.PLAYER_OFFSET_FRAGMENT, +1}
+	previous_fragment = msg.Message{msg.PLAYER_OFFSET_FRAGMENT, -1}
 )
 
-// Events for rewinding a fragment
+// Messages for rewinding a fragment
 var (
-	rewind_5sec_forward  = events.Event{events.PLAYER_OFFSET_POSITION, time.Second * 5}
-	rewind_5sec_back     = events.Event{events.PLAYER_OFFSET_POSITION, time.Second * -5}
-	rewind_30sec_forward = events.Event{events.PLAYER_OFFSET_POSITION, time.Second * 30}
-	rewind_30sec_back    = events.Event{events.PLAYER_OFFSET_POSITION, time.Second * -30}
-	rewind_1min_forward  = events.Event{events.PLAYER_OFFSET_POSITION, time.Minute}
-	rewind_1min_back     = events.Event{events.PLAYER_OFFSET_POSITION, -time.Minute}
-	rewind_5min_forward  = events.Event{events.PLAYER_OFFSET_POSITION, time.Minute * 5}
-	rewind_5min_back     = events.Event{events.PLAYER_OFFSET_POSITION, time.Minute * -5}
+	rewind_5sec_forward  = msg.Message{msg.PLAYER_OFFSET_POSITION, time.Second * 5}
+	rewind_5sec_back     = msg.Message{msg.PLAYER_OFFSET_POSITION, time.Second * -5}
+	rewind_30sec_forward = msg.Message{msg.PLAYER_OFFSET_POSITION, time.Second * 30}
+	rewind_30sec_back    = msg.Message{msg.PLAYER_OFFSET_POSITION, time.Second * -30}
+	rewind_1min_forward  = msg.Message{msg.PLAYER_OFFSET_POSITION, time.Minute}
+	rewind_1min_back     = msg.Message{msg.PLAYER_OFFSET_POSITION, -time.Minute}
+	rewind_5min_forward  = msg.Message{msg.PLAYER_OFFSET_POSITION, time.Minute * 5}
+	rewind_5min_back     = msg.Message{msg.PLAYER_OFFSET_POSITION, time.Minute * -5}
 )
 
 type MainListBox struct {
 	*walk.ListBox
-	label   *walk.TextLabel
-	eventCH chan events.Event
+	label *walk.TextLabel
+	msgCH chan msg.Message
 }
 
-func NewMainListBox(lb *walk.ListBox, label *walk.TextLabel, eventCH chan events.Event) (*MainListBox, error) {
+func NewMainListBox(lb *walk.ListBox, label *walk.TextLabel, msgCH chan msg.Message) (*MainListBox, error) {
 	mlb := &MainListBox{
 		ListBox: lb,
 		label:   label,
-		eventCH: eventCH,
+		msgCH:   msgCH,
 	}
 
 	if err := walk.InitWrapperWindow(mlb); err != nil {
@@ -63,8 +63,8 @@ func (mlb *MainListBox) CurrentIndex() int {
 	return <-ic
 }
 
-func (mlb *MainListBox) WndProc(hwnd win.HWND, msg uint32, wParam, lParam uintptr) uintptr {
-	switch msg {
+func (mlb *MainListBox) WndProc(hwnd win.HWND, winmsg uint32, wParam, lParam uintptr) uintptr {
+	switch winmsg {
 	case win.WM_CHAR:
 		if wParam <= 32 || walk.ModifiersDown() != 0 {
 			return 0
@@ -77,10 +77,10 @@ func (mlb *MainListBox) WndProc(hwnd win.HWND, msg uint32, wParam, lParam uintpt
 		if mods == walk.ModControl|walk.ModShift {
 			switch key {
 			case walk.KeyLeft:
-				mlb.eventCH <- rewind_5min_back
+				mlb.msgCH <- rewind_5min_back
 				return 0
 			case walk.KeyRight:
-				mlb.eventCH <- rewind_5min_forward
+				mlb.msgCH <- rewind_5min_forward
 				return 0
 			}
 		}
@@ -88,10 +88,10 @@ func (mlb *MainListBox) WndProc(hwnd win.HWND, msg uint32, wParam, lParam uintpt
 		if mods == walk.ModShift {
 			switch key {
 			case walk.KeyLeft:
-				mlb.eventCH <- rewind_1min_back
+				mlb.msgCH <- rewind_1min_back
 				return 0
 			case walk.KeyRight:
-				mlb.eventCH <- rewind_1min_forward
+				mlb.msgCH <- rewind_1min_forward
 				return 0
 			}
 		}
@@ -99,16 +99,16 @@ func (mlb *MainListBox) WndProc(hwnd win.HWND, msg uint32, wParam, lParam uintpt
 		if mods == walk.ModControl {
 			switch key {
 			case walk.KeyLeft:
-				mlb.eventCH <- rewind_30sec_back
+				mlb.msgCH <- rewind_30sec_back
 				return 0
 			case walk.KeyRight:
-				mlb.eventCH <- rewind_30sec_forward
+				mlb.msgCH <- rewind_30sec_forward
 				return 0
 			case walk.KeyUp:
-				mlb.eventCH <- events.Event{events.PLAYER_VOLUME_UP, nil}
+				mlb.msgCH <- msg.Message{msg.PLAYER_VOLUME_UP, nil}
 				return 0
 			case walk.KeyDown:
-				mlb.eventCH <- events.Event{events.PLAYER_VOLUME_DOWN, nil}
+				mlb.msgCH <- msg.Message{msg.PLAYER_VOLUME_DOWN, nil}
 				return 0
 			}
 		}
@@ -116,30 +116,30 @@ func (mlb *MainListBox) WndProc(hwnd win.HWND, msg uint32, wParam, lParam uintpt
 		if mods == 0 {
 			switch key {
 			case walk.KeyRight:
-				mlb.eventCH <- rewind_5sec_forward
+				mlb.msgCH <- rewind_5sec_forward
 				return 0
 			case walk.KeyLeft:
-				mlb.eventCH <- rewind_5sec_back
+				mlb.msgCH <- rewind_5sec_back
 				return 0
 			case walk.KeySpace:
-				mlb.eventCH <- events.Event{events.PLAYER_PLAY_PAUSE, nil}
+				mlb.msgCH <- msg.Message{msg.PLAYER_PLAY_PAUSE, nil}
 				return 0
 			case walk.KeyMediaPlayPause:
-				mlb.eventCH <- events.Event{events.PLAYER_PLAY_PAUSE, nil}
+				mlb.msgCH <- msg.Message{msg.PLAYER_PLAY_PAUSE, nil}
 				return 0
 			case walk.KeyMediaStop:
-				mlb.eventCH <- events.Event{events.PLAYER_STOP, nil}
+				mlb.msgCH <- msg.Message{msg.PLAYER_STOP, nil}
 				return 0
 			case walk.KeyMediaNextTrack:
-				mlb.eventCH <- next_fragment
+				mlb.msgCH <- next_fragment
 				return 0
 			case walk.KeyMediaPrevTrack:
-				mlb.eventCH <- previous_fragment
+				mlb.msgCH <- previous_fragment
 				return 0
 			}
 		}
 
 	}
 
-	return mlb.ListBox.WndProc(hwnd, msg, wParam, lParam)
+	return mlb.ListBox.WndProc(hwnd, winmsg, wParam, lParam)
 }

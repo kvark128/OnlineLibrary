@@ -13,8 +13,8 @@ import (
 
 	"github.com/kvark128/OnlineLibrary/internal/config"
 	"github.com/kvark128/OnlineLibrary/internal/connection"
-	"github.com/kvark128/OnlineLibrary/internal/events"
 	"github.com/kvark128/OnlineLibrary/internal/gui"
+	"github.com/kvark128/OnlineLibrary/internal/msg"
 	"github.com/kvark128/OnlineLibrary/internal/player"
 	"github.com/kvark128/OnlineLibrary/internal/util"
 	daisy "github.com/kvark128/daisyonline"
@@ -42,19 +42,19 @@ type Manager struct {
 	userResponses []daisy.UserResponse
 }
 
-func (m *Manager) Start(eventCH chan events.Event) {
+func (m *Manager) Start(msgCH chan msg.Message) {
 	m.Add(1)
 	defer m.Done()
 
-	for evt := range eventCH {
-		if m.library == nil && evt.EventCode != events.LIBRARY_LOGON && evt.EventCode != events.LIBRARY_ADD {
+	for evt := range msgCH {
+		if m.library == nil && evt.Code != msg.LIBRARY_LOGON && evt.Code != msg.LIBRARY_ADD {
 			// If the library is nil, we can only log in or add a new account
-			log.Printf("event: %v: library is nil", evt.EventCode)
+			log.Printf("message: %v: library is nil", evt.Code)
 			continue
 		}
 
-		switch evt.EventCode {
-		case events.ACTIVATE_MENU:
+		switch evt.Code {
+		case msg.ACTIVATE_MENU:
 			index := gui.MainList.CurrentIndex()
 			if m.contentList != nil {
 				book := m.contentList.Item(index)
@@ -79,19 +79,19 @@ func (m *Manager) Start(eventCH chan events.Event) {
 				m.setInputQuestion()
 			}
 
-		case events.OPEN_BOOKSHELF:
+		case msg.OPEN_BOOKSHELF:
 			m.setContent(daisy.Issued)
 
-		case events.MAIN_MENU:
+		case msg.MAIN_MENU:
 			m.setQuestions(daisy.UserResponse{QuestionID: daisy.Default})
 
-		case events.SEARCH_BOOK:
+		case msg.SEARCH_BOOK:
 			m.setQuestions(daisy.UserResponse{QuestionID: daisy.Search})
 
-		case events.MENU_BACK:
+		case msg.MENU_BACK:
 			m.setQuestions(daisy.UserResponse{QuestionID: daisy.Back})
 
-		case events.LIBRARY_LOGON:
+		case msg.LIBRARY_LOGON:
 			name, ok := evt.Data.(string)
 			if !ok {
 				break
@@ -110,9 +110,9 @@ func (m *Manager) Start(eventCH chan events.Event) {
 			}
 
 			config.Conf.SetCurrentService(service)
-			gui.SetLibraryMenu(eventCH, config.Conf.Services, service.Name)
+			gui.SetLibraryMenu(msgCH, config.Conf.Services, service.Name)
 
-		case events.LIBRARY_ADD:
+		case msg.LIBRARY_ADD:
 			service := new(config.Service)
 			if gui.Credentials(service) != walk.DlgCmdOK || service.Name == "" {
 				log.Printf("adding library: pressed Cancel button or len(service.Name) == 0")
@@ -131,56 +131,56 @@ func (m *Manager) Start(eventCH chan events.Event) {
 			}
 
 			config.Conf.SetService(service)
-			gui.SetLibraryMenu(eventCH, config.Conf.Services, service.Name)
+			gui.SetLibraryMenu(msgCH, config.Conf.Services, service.Name)
 
-		case events.LIBRARY_LOGOFF:
+		case msg.LIBRARY_LOGOFF:
 			m.logoff()
 
-		case events.LIBRARY_REMOVE:
+		case msg.LIBRARY_REMOVE:
 			msg := fmt.Sprintf("Вы действительно хотите удалить учётную запись %v?\nТакже будут удалены сохранённые позиции всех книг этой библиотеки.\nЭто действие не может быть отменено.", m.library.service.Name)
 			if gui.MessageBox("Удаление учётной записи", msg, walk.MsgBoxYesNo|walk.MsgBoxIconQuestion) != walk.DlgCmdYes {
 				break
 			}
 			config.Conf.RemoveService(m.library.service)
 			m.logoff()
-			gui.SetLibraryMenu(eventCH, config.Conf.Services, "")
+			gui.SetLibraryMenu(msgCH, config.Conf.Services, "")
 
-		case events.ISSUE_BOOK:
+		case msg.ISSUE_BOOK:
 			if m.contentList != nil {
 				index := gui.MainList.CurrentIndex()
 				book := m.contentList.Item(index)
 				m.issueBook(book)
 			}
 
-		case events.REMOVE_BOOK:
+		case msg.REMOVE_BOOK:
 			if m.contentList != nil {
 				index := gui.MainList.CurrentIndex()
 				book := m.contentList.Item(index)
 				m.removeBook(book)
 			}
 
-		case events.DOWNLOAD_BOOK:
+		case msg.DOWNLOAD_BOOK:
 			if m.contentList != nil {
 				index := gui.MainList.CurrentIndex()
 				book := m.contentList.Item(index)
 				m.downloadBook(book)
 			}
 
-		case events.BOOK_DESCRIPTION:
+		case msg.BOOK_DESCRIPTION:
 			if m.contentList != nil {
 				index := gui.MainList.CurrentIndex()
 				book := m.contentList.Item(index)
 				m.showBookDescription(book)
 			}
 
-		case events.PLAYER_PLAY_PAUSE:
+		case msg.PLAYER_PLAY_PAUSE:
 			m.bookplayer.PlayPause()
 
-		case events.PLAYER_STOP:
+		case msg.PLAYER_STOP:
 			m.saveBookPosition(m.bookplayer)
 			m.bookplayer.Stop()
 
-		case events.PLAYER_OFFSET_FRAGMENT:
+		case msg.PLAYER_OFFSET_FRAGMENT:
 			offset, ok := evt.Data.(int)
 			if !ok {
 				log.Printf("invalid offset fragment")
@@ -189,31 +189,31 @@ func (m *Manager) Start(eventCH chan events.Event) {
 			fragment, _ := m.bookplayer.PositionInfo()
 			m.bookplayer.SetFragment(fragment + offset)
 
-		case events.PLAYER_SPEED_RESET:
+		case msg.PLAYER_SPEED_RESET:
 			m.bookplayer.SetSpeed(player.DEFAULT_SPEED)
 
-		case events.PLAYER_SPEED_UP:
+		case msg.PLAYER_SPEED_UP:
 			m.bookplayer.ChangeSpeed(+0.1)
 
-		case events.PLAYER_SPEED_DOWN:
+		case msg.PLAYER_SPEED_DOWN:
 			m.bookplayer.ChangeSpeed(-0.1)
 
-		case events.PLAYER_PITCH_RESET:
+		case msg.PLAYER_PITCH_RESET:
 			m.bookplayer.SetPitch(player.DEFAULT_PITCH)
 
-		case events.PLAYER_PITCH_UP:
+		case msg.PLAYER_PITCH_UP:
 			m.bookplayer.ChangePitch(+0.05)
 
-		case events.PLAYER_PITCH_DOWN:
+		case msg.PLAYER_PITCH_DOWN:
 			m.bookplayer.ChangePitch(-0.05)
 
-		case events.PLAYER_VOLUME_UP:
+		case msg.PLAYER_VOLUME_UP:
 			m.bookplayer.ChangeVolume(+1)
 
-		case events.PLAYER_VOLUME_DOWN:
+		case msg.PLAYER_VOLUME_DOWN:
 			m.bookplayer.ChangeVolume(-1)
 
-		case events.PLAYER_OFFSET_POSITION:
+		case msg.PLAYER_OFFSET_POSITION:
 			offset, ok := evt.Data.(time.Duration)
 			if !ok {
 				log.Printf("invalid offset position")
@@ -222,7 +222,7 @@ func (m *Manager) Start(eventCH chan events.Event) {
 			_, pos := m.bookplayer.PositionInfo()
 			m.bookplayer.SetPosition(pos + offset)
 
-		case events.PLAYER_GOTO_FRAGMENT:
+		case msg.PLAYER_GOTO_FRAGMENT:
 			fragment, ok := evt.Data.(int)
 			if !ok {
 				var text string
@@ -238,7 +238,7 @@ func (m *Manager) Start(eventCH chan events.Event) {
 			}
 			m.bookplayer.SetFragment(fragment)
 
-		case events.PLAYER_GOTO_POSITION:
+		case msg.PLAYER_GOTO_POSITION:
 			var text string
 			_, pos := m.bookplayer.PositionInfo()
 			if gui.TextEntryDialog("Переход к позиции", "Введите позицию фрагмента:", util.FmtDuration(pos), &text) != walk.DlgCmdOK {
@@ -251,7 +251,7 @@ func (m *Manager) Start(eventCH chan events.Event) {
 			}
 			m.bookplayer.SetPosition(position)
 
-		case events.PLAYER_OUTPUT_DEVICE:
+		case msg.PLAYER_OUTPUT_DEVICE:
 			device, ok := evt.Data.(string)
 			if !ok {
 				log.Printf("set output device: invalid device")
@@ -260,7 +260,7 @@ func (m *Manager) Start(eventCH chan events.Event) {
 			config.Conf.General.OutputDevice = device
 			m.bookplayer.SetOutputDevice(device)
 
-		case events.PLAYER_SET_TIMER:
+		case msg.PLAYER_SET_TIMER:
 			var text string
 			d := int(m.bookplayer.TimerDuration().Minutes())
 
@@ -277,7 +277,7 @@ func (m *Manager) Start(eventCH chan events.Event) {
 			m.bookplayer.SetTimerDuration(config.Conf.General.PauseTimer)
 
 		default:
-			log.Printf("Unknown event: %v", evt.EventCode)
+			log.Printf("Unknown message: %v", evt.Code)
 
 		}
 	}
@@ -463,7 +463,7 @@ func (m *Manager) downloadBook(book ContentItem) {
 		return
 	}
 
-	// Book downloading should not block handling of other events
+	// Book downloading should not block handling of other messages
 	go func() {
 		me := &sync.Mutex{}
 		var dst io.WriteCloser
