@@ -138,6 +138,12 @@ func (f *Fragment) pause(pause bool) bool {
 	return true
 }
 
+func (f *Fragment) IsPause() bool {
+	f.Lock()
+	defer f.Unlock()
+	return f.paused
+}
+
 func (f *Fragment) changeVolume(offset int) {
 	l, r := f.wp.GetVolume()
 	newOffset := offset * 4096

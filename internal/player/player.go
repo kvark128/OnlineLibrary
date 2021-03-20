@@ -82,6 +82,9 @@ func (p *Player) SetTimerDuration(d time.Duration) {
 	p.Lock()
 	defer p.Unlock()
 	p.timerDuration = d
+	if p.playing.IsSet() && p.fragment != nil && !p.fragment.IsPause() {
+		p.updateTimer(p.timerDuration)
+	}
 }
 
 func (p *Player) TimerDuration() time.Duration {
@@ -95,14 +98,13 @@ func (p *Player) TimerDuration() time.Duration {
 }
 
 func (p *Player) updateTimer(d time.Duration) {
-	if d == 0 {
-		if p.pauseTimer != nil {
-			p.pauseTimer.Stop()
-			p.pauseTimer = nil
-		}
-		return
+	if p.pauseTimer != nil {
+		p.pauseTimer.Stop()
+		p.pauseTimer = nil
 	}
-	p.pauseTimer = time.AfterFunc(d, p.PlayPause)
+	if d > 0 {
+		p.pauseTimer = time.AfterFunc(d, p.PlayPause)
+	}
 }
 
 func (p *Player) BookInfo() (string, string) {
@@ -262,7 +264,6 @@ func (p *Player) PlayPause() {
 		p.playing.Set()
 		p.wg.Add(1)
 		go p.start(p.fragmentIndex)
-		p.updateTimer(p.timerDuration)
 	} else if p.fragment != nil {
 		p.updateTimer(0)
 		if !p.fragment.pause(true) {
@@ -279,7 +280,6 @@ func (p *Player) Stop() {
 	defer p.wg.Wait()
 	p.Lock()
 	defer p.Unlock()
-	defer p.updateTimer(0)
 	p.playing.Clear()
 	p.offset = 0
 	if p.fragment != nil {
@@ -290,6 +290,9 @@ func (p *Player) Stop() {
 func (p *Player) start(startFragment int) {
 	defer p.wg.Done()
 	defer p.playing.Clear()
+
+	p.updateTimer(p.timerDuration)
+	defer p.updateTimer(0)
 
 	for index, r := range p.playList[startFragment:] {
 		var src io.ReadCloser
