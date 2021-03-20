@@ -262,9 +262,9 @@ func (m *Manager) Start(eventCH chan events.Event) {
 
 		case events.PLAYER_SET_TIMER:
 			var text string
-			d := int(m.bookplayer.TimerDuration().Seconds())
+			d := int(m.bookplayer.TimerDuration().Minutes())
 
-			if gui.TextEntryDialog("Установка таймера паузы", "Введите время таймера в секундах:", strconv.Itoa(d), &text) != walk.DlgCmdOK {
+			if gui.TextEntryDialog("Установка таймера паузы", "Введите время таймера в минутах:", strconv.Itoa(d), &text) != walk.DlgCmdOK {
 				break
 			}
 
@@ -272,7 +272,9 @@ func (m *Manager) Start(eventCH chan events.Event) {
 			if err != nil {
 				break
 			}
-			m.bookplayer.SetTimerDuration(time.Second * time.Duration(n))
+
+			config.Conf.General.PauseTimer = time.Minute * time.Duration(n)
+			m.bookplayer.SetTimerDuration(config.Conf.General.PauseTimer)
 
 		default:
 			log.Printf("Unknown event: %v", evt.EventCode)
@@ -444,6 +446,7 @@ func (m *Manager) setBookplayer(book ContentItem) error {
 
 	gui.SetMainWindowTitle(book.Label().Text)
 	m.bookplayer = player.NewPlayer(book.ID(), book.Label().Text, rsrc, config.Conf.General.OutputDevice)
+	m.bookplayer.SetTimerDuration(config.Conf.General.PauseTimer)
 	if book, err := m.library.service.Book(book.ID()); err == nil {
 		m.bookplayer.SetFragment(book.Fragment)
 		m.bookplayer.SetPosition(book.ElapsedTime)
