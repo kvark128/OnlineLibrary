@@ -6,7 +6,6 @@ import (
 	"io"
 	"log"
 	"net/http"
-	"sync"
 	"time"
 )
 
@@ -16,12 +15,10 @@ const (
 )
 
 type Connection struct {
-	sync.Mutex
 	url           string
 	client        http.Client
 	ctx           context.Context
 	resp          *http.Response
-	closed        bool
 	buf           []byte
 	rBuf, wBuf    int
 	lastErr       error
@@ -54,13 +51,6 @@ func NewConnectionWithContext(ctx context.Context, url string) (*Connection, err
 }
 
 func (c *Connection) createResponse(nAttempts int) error {
-	c.Lock()
-	defer c.Unlock()
-
-	if c.closed {
-		return fmt.Errorf("connection was closed")
-	}
-
 	ctx, cancelFunc := context.WithCancel(c.ctx)
 	c.timer = time.AfterFunc(timeout, cancelFunc)
 	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, c.url, nil)
@@ -152,7 +142,6 @@ func (c *Connection) resetBuf() {
 
 func (c *Connection) Seek(offset int64, whence int) (int64, error) {
 	var position int64
-
 	switch whence {
 	case io.SeekStart:
 		position = offset
@@ -183,6 +172,10 @@ func (c *Connection) Seek(offset int64, whence int) (int64, error) {
 	}
 
 	c.resetBuf()
+	if c.lastErr != nil {
+		return 0, c.lastErr
+	}
+
 	c.reads = position
 	if err := c.createResponse(1); err != nil {
 		return 0, err
@@ -191,9 +184,7 @@ func (c *Connection) Seek(offset int64, whence int) (int64, error) {
 }
 
 func (c *Connection) Close() error {
-	c.Lock()
-	defer c.Unlock()
-	c.closed = true
 	c.resetBuf()
+	c.lastErr = fmt.Errorf("connection was closed")
 	return c.resp.Body.Close()
 }
