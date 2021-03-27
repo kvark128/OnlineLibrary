@@ -473,12 +473,13 @@ func (m *Manager) downloadBook(book ContentItem) {
 		dlg.Show()
 
 		for _, r := range rsrc {
+			var n int64
 			path := filepath.Join(config.UserData(), util.ReplaceForbiddenCharacters(book.Label().Text), r.LocalURI)
-			_, err = func() (int64, error) {
+			n, err = func() (int64, error) {
 				if info, e := os.Stat(path); e == nil {
 					if !info.IsDir() && info.Size() == r.Size {
 						// r.LocalURI already exist
-						return r.Size, nil
+						return info.Size(), nil
 					}
 				}
 
@@ -498,6 +499,10 @@ func (m *Manager) downloadBook(book ContentItem) {
 				return io.CopyBuffer(dst, src, make([]byte, 512*1024))
 			}()
 
+			if err == nil && r.Size != n {
+				err = errors.New("resource size mismatch")
+			}
+
 			if err != nil {
 				// Removing an unwritten file
 				os.Remove(path)
@@ -513,7 +518,7 @@ func (m *Manager) downloadBook(book ContentItem) {
 		case errors.Is(err, context.Canceled):
 			gui.MessageBox("Предупреждение", "Загрузка отменена пользователем", walk.MsgBoxOK|walk.MsgBoxIconWarning)
 		case err != nil:
-			gui.MessageBox("Ошибка", err.Error(), walk.MsgBoxOK|walk.MsgBoxIconWarning)
+			gui.MessageBox("Ошибка", err.Error(), walk.MsgBoxOK|walk.MsgBoxIconError)
 		default:
 			gui.MessageBox("Уведомление", "Книга успешно загружена", walk.MsgBoxOK|walk.MsgBoxIconWarning)
 		}
