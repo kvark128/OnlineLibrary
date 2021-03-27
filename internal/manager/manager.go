@@ -1,6 +1,8 @@
 package manager
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -465,56 +467,37 @@ func (m *Manager) downloadBook(book ContentItem) {
 
 	// Book downloading should not block handling of other messages
 	go func() {
-		me := &sync.Mutex{}
-		var dst io.WriteCloser
-		var conn, src io.ReadCloser
-		var stop bool
 		var err error
-
-		cancelFN := func() {
-			me.Lock()
-			if src != nil {
-				src.Close()
-			}
-			stop = true
-			me.Unlock()
-		}
-
-		dlg := gui.NewProgressDialog("Загрузка книги", fmt.Sprintf("Загрузка %s", book.Label().Text), len(rsrc), cancelFN)
+		ctx, cancelFunc := context.WithCancel(context.TODO())
+		dlg := gui.NewProgressDialog("Загрузка книги", fmt.Sprintf("Загрузка %s", book.Label().Text), len(rsrc), cancelFunc)
 		dlg.Show()
 
 		for _, r := range rsrc {
 			path := filepath.Join(config.UserData(), util.ReplaceForbiddenCharacters(book.Label().Text), r.LocalURI)
-			if info, e := os.Stat(path); e == nil {
-				if !info.IsDir() && info.Size() == r.Size {
-					// v.LocalURI already exist
-					dlg.IncreaseValue(1)
-					continue
+			_, err = func() (int64, error) {
+				if info, e := os.Stat(path); e == nil {
+					if !info.IsDir() && info.Size() == r.Size {
+						// r.LocalURI already exist
+						return r.Size, nil
+					}
 				}
-			}
 
-			conn, err = connection.NewConnection(r.URI)
-			if err != nil {
-				break
-			}
+				src, err := connection.NewConnectionWithContext(ctx, r.URI)
+				if err != nil {
+					return 0, err
+				}
+				defer src.Close()
 
-			os.MkdirAll(filepath.Dir(path), os.ModeDir)
-			dst, err = os.Create(path)
-			if err != nil {
-				conn.Close()
-				break
-			}
+				os.MkdirAll(filepath.Dir(path), os.ModeDir)
+				dst, err := os.Create(path)
+				if err != nil {
+					return 0, err
+				}
+				defer dst.Close()
 
-			me.Lock()
-			src = conn
-			if stop {
-				src.Close()
-			}
-			me.Unlock()
+				return io.CopyBuffer(dst, src, make([]byte, 512*1024))
+			}()
 
-			_, err = io.CopyBuffer(dst, src, make([]byte, 512*1024))
-			dst.Close()
-			src.Close()
 			if err != nil {
 				// Removing an unwritten file
 				os.Remove(path)
@@ -525,16 +508,15 @@ func (m *Manager) downloadBook(book ContentItem) {
 		}
 
 		dlg.Cancel()
-		if stop {
-			gui.MessageBox("Предупреждение", "Загрузка отменена пользователем", walk.MsgBoxOK|walk.MsgBoxIconWarning)
-			return
-		}
 
-		if err != nil {
+		switch {
+		case errors.Is(err, context.Canceled):
+			gui.MessageBox("Предупреждение", "Загрузка отменена пользователем", walk.MsgBoxOK|walk.MsgBoxIconWarning)
+		case err != nil:
 			gui.MessageBox("Ошибка", err.Error(), walk.MsgBoxOK|walk.MsgBoxIconWarning)
-			return
+		default:
+			gui.MessageBox("Уведомление", "Книга успешно загружена", walk.MsgBoxOK|walk.MsgBoxIconWarning)
 		}
-		gui.MessageBox("Уведомление", "Книга успешно загружена", walk.MsgBoxOK|walk.MsgBoxIconWarning)
 	}()
 }
 
