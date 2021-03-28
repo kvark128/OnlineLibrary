@@ -146,14 +146,14 @@ func (p *Player) SetOutputDevice(outputDevice string) {
 	p.Unlock()
 }
 
-func (p *Player) ChangeSpeed(offset float64) {
+func (p *Player) Speed() float64 {
 	if p == nil {
-		return
+		return 0.0
 	}
+
 	p.Lock()
-	newSpeed := p.speed + offset
-	p.Unlock()
-	p.SetSpeed(newSpeed)
+	defer p.Unlock()
+	return p.speed
 }
 
 func (p *Player) SetSpeed(speed float64) {
@@ -175,14 +175,14 @@ func (p *Player) SetSpeed(speed float64) {
 	}
 }
 
-func (p *Player) ChangePitch(offset float64) {
+func (p *Player) Pitch() float64 {
 	if p == nil {
-		return
+		return 0.0
 	}
+
 	p.Lock()
-	newPitch := p.pitch + offset
-	p.Unlock()
-	p.SetPitch(newPitch)
+	defer p.Unlock()
+	return p.pitch
 }
 
 func (p *Player) SetPitch(pitch float64) {
