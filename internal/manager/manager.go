@@ -292,7 +292,7 @@ func (m *Manager) Start(msgCH chan msg.Message) {
 func (m *Manager) logoff() {
 	m.saveBookPosition(m.bookplayer)
 	m.bookplayer.Stop()
-	gui.MainList.SetItems([]string{}, "")
+	gui.MainList.Clear()
 	gui.SetMainWindowTitle("")
 
 	if _, err := m.library.LogOff(); err != nil {
@@ -335,7 +335,7 @@ func (m *Manager) setQuestions(response ...daisy.UserResponse) {
 	if len(response) == 0 {
 		log.Printf("Error: len(response) == 0")
 		m.questions = nil
-		gui.MainList.SetItems([]string{}, "")
+		gui.MainList.Clear()
 		return
 	}
 
@@ -346,7 +346,7 @@ func (m *Manager) setQuestions(response ...daisy.UserResponse) {
 		log.Printf(msg)
 		gui.MessageBox("Ошибка", msg, walk.MsgBoxOK|walk.MsgBoxIconError)
 		m.questions = nil
-		gui.MainList.SetItems([]string{}, "")
+		gui.MainList.Clear()
 		return
 	}
 
@@ -377,12 +377,12 @@ func (m *Manager) setMultipleChoiceQuestion(index int) {
 	choiceQuestion := m.questions.MultipleChoiceQuestion[index]
 	m.contentList = nil
 
-	var items []string
+	var labels []string
 	for _, c := range choiceQuestion.Choices.Choice {
-		items = append(items, c.Label.Text)
+		labels = append(labels, c.Label.Text)
 	}
 
-	gui.MainList.SetItems(items, choiceQuestion.Label.Text)
+	gui.MainList.SetItems(labels, choiceQuestion.Label.Text, nil)
 }
 
 func (m *Manager) setInputQuestion() {
@@ -407,7 +407,7 @@ func (m *Manager) setContent(contentID string) {
 		log.Printf(msg)
 		gui.MessageBox("Ошибка", msg, walk.MsgBoxOK|walk.MsgBoxIconError)
 		m.questions = nil
-		gui.MainList.SetItems([]string{}, "")
+		gui.MainList.Clear()
 		return
 	}
 
@@ -430,7 +430,8 @@ func (m *Manager) setContent(contentID string) {
 			m.library.service.AddBook(book.ID(), book.Label().Text)
 		}
 	}
-	gui.MainList.SetItems(labels, m.contentList.Label().Text)
+
+	gui.MainList.SetItems(labels, m.contentList.Label().Text, gui.BookMenu)
 }
 
 func (m *Manager) saveBookPosition(bookplayer *player.Player) {

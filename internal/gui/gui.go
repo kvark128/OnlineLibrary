@@ -16,6 +16,7 @@ var (
 	MainList                         *MainListBox
 	libraryMenu                      *walk.Menu
 	outputDeviceMenu                 *walk.Menu
+	BookMenu                         *walk.Menu
 	elapseTime, totalTime, fragments *walk.StatusBarItem
 )
 
@@ -80,7 +81,8 @@ func Initialize(msgCH chan msg.Message) error {
 			},
 
 			Menu{
-				Text: "&Книги",
+				Text:     "&Книга",
+				AssignTo: &BookMenu,
 				Items: []MenuItem{
 					Action{
 						Text:        "Загрузить книгу",
