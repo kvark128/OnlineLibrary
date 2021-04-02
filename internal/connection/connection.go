@@ -4,9 +4,10 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"time"
+
+	"github.com/kvark128/OnlineLibrary/internal/log"
 )
 
 const (
@@ -119,7 +120,7 @@ func (c *Connection) fillBuf() {
 		c.reads += int64(n)
 
 		if err != nil && err != context.Canceled && c.reads < c.contentLength {
-			log.Printf("connection recovery: %v", err)
+			log.Debug("connection recovery: %v", err)
 			if c.createResponse(3) == nil {
 				if n == 0 {
 					// We have no read data. Repeat reading

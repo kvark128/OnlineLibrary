@@ -3,11 +3,11 @@ package player
 import (
 	"fmt"
 	"io"
-	"log"
 	"sync"
 	"time"
 
 	"github.com/kvark128/OnlineLibrary/internal/gui"
+	"github.com/kvark128/OnlineLibrary/internal/log"
 	"github.com/kvark128/OnlineLibrary/internal/util"
 	"github.com/kvark128/OnlineLibrary/internal/winmm"
 	"github.com/kvark128/minimp3"
@@ -86,7 +86,7 @@ func (f *Fragment) play(playing *util.Flag) {
 		gui.SetElapsedTime(f.Position())
 		n, err := f.fillBuf(f.buffer)
 		if _, err := f.wp.Write(f.buffer[:n]); err != nil {
-			log.Printf("wavePlayer: %v", err)
+			log.Info("wavePlayer: %v", err)
 		}
 		f.nWrite += int64(float64(p) * f.stream.Speed())
 		p = n

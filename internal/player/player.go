@@ -2,7 +2,6 @@ package player
 
 import (
 	"io"
-	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -13,6 +12,7 @@ import (
 	"github.com/kvark128/OnlineLibrary/internal/connection"
 	"github.com/kvark128/OnlineLibrary/internal/gui"
 	"github.com/kvark128/OnlineLibrary/internal/lkf"
+	"github.com/kvark128/OnlineLibrary/internal/log"
 	"github.com/kvark128/OnlineLibrary/internal/util"
 	daisy "github.com/kvark128/daisyonline"
 	"github.com/kvark128/sonic"
@@ -249,7 +249,7 @@ func (p *Player) SetPosition(position time.Duration) {
 	}
 	if p.fragment != nil {
 		if err := p.fragment.SetPosition(position); err != nil {
-			log.Printf("set fragment position: %v", err)
+			log.Info("set fragment position: %v", err)
 		}
 	}
 }
@@ -313,7 +313,7 @@ func (p *Player) start(startFragment int) {
 			uri = r.URI
 			src, err = connection.NewConnection(uri)
 			if err != nil {
-				log.Printf("Connection creating: %v", err)
+				log.Info("Connection creating: %v", err)
 				break
 			}
 		}
@@ -331,13 +331,13 @@ func (p *Player) start(startFragment int) {
 
 		fragment, kbps, err := NewFragment(src, speed, pitch, outputDevice)
 		if err != nil {
-			log.Printf("new fragment for %v: %v", uri, err)
+			log.Info("new fragment for %v: %v", uri, err)
 			src.Close()
 			continue
 		}
 
 		if err := fragment.SetPosition(offset); err != nil {
-			log.Printf("set fragment position: %v", err)
+			log.Info("set fragment position: %v", err)
 			src.Close()
 			continue
 		}

@@ -1,12 +1,12 @@
 package main
 
 import (
-	"log"
 	"os"
 	"path/filepath"
 
 	"github.com/kvark128/OnlineLibrary/internal/config"
 	"github.com/kvark128/OnlineLibrary/internal/gui"
+	"github.com/kvark128/OnlineLibrary/internal/log"
 	"github.com/kvark128/OnlineLibrary/internal/manager"
 	"github.com/kvark128/OnlineLibrary/internal/msg"
 	"github.com/kvark128/OnlineLibrary/internal/winmm"
@@ -17,15 +17,14 @@ func main() {
 		log.SetOutput(fl)
 		defer fl.Close()
 	}
-	log.SetPrefix("\n")
-	log.SetFlags(log.Lmsgprefix | log.Ltime | log.Lshortfile)
 
-	log.Printf("Starting OnlineLibrary version %s", config.ProgramVersion)
+	log.Info("Starting OnlineLibrary version %s", config.ProgramVersion)
 	config.Conf.Load()
 	msgCH := make(chan msg.Message, 16)
 
 	if err := gui.Initialize(msgCH); err != nil {
-		log.Fatal(err)
+		log.Info("GUI initializing: %v", err)
+		os.Exit(1)
 	}
 
 	// Filling in the menu with the available audio output devices
@@ -49,5 +48,5 @@ func main() {
 
 	mng.Wait()
 	config.Conf.Save()
-	log.Printf("Exiting")
+	log.Info("Exiting")
 }

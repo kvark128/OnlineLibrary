@@ -3,11 +3,11 @@ package config
 import (
 	"encoding/json"
 	"errors"
-	"log"
 	"os"
 	"path/filepath"
 	"time"
 
+	"github.com/kvark128/OnlineLibrary/internal/log"
 	daisy "github.com/kvark128/daisyonline"
 )
 
@@ -203,24 +203,24 @@ func (c *Config) Load() {
 	path := filepath.Join(UserData(), ConfigFile)
 	f, err := os.Open(path)
 	if err != nil {
-		log.Printf("Opening config file: %v", err)
+		log.Info("Opening config file: %v", err)
 		return
 	}
 	defer f.Close()
 
 	d := json.NewDecoder(f)
 	if err := d.Decode(c); err != nil {
-		log.Printf("Loading config: %v", err)
+		log.Info("Loading config: %v", err)
 		return
 	}
-	log.Printf("Loading config from %v", path)
+	log.Info("Loading config from %v", path)
 }
 
 func (c *Config) Save() {
 	path := filepath.Join(UserData(), ConfigFile)
 	f, err := os.Create(path)
 	if err != nil {
-		log.Printf("Creating config file: %v", err)
+		log.Info("Creating config file: %v", err)
 		return
 	}
 	defer f.Close()
@@ -228,8 +228,8 @@ func (c *Config) Save() {
 	e := json.NewEncoder(f)
 	e.SetIndent("", "\t") // for readability
 	if err := e.Encode(c); err != nil {
-		log.Printf("Saving config: %v", err)
+		log.Info("Saving config: %v", err)
 		return
 	}
-	log.Printf("Saving config to %v", path)
+	log.Info("Saving config to %v", path)
 }
