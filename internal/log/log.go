@@ -14,12 +14,12 @@ type Level int
 
 func (l Level) String() string {
 	switch l {
-	case FatalLevel:
-		return "FATAL"
 	case ErrorLevel:
 		return "ERROR"
 	case InfoLevel:
 		return "INFO"
+	case WarningLevel:
+		return "WARNING"
 	case DebugLevel:
 		return "DEBUG"
 	default:
@@ -28,9 +28,9 @@ func (l Level) String() string {
 }
 
 const (
-	FatalLevel Level = iota
-	ErrorLevel
+	ErrorLevel Level = iota
 	InfoLevel
+	WarningLevel
 	DebugLevel
 )
 
@@ -41,6 +41,8 @@ var (
 )
 
 func log(calldepth int, level Level, format string, args ...interface{}) {
+	mu.Lock()
+	defer mu.Unlock()
 	if logLevel < level || out == nil {
 		return
 	}
@@ -55,29 +57,20 @@ func log(calldepth int, level Level, format string, args ...interface{}) {
 	fmt.Fprintf(out, "%s - %s:%d (%s):\r\n%s\r\n", level, filepath.Base(file), line, clock, msg)
 }
 
-func Info(format string, args ...interface{}) {
-	mu.Lock()
-	defer mu.Unlock()
-	log(2, InfoLevel, format, args...)
-}
-
 func Error(format string, args ...interface{}) {
-	mu.Lock()
-	defer mu.Unlock()
 	log(2, ErrorLevel, format, args...)
 }
 
-func Debug(format string, args ...interface{}) {
-	mu.Lock()
-	defer mu.Unlock()
-	log(2, DebugLevel, format, args...)
+func Info(format string, args ...interface{}) {
+	log(2, InfoLevel, format, args...)
 }
 
-func Fatal(format string, args ...interface{}) {
-	mu.Lock()
-	defer mu.Unlock()
-	log(2, FatalLevel, format, args...)
-	os.Exit(1)
+func Warning(format string, args ...interface{}) {
+	log(2, WarningLevel, format, args...)
+}
+
+func Debug(format string, args ...interface{}) {
+	log(2, DebugLevel, format, args...)
 }
 
 func SetOutput(newOut io.Writer) {
@@ -89,5 +82,12 @@ func SetOutput(newOut io.Writer) {
 func SetLevel(level Level) {
 	mu.Lock()
 	defer mu.Unlock()
-	logLevel = level
+	switch {
+	case level < ErrorLevel:
+		logLevel = ErrorLevel
+	case level > DebugLevel:
+		logLevel = DebugLevel
+	default:
+		logLevel = level
+	}
 }
