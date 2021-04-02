@@ -14,6 +14,8 @@ type Level int
 
 func (l Level) String() string {
 	switch l {
+	case FatalLevel:
+		return "FATAL"
 	case ErrorLevel:
 		return "ERROR"
 	case InfoLevel:
@@ -26,7 +28,8 @@ func (l Level) String() string {
 }
 
 const (
-	ErrorLevel Level = iota
+	FatalLevel Level = iota
+	ErrorLevel
 	InfoLevel
 	DebugLevel
 )
@@ -49,8 +52,7 @@ func log(calldepth int, level Level, format string, args ...interface{}) {
 		line = 0
 	}
 	msg := fmt.Sprintf(format, args...)
-	s := fmt.Sprintf("%s - %s:%d (%s):\r\n%s\r\n", level, filepath.Base(file), line, clock, msg)
-	out.Write([]byte(s))
+	fmt.Fprintf(out, "%s - %s:%d (%s):\r\n%s\r\n", level, filepath.Base(file), line, clock, msg)
 }
 
 func Info(format string, args ...interface{}) {
@@ -59,7 +61,7 @@ func Info(format string, args ...interface{}) {
 	log(2, InfoLevel, format, args...)
 }
 
-func ERROR(format string, args ...interface{}) {
+func Error(format string, args ...interface{}) {
 	mu.Lock()
 	defer mu.Unlock()
 	log(2, ErrorLevel, format, args...)
@@ -69,6 +71,13 @@ func Debug(format string, args ...interface{}) {
 	mu.Lock()
 	defer mu.Unlock()
 	log(2, DebugLevel, format, args...)
+}
+
+func Fatal(format string, args ...interface{}) {
+	mu.Lock()
+	defer mu.Unlock()
+	log(2, FatalLevel, format, args...)
+	os.Exit(1)
 }
 
 func SetOutput(newOut io.Writer) {

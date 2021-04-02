@@ -23,8 +23,7 @@ func main() {
 	msgCH := make(chan msg.Message, 16)
 
 	if err := gui.Initialize(msgCH); err != nil {
-		log.Info("GUI initializing: %v", err)
-		os.Exit(1)
+		log.Fatal("GUI initializing: %v", err)
 	}
 
 	// Filling in the menu with the available audio output devices
