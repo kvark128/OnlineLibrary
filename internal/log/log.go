@@ -12,8 +12,22 @@ import (
 
 type Level int
 
+func (l Level) String() string {
+	switch l {
+	case ErrorLevel:
+		return "ERROR"
+	case InfoLevel:
+		return "INFO"
+	case DebugLevel:
+		return "DEBUG"
+	default:
+		return "UNKNOWN"
+	}
+}
+
 const (
-	InfoLevel Level = iota
+	ErrorLevel Level = iota
+	InfoLevel
 	DebugLevel
 )
 
@@ -23,8 +37,8 @@ var (
 	out      io.Writer = os.Stdout
 )
 
-func log(calldepth int, level, msg string, args []interface{}) {
-	if out == nil {
+func log(calldepth int, level Level, format string, args ...interface{}) {
+	if logLevel < level || out == nil {
 		return
 	}
 	hour, min, sec := time.Now().Clock()
@@ -34,24 +48,27 @@ func log(calldepth int, level, msg string, args []interface{}) {
 		file = "???"
 		line = 0
 	}
-	msg = fmt.Sprintf(msg, args...)
-	s := fmt.Sprintf("%s - %s:%d (%s):\n%s\n", level, filepath.Base(file), line, clock, msg)
+	msg := fmt.Sprintf(format, args...)
+	s := fmt.Sprintf("%s - %s:%d (%s):\r\n%s\r\n", level, filepath.Base(file), line, clock, msg)
 	out.Write([]byte(s))
 }
 
-func Info(msg string, args ...interface{}) {
+func Info(format string, args ...interface{}) {
 	mu.Lock()
 	defer mu.Unlock()
-	log(2, "INFO", msg, args)
+	log(2, InfoLevel, format, args...)
 }
 
-func Debug(msg string, args ...interface{}) {
+func ERROR(format string, args ...interface{}) {
 	mu.Lock()
 	defer mu.Unlock()
-	if logLevel < DebugLevel {
-		return
-	}
-	log(2, "DEBUG", msg, args)
+	log(2, ErrorLevel, format, args...)
+}
+
+func Debug(format string, args ...interface{}) {
+	mu.Lock()
+	defer mu.Unlock()
+	log(2, DebugLevel, format, args...)
 }
 
 func SetOutput(newOut io.Writer) {
