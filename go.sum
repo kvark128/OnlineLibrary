@@ -2,6 +2,8 @@ github.com/kvark128/daisyonline v0.0.0-20200920082134-6034c8769bcb h1:2Wnq8Yzbzb
 github.com/kvark128/daisyonline v0.0.0-20200920082134-6034c8769bcb/go.mod h1:SOw4ymhX7jfHUptO5JhejOUit7lZp4t7nyFD2NW9Lp0=
 github.com/kvark128/daisyonline v0.0.0-20210403115548-a3fb6047c204 h1:LJpw0Q0vy5Izb0yPev8iyCRoKbsibS7swGj7NWjSjfw=
 github.com/kvark128/daisyonline v0.0.0-20210403115548-a3fb6047c204/go.mod h1:FzBWC2NYNJu3GtkttkC3spTLG/mIg1P+MRMg5SVUanc=
+github.com/kvark128/daisyonline v0.0.0-20210403215904-853f4b0031ec h1:tQAJE3v3w9ME/h5XeEBtXVD+48WCj7rfUFmc9MB5ywE=
+github.com/kvark128/daisyonline v0.0.0-20210403215904-853f4b0031ec/go.mod h1:FzBWC2NYNJu3GtkttkC3spTLG/mIg1P+MRMg5SVUanc=
 github.com/kvark128/lkf v0.0.0-20200906212533-0cc542d11ec8 h1:Aqw38uFO5FQwpLG2w0+7ot7GYIFtoYiiKN54Nvshbfk=
 github.com/kvark128/lkf v0.0.0-20200906212533-0cc542d11ec8/go.mod h1:XYk24siMM2Awb3zhupGfdS62SqWOrDFMtx7Cg7C2KeU=
 github.com/kvark128/minimp3 v0.0.0-20210118111654-8e3d819290c1 h1:LXYB7tXya5a79xYf8tLVtrf4lAKIKwEGcTkz5XnT/P4=

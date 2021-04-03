@@ -3,7 +3,7 @@ module github.com/kvark128/OnlineLibrary
 go 1.16
 
 require (
-	github.com/kvark128/daisyonline v0.0.0-20210403115548-a3fb6047c204
+	github.com/kvark128/daisyonline v0.0.0-20210403215904-853f4b0031ec
 	github.com/kvark128/lkf v0.0.0-20200906212533-0cc542d11ec8
 	github.com/kvark128/minimp3 v0.0.0-20210118111654-8e3d819290c1
 	github.com/kvark128/sonic v0.0.0-20201207081834-61dfd0ccaee2
