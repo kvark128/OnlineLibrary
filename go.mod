@@ -6,7 +6,7 @@ require (
 	github.com/kvark128/daisyonline v0.0.0-20210403215904-853f4b0031ec
 	github.com/kvark128/lkf v0.0.0-20200906212533-0cc542d11ec8
 	github.com/kvark128/minimp3 v0.0.0-20210118111654-8e3d819290c1
-	github.com/kvark128/sonic v0.0.0-20201207081834-61dfd0ccaee2
+	github.com/kvark128/sonic v0.0.0-20210406134037-840d5585e177
 	github.com/lxn/walk v0.0.0-20210112085537-c389da54e794
 	github.com/lxn/win v0.0.0-20201111105847-2a20daff6a55
 	golang.org/x/sys v0.0.0-20210216224549-f992740a1bac
