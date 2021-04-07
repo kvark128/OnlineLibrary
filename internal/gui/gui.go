@@ -18,6 +18,7 @@ var (
 	outputDeviceMenu                 *walk.Menu
 	BookMenu                         *walk.Menu
 	elapseTime, totalTime, fragments *walk.StatusBarItem
+	pauseTimerItem                   *walk.Action
 )
 
 func Initialize(msgCH chan msg.Message) error {
@@ -256,6 +257,7 @@ func Initialize(msgCH chan msg.Message) error {
 					},
 					Action{
 						Text:        "Таймер паузы",
+						AssignTo:    &pauseTimerItem,
 						Shortcut:    Shortcut{walk.ModControl, walk.KeyP},
 						OnTriggered: func() { msgCH <- msg.Message{msg.PLAYER_SET_TIMER, nil} },
 					},
@@ -383,6 +385,16 @@ func SetOutputDeviceMenu(msgCH chan msg.Message, deviceNames []string, current s
 			})
 			actions.Insert(i, a)
 		}
+	})
+}
+
+func SetPauseTimerLabel(minutes int) {
+	label := "Таймер паузы (Нет)"
+	if minutes > 0 {
+		label = fmt.Sprintf("Таймер паузы (%d мин.)", minutes)
+	}
+	mainWindow.Synchronize(func() {
+		pauseTimerItem.SetText(label)
 	})
 }
 

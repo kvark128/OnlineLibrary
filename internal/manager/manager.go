@@ -280,6 +280,7 @@ func (m *Manager) Start(msgCH chan msg.Message) {
 			}
 
 			config.Conf.General.PauseTimer = time.Minute * time.Duration(n)
+			gui.SetPauseTimerLabel(n)
 			m.bookplayer.SetTimerDuration(config.Conf.General.PauseTimer)
 
 		default:

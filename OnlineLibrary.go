@@ -33,6 +33,9 @@ func main() {
 	// Filling in the menu with the available libraries
 	gui.SetLibraryMenu(msgCH, config.Conf.Services, "")
 
+	// Setting label for the pause timer in the menu
+	gui.SetPauseTimerLabel(int(config.Conf.General.PauseTimer.Minutes()))
+
 	mng := new(manager.Manager)
 	go mng.Start(msgCH)
 
