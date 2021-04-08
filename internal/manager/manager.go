@@ -39,6 +39,7 @@ type Manager struct {
 	sync.WaitGroup
 	library       *Library
 	bookplayer    *player.Player
+	currentBook   *config.Book
 	contentList   ContentList
 	questions     *daisy.Questions
 	userResponses []daisy.UserResponse
@@ -283,6 +284,37 @@ func (m *Manager) Start(msgCH chan msg.Message) {
 			gui.SetPauseTimerLabel(n)
 			m.bookplayer.SetTimerDuration(config.Conf.General.PauseTimer)
 
+		case msg.BOOKMARK_SET:
+			bookmarkID, ok := evt.Data.(string)
+			if !ok {
+				break
+			}
+			if m.currentBook != nil {
+				bookmark := config.Bookmark{}
+				bookmark.Fragment, bookmark.Position = m.bookplayer.PositionInfo()
+				m.currentBook.SetBookmark(bookmarkID, bookmark)
+			}
+
+		case msg.BOOKMARK_FETCH:
+			bookmarkID, ok := evt.Data.(string)
+			if !ok {
+				break
+			}
+			if m.currentBook != nil {
+				bookmark, err := m.currentBook.Bookmark(bookmarkID)
+				if err != nil {
+					break
+				}
+				if f, _ := m.bookplayer.PositionInfo(); f == bookmark.Fragment {
+					m.bookplayer.SetPosition(bookmark.Position)
+					break
+				}
+				m.bookplayer.Stop()
+				m.bookplayer.SetFragment(bookmark.Fragment)
+				m.bookplayer.SetPosition(bookmark.Position)
+				m.bookplayer.PlayPause()
+			}
+
 		default:
 			log.Info("Unknown message: %v", evt.Code)
 
@@ -301,6 +333,7 @@ func (m *Manager) logoff() {
 	}
 
 	m.bookplayer = nil
+	m.currentBook = nil
 	m.contentList = nil
 	m.questions = nil
 	m.library = nil
@@ -454,10 +487,12 @@ func (m *Manager) setBookplayer(book ContentItem) error {
 
 	gui.SetMainWindowTitle(book.Label().Text)
 	m.bookplayer = player.NewPlayer(book.ID(), book.Label().Text, rsrc, config.Conf.General.OutputDevice)
+	m.currentBook = new(config.Book)
 	m.bookplayer.SetTimerDuration(config.Conf.General.PauseTimer)
 	if book, err := m.library.service.Book(book.ID()); err == nil {
 		m.bookplayer.SetFragment(book.Fragment)
 		m.bookplayer.SetPosition(book.ElapsedTime)
+		m.currentBook = book
 	}
 	return nil
 }

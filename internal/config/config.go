@@ -44,13 +44,6 @@ var ReadingSystemAttributes = daisy.ReadingSystemAttributes{
 
 var Conf Config
 
-type Book struct {
-	Name        string        `json:"name"`
-	ID          string        `json:"id"`
-	Fragment    int           `json:"fragment"`
-	ElapsedTime time.Duration `json:"elapsed_time"`
-}
-
 type Service struct {
 	Name        string      `json:"name"`
 	URL         string      `json:"url"`
@@ -95,13 +88,13 @@ func (s *Service) RemoveBook(id string) {
 	}
 }
 
-func (s *Service) Book(id string) (Book, error) {
-	for _, b := range s.RecentBooks {
+func (s *Service) Book(id string) (*Book, error) {
+	for i, b := range s.RecentBooks {
 		if b.ID == id {
-			return b, nil
+			return &s.RecentBooks[i], nil
 		}
 	}
-	return Book{}, errors.New("book not found")
+	return nil, errors.New("book not found")
 }
 
 func (s *Service) SetCurrentBook(id string) {
