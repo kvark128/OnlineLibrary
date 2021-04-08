@@ -61,7 +61,7 @@ func (m *Manager) Start(msgCH chan msg.Message) {
 			index := gui.MainList.CurrentIndex()
 			if m.contentList != nil {
 				book := m.contentList.Item(index)
-				if _, id := m.bookplayer.BookInfo(); book.ID() != id {
+				if m.currentBook == nil || book.ID() != m.currentBook.ID {
 					if err := m.setBookplayer(book); err != nil {
 						log.Info(err.Error())
 						gui.MessageBox("Ошибка", err.Error(), walk.MsgBoxOK|walk.MsgBoxIconError)
@@ -456,23 +456,27 @@ func (m *Manager) setContent(contentID string) {
 	m.questions = nil
 
 	labels := make([]string, m.contentList.Len())
+	ids := make([]string, m.contentList.Len())
 	for i := range labels {
 		book := m.contentList.Item(i)
 		labels[i] = book.Label().Text
-		// books positions on the bookshelf must always be saved
-		if contentID == daisy.Issued {
-			m.library.service.AddBook(book.ID(), book.Label().Text)
+		ids[i] = book.ID()
+	}
+
+	if contentID == daisy.Issued {
+		if m.currentBook != nil && !util.StringInSlice(m.currentBook.ID, ids) {
+			ids = append(ids, m.currentBook.ID)
 		}
+		m.library.service.Tidy(ids)
 	}
 
 	gui.MainList.SetItems(labels, m.contentList.Label().Text, gui.BookMenu)
 }
 
 func (m *Manager) saveBookPosition(bookplayer *player.Player) {
-	bookName, bookID := bookplayer.BookInfo()
-	if bookID != "" {
-		fragment, elapsedTime := bookplayer.PositionInfo()
-		m.library.service.UpdateBook(bookID, bookName, fragment, elapsedTime)
+	if m.currentBook != nil {
+		m.currentBook.Fragment, m.currentBook.ElapsedTime = bookplayer.PositionInfo()
+		m.library.service.SetBook(*m.currentBook)
 	}
 }
 
@@ -486,8 +490,12 @@ func (m *Manager) setBookplayer(book ContentItem) error {
 	}
 
 	gui.SetMainWindowTitle(book.Label().Text)
-	m.bookplayer = player.NewPlayer(book.ID(), book.Label().Text, rsrc, config.Conf.General.OutputDevice)
-	m.currentBook = new(config.Book)
+	bookDir := filepath.Join(config.UserData(), util.ReplaceForbiddenCharacters(book.Label().Text))
+	m.bookplayer = player.NewPlayer(bookDir, rsrc, config.Conf.General.OutputDevice)
+	m.currentBook = &config.Book{
+		Name: book.Label().Text,
+		ID:   book.ID(),
+	}
 	m.bookplayer.SetTimerDuration(config.Conf.General.PauseTimer)
 	if book, err := m.library.service.Book(book.ID()); err == nil {
 		m.bookplayer.SetFragment(book.Fragment)
@@ -574,8 +582,6 @@ func (m *Manager) removeBook(book ContentItem) {
 		gui.MessageBox("Ошибка", msg, walk.MsgBoxOK|walk.MsgBoxIconError)
 		return
 	}
-
-	m.library.service.RemoveBook(book.ID())
 	gui.MessageBox("Уведомление", fmt.Sprintf("%s удалена с книжной полки", book.Label().Text), walk.MsgBoxOK|walk.MsgBoxIconWarning)
 }
 
@@ -587,8 +593,6 @@ func (m *Manager) issueBook(book ContentItem) {
 		gui.MessageBox("Ошибка", msg, walk.MsgBoxOK|walk.MsgBoxIconError)
 		return
 	}
-
-	m.library.service.AddBook(book.ID(), book.Label().Text)
 	gui.MessageBox("Уведомление", fmt.Sprintf("%s добавлена на книжную полку", book.Label().Text), walk.MsgBoxOK|walk.MsgBoxIconWarning)
 }
 

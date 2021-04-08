@@ -32,3 +32,12 @@ func ParseDuration(s string) (time.Duration, error) {
 	}
 	return time.Hour*hh + time.Minute*mm + time.Second*ss, nil
 }
+
+func StringInSlice(str string, slc []string) bool {
+	for _, s := range slc {
+		if str == s {
+			return true
+		}
+	}
+	return false
+}

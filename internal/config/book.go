@@ -15,7 +15,7 @@ type Book struct {
 	ID          string              `json:"id"`
 	Fragment    int                 `json:"fragment"`
 	ElapsedTime time.Duration       `json:"elapsed_time"`
-	Bookmarks   map[string]Bookmark `json:"bookmarks"`
+	Bookmarks   map[string]Bookmark `json:"bookmarks,omitempty"`
 }
 
 func (b *Book) SetBookmark(id string, bookmark Bookmark) {

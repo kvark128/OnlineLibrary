@@ -8,7 +8,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/kvark128/OnlineLibrary/internal/config"
 	"github.com/kvark128/OnlineLibrary/internal/connection"
 	"github.com/kvark128/OnlineLibrary/internal/gui"
 	"github.com/kvark128/OnlineLibrary/internal/lkf"
@@ -37,8 +36,7 @@ const (
 type Player struct {
 	sync.Mutex
 	playList      []daisy.Resource
-	bookID        string
-	bookName      string
+	bookDir       string
 	playing       *util.Flag
 	wg            *sync.WaitGroup
 	fragment      *Fragment
@@ -51,12 +49,11 @@ type Player struct {
 	pauseTimer    *time.Timer
 }
 
-func NewPlayer(bookID, bookName string, resources []daisy.Resource, outputDevice string) *Player {
+func NewPlayer(bookDir string, resources []daisy.Resource, outputDevice string) *Player {
 	p := &Player{
 		playing:      new(util.Flag),
 		wg:           new(sync.WaitGroup),
-		bookID:       bookID,
-		bookName:     bookName,
+		bookDir:      bookDir,
 		speed:        DEFAULT_SPEED,
 		pitch:        DEFAULT_PITCH,
 		outputDevice: outputDevice,
@@ -105,15 +102,6 @@ func (p *Player) updateTimer(d time.Duration) {
 	if d > 0 {
 		p.pauseTimer = time.AfterFunc(d, p.PlayPause)
 	}
-}
-
-func (p *Player) BookInfo() (string, string) {
-	if p == nil {
-		return "", ""
-	}
-	p.Lock()
-	defer p.Unlock()
-	return p.bookName, p.bookID
 }
 
 func (p *Player) PositionInfo() (int, time.Duration) {
@@ -299,7 +287,7 @@ func (p *Player) start(startFragment int) {
 		var uri string
 		var err error
 
-		uri = filepath.Join(config.UserData(), util.ReplaceForbiddenCharacters(p.bookName), r.LocalURI)
+		uri = filepath.Join(p.bookDir, r.LocalURI)
 		if info, e := os.Stat(uri); e == nil {
 			if !info.IsDir() && info.Size() == r.Size {
 				// fragment already exists on disk

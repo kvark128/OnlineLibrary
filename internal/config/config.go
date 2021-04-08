@@ -3,11 +3,13 @@ package config
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"time"
 
 	"github.com/kvark128/OnlineLibrary/internal/log"
+	"github.com/kvark128/OnlineLibrary/internal/util"
 	daisy "github.com/kvark128/daisyonline"
 )
 
@@ -51,41 +53,25 @@ type Service struct {
 	RecentBooks []Book      `json:"recent_books,omitempty"`
 }
 
-func (s *Service) UpdateBook(id, name string, fragment int, elapsedTime time.Duration) {
-	for i := range s.RecentBooks {
-		if s.RecentBooks[i].ID == id {
-			s.RecentBooks[i].Name = name
-			s.RecentBooks[i].Fragment = fragment
-			s.RecentBooks[i].ElapsedTime = elapsedTime
-			s.SetCurrentBook(id)
-		}
-	}
-}
-
-func (s *Service) AddBook(id, name string) {
-	for _, b := range s.RecentBooks {
-		if b.ID == id {
-			// Book already exists. Do nothing
+func (s *Service) SetBook(book Book) {
+	defer s.SetCurrentBook(book.ID)
+	for i, b := range s.RecentBooks {
+		if book.ID == b.ID {
+			s.RecentBooks[i] = book
 			return
 		}
 	}
-
-	book := Book{
-		Name: name,
-		ID:   id,
-	}
-
 	s.RecentBooks = append(s.RecentBooks, book)
 }
 
-func (s *Service) RemoveBook(id string) {
-	for i, b := range s.RecentBooks {
-		if b.ID == id {
-			copy(s.RecentBooks[i:], s.RecentBooks[i+1:])
-			s.RecentBooks = s.RecentBooks[:len(s.RecentBooks)-1]
-			break
+func (s *Service) Tidy(ids []string) {
+	books := make([]Book, 0, len(ids))
+	for _, b := range s.RecentBooks {
+		if util.StringInSlice(b.ID, ids) {
+			books = append(books, b)
 		}
 	}
+	s.RecentBooks = books
 }
 
 func (s *Service) Book(id string) (*Book, error) {
@@ -94,7 +80,7 @@ func (s *Service) Book(id string) (*Book, error) {
 			return &s.RecentBooks[i], nil
 		}
 	}
-	return nil, errors.New("book not found")
+	return nil, fmt.Errorf("book with %s id not found", id)
 }
 
 func (s *Service) SetCurrentBook(id string) {
