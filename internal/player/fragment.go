@@ -9,7 +9,7 @@ import (
 	"github.com/kvark128/OnlineLibrary/internal/gui"
 	"github.com/kvark128/OnlineLibrary/internal/log"
 	"github.com/kvark128/OnlineLibrary/internal/util"
-	"github.com/kvark128/OnlineLibrary/internal/winmm"
+	"github.com/kvark128/OnlineLibrary/internal/waveout"
 	"github.com/kvark128/minimp3"
 	"github.com/kvark128/sonic"
 )
@@ -23,7 +23,7 @@ type Fragment struct {
 	sampleRate int
 	channels   int
 	buffer     []byte
-	wp         *winmm.WavePlayer
+	wp         *waveout.WavePlayer
 	nWrite     int64
 }
 
@@ -48,7 +48,7 @@ func NewFragment(mp3 io.Reader, speed, pitch float64, devName string) (*Fragment
 	f.stream.SetPitch(pitch)
 	f.stream.Write(f.buffer[:n])
 
-	wp, err := winmm.NewWavePlayer(f.channels, f.sampleRate, 16, len(f.buffer), devName)
+	wp, err := waveout.NewWavePlayer(f.channels, f.sampleRate, 16, len(f.buffer), devName)
 	if err != nil {
 		return nil, 0, err
 	}

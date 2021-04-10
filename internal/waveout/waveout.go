@@ -1,7 +1,6 @@
-package winmm
+package waveout
 
 import (
-	"errors"
 	"fmt"
 	"sync"
 	"unsafe"
@@ -16,13 +15,11 @@ const (
 	CALLBACK_EVENT   = 0x50000
 	MAXPNAMELEN      = 32
 	MMSYSERR_NOERROR = 0
-	TIME_BYTES       = 4
 )
 
 var winmm = windows.NewLazySystemDLL("winmm.dll")
-var ErrClosed = errors.New("wave player already closed")
 
-// Output
+// WaveOut functions
 var (
 	procWaveOutGetNumDevs      = winmm.NewProc("waveOutGetNumDevs")
 	procWaveOutGetDevCapsW     = winmm.NewProc("waveOutGetDevCapsW")
@@ -35,22 +32,11 @@ var (
 	procWaveOutReset           = winmm.NewProc("waveOutReset")
 	procWaveOutGetVolume       = winmm.NewProc("waveOutGetVolume")
 	procWaveOutSetVolume       = winmm.NewProc("waveOutSetVolume")
-	procWaveOutGetPosition     = winmm.NewProc("waveOutGetPosition")
 	procWaveOutGetErrorTextW   = winmm.NewProc("waveOutGetErrorTextW")
 	procWaveOutClose           = winmm.NewProc("waveOutClose")
 )
 
-// Input
-var (
-	procWaveInOpen            = winmm.NewProc("waveInOpen")
-	procWaveInPrepareHeader   = winmm.NewProc("waveInPrepareHeader")
-	procWaveInUnprepareHeader = winmm.NewProc("waveInUnprepareHeader")
-	procWaveInAddBuffer       = winmm.NewProc("waveInAddBuffer")
-	procWaveInStart           = winmm.NewProc("waveInStart")
-	procWaveInStop            = winmm.NewProc("waveInStop")
-	procWaveInClose           = winmm.NewProc("waveInClose")
-)
-
+// The WAVEFORMATEX structure defines the format of waveform-audio data
 type WAVEFORMATEX struct {
 	wFormatTag      uint16
 	nChannels       uint16
@@ -61,6 +47,7 @@ type WAVEFORMATEX struct {
 	cbSize          uint16
 }
 
+// The WAVEHDR structure defines the header used to identify a waveform-audio buffer
 type WAVEHDR struct {
 	lpData          uintptr
 	dwBufferLength  uint32
@@ -72,6 +59,7 @@ type WAVEHDR struct {
 	reserved        uintptr
 }
 
+// The WAVEOUTCAPS structure describes the capabilities of a waveform-audio output device
 type WAVEOUTCAPS struct {
 	wMid           uint16
 	wPid           uint16
@@ -83,19 +71,13 @@ type WAVEOUTCAPS struct {
 	dwSupport      uint32
 }
 
-type MMTIME struct {
-	WType uint
-	Cb    uint32
-	pad   uint32
-}
-
 func OutputDevices() func() (int, string, error) {
 	caps := &WAVEOUTCAPS{}
 	numDevs, _, _ := procWaveOutGetNumDevs.Call()
 	devID := WAVE_MAPPER
 	return func() (int, string, error) {
 		if devID == int(numDevs) {
-			return 0, "", errors.New("no output device")
+			return 0, "", fmt.Errorf("no output device")
 		}
 		procWaveOutGetDevCapsW.Call(uintptr(devID), uintptr(unsafe.Pointer(caps)), unsafe.Sizeof(*caps))
 		devID++
@@ -120,7 +102,7 @@ func OutputDeviceNameToID(devName string) (int, error) {
 	for {
 		id, name, err := device()
 		if err != nil {
-			return 0, errors.New("no device name")
+			return 0, fmt.Errorf("no device name")
 		}
 		if devName == name {
 			return id, nil
@@ -320,23 +302,6 @@ func (wp *WavePlayer) Pause(pauseState bool) {
 	}
 }
 
-func (wp *WavePlayer) Position() (uint32, error) {
-	wp.callMutex.Lock()
-	defer wp.callMutex.Unlock()
-
-	pmmt := &MMTIME{WType: TIME_BYTES}
-	err := mmcall(procWaveOutGetPosition, wp.waveout, uintptr(unsafe.Pointer(pmmt)), unsafe.Sizeof(*pmmt))
-	if err != nil {
-		return 0, err
-	}
-
-	if pmmt.WType != TIME_BYTES {
-		return 0, errors.New("waveOutGetPosition: TIME_BYTES is not supported")
-	}
-
-	return pmmt.Cb, nil
-}
-
 func (wp *WavePlayer) Stop() {
 	wp.callMutex.Lock()
 	defer wp.callMutex.Unlock()
@@ -373,92 +338,4 @@ func (wp *WavePlayer) Close() error {
 	wp.waveout = 0
 	wp.waveout_event = 0
 	return err
-}
-
-type WaveRecorder struct {
-	wfx          *WAVEFORMATEX
-	inputDevice  int
-	wavein       uintptr
-	wavein_event windows.Handle
-	prev_whdr    *WAVEHDR
-	buffer       []byte
-	chanBuffers  chan []byte
-}
-
-func NewWaveRecorder(channels, samplesPerSec, bitsPerSample, bufSize, inputDevice int) *WaveRecorder {
-	wr := &WaveRecorder{
-		inputDevice: inputDevice,
-		chanBuffers: make(chan []byte, 2),
-	}
-
-	wr.wfx = &WAVEFORMATEX{
-		wFormatTag:      WAVE_FORMAT_PCM,
-		nChannels:       uint16(channels),
-		nSamplesPerSec:  uint32(samplesPerSec),
-		wBitsPerSample:  uint16(bitsPerSample),
-		nBlockAlign:     uint16(bitsPerSample / 8 * channels),
-		nAvgBytesPerSec: uint32(bitsPerSample) / 8 * uint32(channels) * uint32(samplesPerSec),
-	}
-
-	wr.chanBuffers <- make([]byte, bufSize)
-	wr.chanBuffers <- make([]byte, bufSize)
-
-	wr.wavein_event, _ = windows.CreateEvent(nil, 0, 0, nil)
-	wr.Open()
-	return wr
-}
-
-func (wr *WaveRecorder) Open() {
-	if wr.wavein == 0 {
-		procWaveInOpen.Call(uintptr(unsafe.Pointer(&wr.wavein)), uintptr(wr.inputDevice), uintptr(unsafe.Pointer(wr.wfx)), uintptr(wr.wavein_event), 0, CALLBACK_EVENT)
-	}
-}
-
-func (wr *WaveRecorder) Read(data []byte) (int, error) {
-	if wr.wavein == 0 {
-		return 0, ErrClosed
-	}
-
-	var n = 0
-	for buffer := range wr.chanBuffers {
-		wr.chanBuffers <- buffer
-
-		whdr := &WAVEHDR{
-			lpData:         uintptr(unsafe.Pointer(&buffer[0])),
-			dwBufferLength: uint32(len(buffer)),
-		}
-
-		procWaveInPrepareHeader.Call(wr.wavein, uintptr(unsafe.Pointer(whdr)), unsafe.Sizeof(*whdr))
-		procWaveInAddBuffer.Call(wr.wavein, uintptr(unsafe.Pointer(whdr)), unsafe.Sizeof(*whdr))
-
-		if wr.prev_whdr != nil {
-			for wr.prev_whdr.dwFlags&WHDR_DONE == 0 {
-				windows.WaitForSingleObject(wr.wavein_event, windows.INFINITE)
-			}
-			procWaveInUnprepareHeader.Call(wr.wavein, uintptr(unsafe.Pointer(wr.prev_whdr)), unsafe.Sizeof(*wr.prev_whdr))
-			n += copy(data[n:], wr.buffer)
-		} else {
-			procWaveInStart.Call(wr.wavein)
-		}
-
-		wr.prev_whdr = whdr
-		wr.buffer = buffer
-
-		if n == len(data) {
-			break
-		}
-	}
-	return n, nil
-}
-
-func (wr *WaveRecorder) Close() error {
-	if wr.wavein == 0 {
-		return ErrClosed
-	}
-
-	procWaveInClose.Call(wr.wavein)
-	windows.CloseHandle(wr.wavein_event)
-	wr.wavein = 0
-	wr.wavein_event = 0
-	return nil
 }

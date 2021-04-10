@@ -9,7 +9,7 @@ import (
 	"github.com/kvark128/OnlineLibrary/internal/log"
 	"github.com/kvark128/OnlineLibrary/internal/manager"
 	"github.com/kvark128/OnlineLibrary/internal/msg"
-	"github.com/kvark128/OnlineLibrary/internal/winmm"
+	"github.com/kvark128/OnlineLibrary/internal/waveout"
 )
 
 func main() {
@@ -28,7 +28,7 @@ func main() {
 	}
 
 	// Filling in the menu with the available audio output devices
-	gui.SetOutputDeviceMenu(msgCH, winmm.OutputDeviceNames(), config.Conf.General.OutputDevice)
+	gui.SetOutputDeviceMenu(msgCH, waveout.OutputDeviceNames(), config.Conf.General.OutputDevice)
 
 	// Filling in the menu with the available libraries
 	gui.SetLibraryMenu(msgCH, config.Conf.Services, "")
