@@ -275,7 +275,7 @@ func Initialize(msgCH chan msg.Message) error {
 					Action{
 						Text: "О программе",
 						OnTriggered: func() {
-							text := fmt.Sprintf("%v версия %v", config.ProgramName, config.ProgramVersion)
+							text := fmt.Sprintf("%v версия %v\nКаталог приложения: %s", config.ProgramName, config.ProgramVersion, config.UserData())
 							walk.MsgBox(mainWindow, "О программе", text, walk.MsgBoxOK|walk.MsgBoxIconInformation)
 						},
 					},
