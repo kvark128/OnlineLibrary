@@ -183,22 +183,27 @@ func (c *Config) Load() {
 	path := filepath.Join(UserData(), ConfigFile)
 	f, err := os.Open(path)
 	if err != nil {
-		log.Info("Opening config file: %v", err)
+		log.Error("Opening config file: %v", err)
 		return
 	}
 	defer f.Close()
 
 	d := json.NewDecoder(f)
 	if err := d.Decode(c); err != nil {
-		log.Info("Loading config: %v", err)
+		log.Error("Loading config: %v", err)
 		return
 	}
+
 	log.Info("Loading config from %v", path)
 }
 
 func (c *Config) Save() {
+	// First, save the configuration to a temporary file
+	// If the save was successful, replace the main file with a temporary one
+	// This reduces the chance of configuration loss in the event of an I/O error
 	path := filepath.Join(UserData(), ConfigFile)
 	tmpPath := path + ".tmp"
+
 	f, err := os.Create(tmpPath)
 	if err != nil {
 		log.Error("Creating temporary config file: %v", err)

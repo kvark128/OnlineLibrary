@@ -52,7 +52,7 @@ func (m *Manager) Start(msgCH chan msg.Message) {
 	for evt := range msgCH {
 		if m.library == nil && evt.Code != msg.LIBRARY_LOGON && evt.Code != msg.LIBRARY_ADD && evt.Code != msg.LOG_SET_LEVEL {
 			// If the library is nil, we can only log in or add a new account
-			log.Info("message: %v: library is nil", evt.Code)
+			log.Warning("Message: %v: library is nil", evt.Code)
 			continue
 		}
 
@@ -63,7 +63,7 @@ func (m *Manager) Start(msgCH chan msg.Message) {
 				book := m.contentList.Item(index)
 				if m.currentBook == nil || book.ID() != m.currentBook.ID {
 					if err := m.setBookplayer(book); err != nil {
-						log.Info(err.Error())
+						log.Error("Set book player: %v", err)
 						gui.MessageBox("Ошибка", err.Error(), walk.MsgBoxOK|walk.MsgBoxIconError)
 						break
 					}
@@ -102,12 +102,12 @@ func (m *Manager) Start(msgCH chan msg.Message) {
 
 			service, err := config.Conf.ServiceByName(name)
 			if err != nil {
-				log.Info("logon: %v", err)
+				log.Error("logon: %v", err)
 				break
 			}
 
 			if err := m.logon(service); err != nil {
-				log.Info("logon: %v", err)
+				log.Error("logon: %v", err)
 				gui.MessageBox("Ошибка", fmt.Sprintf("logon: %v", err), walk.MsgBoxOK|walk.MsgBoxIconError)
 				break
 			}
@@ -118,7 +118,7 @@ func (m *Manager) Start(msgCH chan msg.Message) {
 		case msg.LIBRARY_ADD:
 			service := new(config.Service)
 			if gui.Credentials(service) != walk.DlgCmdOK || service.Name == "" {
-				log.Info("adding library: pressed Cancel button or len(service.Name) == 0")
+				log.Warning("Adding library: pressed Cancel button or len(service.Name) == 0")
 				break
 			}
 
@@ -128,7 +128,7 @@ func (m *Manager) Start(msgCH chan msg.Message) {
 			}
 
 			if err := m.logon(service); err != nil {
-				log.Info("logon: %v", err)
+				log.Error("logon: %v", err)
 				gui.MessageBox("Ошибка", fmt.Sprintf("logon: %v", err), walk.MsgBoxOK|walk.MsgBoxIconError)
 				break
 			}
@@ -186,7 +186,7 @@ func (m *Manager) Start(msgCH chan msg.Message) {
 		case msg.PLAYER_OFFSET_FRAGMENT:
 			offset, ok := evt.Data.(int)
 			if !ok {
-				log.Info("invalid offset fragment")
+				log.Error("Invalid offset fragment")
 				break
 			}
 			fragment, _ := m.bookplayer.PositionInfo()
@@ -223,7 +223,7 @@ func (m *Manager) Start(msgCH chan msg.Message) {
 		case msg.PLAYER_OFFSET_POSITION:
 			offset, ok := evt.Data.(time.Duration)
 			if !ok {
-				log.Info("invalid offset position")
+				log.Error("Invalid offset position")
 				break
 			}
 			_, pos := m.bookplayer.PositionInfo()
@@ -253,7 +253,7 @@ func (m *Manager) Start(msgCH chan msg.Message) {
 			}
 			position, err := util.ParseDuration(text)
 			if err != nil {
-				log.Info("goto position: %v", err)
+				log.Error("goto position: %v", err)
 				break
 			}
 			m.bookplayer.SetPosition(position)
@@ -261,7 +261,7 @@ func (m *Manager) Start(msgCH chan msg.Message) {
 		case msg.PLAYER_OUTPUT_DEVICE:
 			device, ok := evt.Data.(string)
 			if !ok {
-				log.Info("set output device: invalid device")
+				log.Error("set output device: invalid device")
 				break
 			}
 			config.Conf.General.OutputDevice = device
@@ -326,7 +326,7 @@ func (m *Manager) Start(msgCH chan msg.Message) {
 			log.Info("Set log level to %s", level)
 
 		default:
-			log.Info("Unknown message: %v", evt.Code)
+			log.Warning("Unknown message: %v", evt.Code)
 
 		}
 	}
@@ -339,7 +339,7 @@ func (m *Manager) logoff() {
 	gui.SetMainWindowTitle("")
 
 	if _, err := m.library.LogOff(); err != nil {
-		log.Info("logoff: %v", err)
+		log.Warning("logoff: %v", err)
 	}
 
 	m.bookplayer = nil
@@ -370,14 +370,14 @@ func (m *Manager) logon(service *config.Service) error {
 
 	book, _ := m.library.service.Book(id)
 	if err := m.setBookplayer(NewLibraryContentItem(m.library, book.ID, book.Name)); err != nil {
-		log.Info(err.Error())
+		log.Error("Set book player: %v", err)
 	}
 	return nil
 }
 
 func (m *Manager) setQuestions(response ...daisy.UserResponse) {
 	if len(response) == 0 {
-		log.Info("Error: len(response) == 0")
+		log.Error("len(response) == 0")
 		m.questions = nil
 		gui.MainList.Clear()
 		return
@@ -387,7 +387,7 @@ func (m *Manager) setQuestions(response ...daisy.UserResponse) {
 	questions, err := m.library.GetQuestions(&ur)
 	if err != nil {
 		msg := fmt.Sprintf("GetQuestions: %s", err)
-		log.Info(msg)
+		log.Error(msg)
 		gui.MessageBox("Ошибка", msg, walk.MsgBoxOK|walk.MsgBoxIconError)
 		m.questions = nil
 		gui.MainList.Clear()
@@ -448,7 +448,7 @@ func (m *Manager) setContent(contentID string) {
 	contentList, err := NewLibraryContentList(m.library, contentID)
 	if err != nil {
 		msg := fmt.Sprintf("GetContentList: %s", err)
-		log.Info(msg)
+		log.Error(msg)
 		gui.MessageBox("Ошибка", msg, walk.MsgBoxOK|walk.MsgBoxIconError)
 		m.questions = nil
 		gui.MainList.Clear()
@@ -519,7 +519,7 @@ func (m *Manager) downloadBook(book ContentItem) {
 	rsrc, err := book.Resources()
 	if err != nil {
 		msg := fmt.Sprintf("GetContentResources: %v", err)
-		log.Info(msg)
+		log.Error(msg)
 		gui.MessageBox("Ошибка", msg, walk.MsgBoxOK|walk.MsgBoxIconError)
 		return
 	}
@@ -588,7 +588,7 @@ func (m *Manager) removeBook(book ContentItem) {
 	_, err := m.library.ReturnContent(book.ID())
 	if err != nil {
 		msg := fmt.Sprintf("ReturnContent: %s", err)
-		log.Info(msg)
+		log.Error(msg)
 		gui.MessageBox("Ошибка", msg, walk.MsgBoxOK|walk.MsgBoxIconError)
 		return
 	}
@@ -599,7 +599,7 @@ func (m *Manager) issueBook(book ContentItem) {
 	_, err := m.library.IssueContent(book.ID())
 	if err != nil {
 		msg := fmt.Sprintf("IssueContent: %s", err)
-		log.Info(msg)
+		log.Error(msg)
 		gui.MessageBox("Ошибка", msg, walk.MsgBoxOK|walk.MsgBoxIconError)
 		return
 	}
@@ -610,7 +610,7 @@ func (m *Manager) showBookDescription(book ContentItem) {
 	md, err := m.library.GetContentMetadata(book.ID())
 	if err != nil {
 		msg := fmt.Sprintf("GetContentMetadata: %v", err)
-		log.Info(msg)
+		log.Error(msg)
 		gui.MessageBox("Ошибка", msg, walk.MsgBoxOK|walk.MsgBoxIconError)
 		return
 	}

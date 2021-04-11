@@ -86,7 +86,7 @@ func (f *Fragment) play(playing *util.Flag) {
 		gui.SetElapsedTime(f.Position())
 		n, err := f.fillBuf(f.buffer)
 		if _, err := f.wp.Write(f.buffer[:n]); err != nil {
-			log.Info("wavePlayer: %v", err)
+			log.Error("WavePlayer: %v", err)
 		}
 		f.nWrite += int64(float64(p) * f.stream.Speed())
 		p = n
