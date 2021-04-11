@@ -286,6 +286,7 @@ func (p *Player) start(startFragment int) {
 		var src io.ReadCloser
 		var uri string
 		var err error
+		log.Debug("Fetching resource: %s; URI: %s; MimeType: %s; Size: %d", r.LocalURI, r.URI, r.MimeType, r.Size)
 
 		uri = filepath.Join(p.bookDir, r.LocalURI)
 		if info, e := os.Stat(uri); e == nil {
