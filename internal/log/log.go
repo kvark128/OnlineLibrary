@@ -91,3 +91,9 @@ func SetLevel(level Level) {
 		logLevel = level
 	}
 }
+
+func GetLevel() Level {
+	mu.Lock()
+	defer mu.Unlock()
+	return logLevel
+}

@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/kvark128/OnlineLibrary/internal/config"
+	"github.com/kvark128/OnlineLibrary/internal/log"
 	"github.com/kvark128/OnlineLibrary/internal/msg"
 	"github.com/kvark128/OnlineLibrary/internal/util"
 	"github.com/lxn/walk"
@@ -17,6 +18,7 @@ var (
 	libraryMenu                      *walk.Menu
 	outputDeviceMenu                 *walk.Menu
 	BookMenu                         *walk.Menu
+	logLevelMenu                     *walk.Menu
 	elapseTime, totalTime, fragments *walk.StatusBarItem
 	pauseTimerItem                   *walk.Action
 )
@@ -252,7 +254,7 @@ func Initialize(msgCH chan msg.Message) error {
 				Text: "&Настройки",
 				Items: []MenuItem{
 					Menu{
-						Text:     "Устройство вывода",
+						Text:     "Устройство вывода звука",
 						AssignTo: &outputDeviceMenu,
 					},
 					Action{
@@ -260,6 +262,10 @@ func Initialize(msgCH chan msg.Message) error {
 						AssignTo:    &pauseTimerItem,
 						Shortcut:    Shortcut{walk.ModControl, walk.KeyP},
 						OnTriggered: func() { msgCH <- msg.Message{msg.PLAYER_SET_TIMER, nil} },
+					},
+					Menu{
+						Text:     "Уровень ведения журнала",
+						AssignTo: &logLevelMenu,
 					},
 				},
 			},
@@ -304,6 +310,27 @@ func Initialize(msgCH chan msg.Message) error {
 		},
 	}.Create()); err != nil {
 		return err
+	}
+
+	logLevels := []log.Level{log.ErrorLevel, log.InfoLevel, log.WarningLevel, log.DebugLevel}
+	logActions := logLevelMenu.Actions()
+	currentLogLevel := log.GetLevel()
+	for _, level := range logLevels {
+		level := level // Avoid capturing the iteration variable
+		a := walk.NewAction()
+		a.SetText(level.String())
+		if level == currentLogLevel {
+			a.SetChecked(true)
+		}
+		a.Triggered().Attach(func() {
+			actions := logLevelMenu.Actions()
+			for i := 0; i < actions.Len(); i++ {
+				actions.At(i).SetChecked(false)
+			}
+			a.SetChecked(true)
+			msgCH <- msg.Message{Code: msg.LOG_SET_LEVEL, Data: level}
+		})
+		logActions.Add(a)
 	}
 
 	var err error

@@ -50,7 +50,7 @@ func (m *Manager) Start(msgCH chan msg.Message) {
 	defer m.Done()
 
 	for evt := range msgCH {
-		if m.library == nil && evt.Code != msg.LIBRARY_LOGON && evt.Code != msg.LIBRARY_ADD {
+		if m.library == nil && evt.Code != msg.LIBRARY_LOGON && evt.Code != msg.LIBRARY_ADD && evt.Code != msg.LOG_SET_LEVEL {
 			// If the library is nil, we can only log in or add a new account
 			log.Info("message: %v: library is nil", evt.Code)
 			continue
@@ -314,6 +314,16 @@ func (m *Manager) Start(msgCH chan msg.Message) {
 				m.bookplayer.SetPosition(bookmark.Position)
 				m.bookplayer.PlayPause()
 			}
+
+		case msg.LOG_SET_LEVEL:
+			level, ok := evt.Data.(log.Level)
+			if !ok {
+				log.Error("Set log level: invalid level")
+				break
+			}
+			config.Conf.General.LogLevel = level
+			log.SetLevel(level)
+			log.Info("Set log level to %s", level)
 
 		default:
 			log.Info("Unknown message: %v", evt.Code)

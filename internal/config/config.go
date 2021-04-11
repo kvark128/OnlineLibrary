@@ -108,6 +108,7 @@ type Credentials struct {
 type General struct {
 	OutputDevice string        `json:"output_device,omitempty"`
 	PauseTimer   time.Duration `json:"pause_timer,omitempty"`
+	LogLevel     log.Level     `json:"log_level,omitempty"`
 }
 
 type Config struct {
