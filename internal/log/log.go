@@ -27,6 +27,21 @@ func (l Level) String() string {
 	}
 }
 
+func StringToLevel(str string) (Level, error) {
+	switch str {
+	case ErrorLevel.String():
+		return ErrorLevel, nil
+	case InfoLevel.String():
+		return InfoLevel, nil
+	case WarningLevel.String():
+		return WarningLevel, nil
+	case DebugLevel.String():
+		return DebugLevel, nil
+	default:
+		return 0, fmt.Errorf("%s is not a supported log level", str)
+	}
+}
+
 const (
 	ErrorLevel Level = iota
 	InfoLevel
@@ -79,17 +94,14 @@ func SetOutput(newOut io.Writer) {
 	out = newOut
 }
 
-func SetLevel(level Level) {
+func SetLevel(level Level) error {
 	mu.Lock()
 	defer mu.Unlock()
-	switch {
-	case level < ErrorLevel:
-		logLevel = ErrorLevel
-	case level > DebugLevel:
-		logLevel = DebugLevel
-	default:
-		logLevel = level
+	if level < ErrorLevel || level > DebugLevel {
+		return fmt.Errorf("unsupported log level")
 	}
+	logLevel = level
+	return nil
 }
 
 func GetLevel() Level {

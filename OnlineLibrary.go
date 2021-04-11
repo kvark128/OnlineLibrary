@@ -20,7 +20,10 @@ func main() {
 
 	log.Info("Starting OnlineLibrary version %s", config.ProgramVersion)
 	config.Conf.Load()
-	log.SetLevel(config.Conf.General.LogLevel)
+
+	if level, err := log.StringToLevel(config.Conf.General.LogLevel); err == nil {
+		log.SetLevel(level)
+	}
 
 	msgCH := make(chan msg.Message, 16)
 

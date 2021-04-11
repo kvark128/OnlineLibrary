@@ -321,7 +321,7 @@ func (m *Manager) Start(msgCH chan msg.Message) {
 				log.Error("Set log level: invalid level")
 				break
 			}
-			config.Conf.General.LogLevel = level
+			config.Conf.General.LogLevel = level.String()
 			log.SetLevel(level)
 			log.Info("Set log level to %s", level)
 
