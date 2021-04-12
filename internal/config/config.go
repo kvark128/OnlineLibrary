@@ -199,7 +199,7 @@ func (c *Config) Load() {
 
 func (c *Config) Save() {
 	path := filepath.Join(UserData(), ConfigFile)
-	f, err := util.NewFaultTolerantFile(path)
+	f, err := util.CreateSecureFile(path)
 	if err != nil {
 		log.Error("Creating config file: %v", err)
 		return

@@ -547,8 +547,7 @@ func (m *Manager) downloadBook(book ContentItem) {
 				}
 				defer src.Close()
 
-				os.MkdirAll(filepath.Dir(path), os.ModeDir)
-				dst, err := util.NewFaultTolerantFile(path)
+				dst, err := util.CreateSecureFile(path)
 				if err != nil {
 					return err
 				}

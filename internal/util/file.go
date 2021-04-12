@@ -2,40 +2,53 @@ package util
 
 import (
 	"os"
+	"path/filepath"
 )
 
 const tmp_suffix = ".tmp"
 
-type FaultTolerantFile struct {
+type SecureFile struct {
 	path      string
 	corrupted bool
-	*os.File
+	f         *os.File
 }
 
-func NewFaultTolerantFile(path string) (*FaultTolerantFile, error) {
+func CreateSecureFile(path string) (*SecureFile, error) {
+	if err := os.MkdirAll(filepath.Dir(path), os.ModeDir); err != nil {
+		return nil, err
+	}
+
 	f, err := os.Create(path + tmp_suffix)
 	if err != nil {
 		return nil, err
 	}
 
-	ftf := new(FaultTolerantFile)
-	ftf.path = path
-	ftf.File = f
-	return ftf, nil
+	sf := new(SecureFile)
+	sf.path = path
+	sf.f = f
+	return sf, nil
 }
 
-func (ftf *FaultTolerantFile) Corrupted() {
-	ftf.corrupted = true
+func (sf *SecureFile) Write(p []byte) (int, error) {
+	n, err := sf.f.Write(p)
+	if err != nil {
+		sf.corrupted = true
+	}
+	return n, err
 }
 
-func (ftf *FaultTolerantFile) Close() error {
-	err := ftf.File.Close()
-	tmp_path := ftf.File.Name()
-	if ftf.corrupted || err != nil {
+func (sf *SecureFile) Corrupted() {
+	sf.corrupted = true
+}
+
+func (sf *SecureFile) Close() error {
+	err := sf.f.Close()
+	tmp_path := sf.f.Name()
+	if sf.corrupted || err != nil {
 		// Temporary file is corrupted. Trying to remove it
 		os.Remove(tmp_path)
 		return err
 	}
 	// Just replace the original file with a temporary one
-	return os.Rename(tmp_path, ftf.path)
+	return os.Rename(tmp_path, sf.path)
 }
