@@ -198,35 +198,20 @@ func (c *Config) Load() {
 }
 
 func (c *Config) Save() {
-	// First, save the configuration to a temporary file
-	// If the save was successful, replace the main file with a temporary one
-	// This reduces the chance of configuration loss in the event of an I/O error
 	path := filepath.Join(UserData(), ConfigFile)
-	tmpPath := path + ".tmp"
-
-	f, err := os.Create(tmpPath)
+	f, err := util.NewFaultTolerantFile(path)
 	if err != nil {
-		log.Error("Creating temporary config file: %v", err)
+		log.Error("Creating config file: %v", err)
 		return
 	}
+	defer f.Close()
 
 	e := json.NewEncoder(f)
 	e.SetIndent("", "\t") // for readability
 	if err := e.Encode(c); err != nil {
-		log.Error("Writing temporary config file: %v", err)
-		// Temporary file is corrupted. Try to delete it
-		f.Close()
-		os.Remove(tmpPath)
+		log.Error("Writing to config file: %v", err)
 		return
 	}
 
-	if err := f.Close(); err != nil {
-		log.Error("Closing temporary config file: %v", err)
-		// Temporary file is corrupted. Try to delete it
-		os.Remove(tmpPath)
-		return
-	}
-
-	os.Rename(tmpPath, path)
 	log.Info("Saving config to %v", path)
 }
