@@ -31,6 +31,7 @@ type ContentItem interface {
 
 type ContentList interface {
 	Label() daisy.Label
+	ID() string
 	Len() int
 	Item(int) ContentItem
 }
@@ -156,10 +157,19 @@ func (m *Manager) Start(msgCH chan msg.Message) {
 			}
 
 		case msg.REMOVE_BOOK:
-			if m.contentList != nil {
-				index := gui.MainList.CurrentIndex()
-				book := m.contentList.Item(index)
-				m.removeBook(book)
+			if m.contentList == nil {
+				break
+			}
+			index := gui.MainList.CurrentIndex()
+			book := m.contentList.Item(index)
+			if err := m.removeBook(book); err != nil {
+				log.Error("Book removing: %v", err)
+				gui.MessageBox("Ошибка", err.Error(), walk.MsgBoxOK|walk.MsgBoxIconError)
+				break
+			}
+			gui.MessageBox("Уведомление", fmt.Sprintf("«%s» удалена с книжной полки", book.Label().Text), walk.MsgBoxOK|walk.MsgBoxIconWarning)
+			if m.contentList.ID() == daisy.Issued {
+				m.setContent(daisy.Issued)
 			}
 
 		case msg.DOWNLOAD_BOOK:
@@ -584,15 +594,9 @@ func (m *Manager) downloadBook(book ContentItem) {
 	}()
 }
 
-func (m *Manager) removeBook(book ContentItem) {
+func (m *Manager) removeBook(book ContentItem) error {
 	_, err := m.library.ReturnContent(book.ID())
-	if err != nil {
-		msg := fmt.Sprintf("ReturnContent: %s", err)
-		log.Error(msg)
-		gui.MessageBox("Ошибка", msg, walk.MsgBoxOK|walk.MsgBoxIconError)
-		return
-	}
-	gui.MessageBox("Уведомление", fmt.Sprintf("%s удалена с книжной полки", book.Label().Text), walk.MsgBoxOK|walk.MsgBoxIconWarning)
+	return err
 }
 
 func (m *Manager) issueBook(book ContentItem) {

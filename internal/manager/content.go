@@ -57,6 +57,10 @@ func (cl *LibraryContentList) Label() daisy.Label {
 	return cl.books.Label
 }
 
+func (cl *LibraryContentList) ID() string {
+	return cl.books.ID
+}
+
 func (cl *LibraryContentList) Len() int {
 	return len(cl.books.ContentItems)
 }
