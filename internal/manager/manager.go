@@ -532,39 +532,40 @@ func (m *Manager) downloadBook(book ContentItem) {
 		dlg.Show()
 
 		for _, r := range rsrc {
-			var n int64
 			path := filepath.Join(config.UserData(), util.ReplaceForbiddenCharacters(book.Label().Text), r.LocalURI)
-			n, err = func() (int64, error) {
+			err = func() error {
 				if info, e := os.Stat(path); e == nil {
 					if !info.IsDir() && info.Size() == r.Size {
 						// r.LocalURI already exist
-						return info.Size(), nil
+						return nil
 					}
 				}
 
 				src, err := connection.NewConnectionWithContext(ctx, r.URI)
 				if err != nil {
-					return 0, err
+					return err
 				}
 				defer src.Close()
 
 				os.MkdirAll(filepath.Dir(path), os.ModeDir)
-				dst, err := os.Create(path)
+				dst, err := util.NewFaultTolerantFile(path)
 				if err != nil {
-					return 0, err
+					return err
 				}
 				defer dst.Close()
 
-				return io.CopyBuffer(dst, src, make([]byte, 512*1024))
+				n, err := io.CopyBuffer(dst, src, make([]byte, 512*1024))
+				if err == nil && r.Size != n {
+					err = errors.New("resource size mismatch")
+				}
+
+				if err != nil {
+					dst.Corrupted()
+				}
+				return err
 			}()
 
-			if err == nil && r.Size != n {
-				err = errors.New("resource size mismatch")
-			}
-
 			if err != nil {
-				// Removing an unwritten file
-				os.Remove(path)
 				break
 			}
 

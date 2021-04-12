@@ -209,6 +209,7 @@ func (c *Config) Save() {
 	e := json.NewEncoder(f)
 	e.SetIndent("", "\t") // for readability
 	if err := e.Encode(c); err != nil {
+		f.Corrupted()
 		log.Error("Writing to config file: %v", err)
 		return
 	}

@@ -8,8 +8,8 @@ const tmp_suffix = ".tmp"
 
 type FaultTolerantFile struct {
 	path      string
-	f         *os.File
 	corrupted bool
+	*os.File
 }
 
 func NewFaultTolerantFile(path string) (*FaultTolerantFile, error) {
@@ -20,21 +20,17 @@ func NewFaultTolerantFile(path string) (*FaultTolerantFile, error) {
 
 	ftf := new(FaultTolerantFile)
 	ftf.path = path
-	ftf.f = f
+	ftf.File = f
 	return ftf, nil
 }
 
-func (ftf *FaultTolerantFile) Write(p []byte) (int, error) {
-	n, err := ftf.f.Write(p)
-	if err != nil {
-		ftf.corrupted = true
-	}
-	return n, err
+func (ftf *FaultTolerantFile) Corrupted() {
+	ftf.corrupted = true
 }
 
 func (ftf *FaultTolerantFile) Close() error {
-	err := ftf.f.Close()
-	tmp_path := ftf.f.Name()
+	err := ftf.File.Close()
+	tmp_path := ftf.File.Name()
 	if ftf.corrupted || err != nil {
 		// Temporary file is corrupted. Trying to remove it
 		os.Remove(tmp_path)
