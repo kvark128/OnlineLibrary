@@ -149,24 +149,31 @@ func (m *Manager) Start(msgCH chan msg.Message) {
 			gui.SetLibraryMenu(msgCH, config.Conf.Services, "")
 
 		case msg.ISSUE_BOOK:
-			if m.contentList != nil {
-				index := gui.MainList.CurrentIndex()
-				book := m.contentList.Item(index)
-				m.issueBook(book)
+			if m.contentList == nil {
+				log.Warning("Attempt to add a book to a bookshelf when there is no content list")
+				break
 			}
+			book := m.contentList.Item(gui.MainList.CurrentIndex())
+			if err := m.issueBook(book); err != nil {
+				log.Error("Issue book: %v", err)
+				gui.MessageBox("Ошибка", err.Error(), walk.MsgBoxOK|walk.MsgBoxIconError)
+				break
+			}
+			gui.MessageBox("Уведомление", fmt.Sprintf("«%s» добавлена на книжную полку", book.Label().Text), walk.MsgBoxOK|walk.MsgBoxIconWarning)
 
 		case msg.REMOVE_BOOK:
 			if m.contentList == nil {
+				log.Warning("Attempt to remove a book from a bookshelf when there is no content list")
 				break
 			}
-			index := gui.MainList.CurrentIndex()
-			book := m.contentList.Item(index)
+			book := m.contentList.Item(gui.MainList.CurrentIndex())
 			if err := m.removeBook(book); err != nil {
-				log.Error("Book removing: %v", err)
+				log.Error("Removing book: %v", err)
 				gui.MessageBox("Ошибка", err.Error(), walk.MsgBoxOK|walk.MsgBoxIconError)
 				break
 			}
 			gui.MessageBox("Уведомление", fmt.Sprintf("«%s» удалена с книжной полки", book.Label().Text), walk.MsgBoxOK|walk.MsgBoxIconWarning)
+			// If a bookshelf is open, it must be updated to reflect the changes made
 			if m.contentList.ID() == daisy.Issued {
 				m.setContent(daisy.Issued)
 			}
@@ -596,15 +603,9 @@ func (m *Manager) removeBook(book ContentItem) error {
 	return err
 }
 
-func (m *Manager) issueBook(book ContentItem) {
+func (m *Manager) issueBook(book ContentItem) error {
 	_, err := m.library.IssueContent(book.ID())
-	if err != nil {
-		msg := fmt.Sprintf("IssueContent: %s", err)
-		log.Error(msg)
-		gui.MessageBox("Ошибка", msg, walk.MsgBoxOK|walk.MsgBoxIconError)
-		return
-	}
-	gui.MessageBox("Уведомление", fmt.Sprintf("%s добавлена на книжную полку", book.Label().Text), walk.MsgBoxOK|walk.MsgBoxIconWarning)
+	return err
 }
 
 func (m *Manager) showBookDescription(book ContentItem) {
