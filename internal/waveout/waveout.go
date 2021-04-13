@@ -36,6 +36,10 @@ var (
 	procWaveOutClose           = winmm.NewProc("waveOutClose")
 )
 
+// Some win types
+type WORD uint16
+type DWORD uint32
+
 // The WAVEFORMATEX structure defines the format of waveform-audio data
 type WAVEFORMATEX struct {
 	wFormatTag      uint16
@@ -61,14 +65,14 @@ type WAVEHDR struct {
 
 // The WAVEOUTCAPS structure describes the capabilities of a waveform-audio output device
 type WAVEOUTCAPS struct {
-	wMid           uint16
-	wPid           uint16
-	vDriverVersion uint
+	wMid           WORD
+	wPid           WORD
+	vDriverVersion uint32
 	szPname        [MAXPNAMELEN]uint16
-	dwFormats      uint32
-	wChannels      uint16
-	wReserved1     uint16
-	dwSupport      uint32
+	dwFormats      DWORD
+	wChannels      WORD
+	wReserved1     WORD
+	dwSupport      DWORD
 }
 
 func OutputDevices() func() (int, string, error) {
