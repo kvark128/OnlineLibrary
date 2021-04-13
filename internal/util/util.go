@@ -2,6 +2,7 @@ package util
 
 import (
 	"fmt"
+	"os"
 	"strings"
 	"time"
 )
@@ -33,9 +34,20 @@ func ParseDuration(s string) (time.Duration, error) {
 	return time.Hour*hh + time.Minute*mm + time.Second*ss, nil
 }
 
+// StringInSlice checks if a string exists in the specified slice of strings
 func StringInSlice(str string, slc []string) bool {
 	for _, s := range slc {
 		if str == s {
+			return true
+		}
+	}
+	return false
+}
+
+// FileIsExist checks that path points to an existing file with the specified size
+func FileIsExist(path string, size int64) bool {
+	if info, err := os.Stat(path); err == nil {
+		if !info.IsDir() && info.Size() == size {
 			return true
 		}
 	}

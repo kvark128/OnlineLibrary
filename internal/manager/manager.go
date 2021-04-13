@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -542,13 +541,11 @@ func (m *Manager) downloadBook(book ContentItem) {
 		dlg.Show()
 
 		for _, r := range rsrc {
-			path := filepath.Join(config.UserData(), util.ReplaceForbiddenCharacters(book.Label().Text), r.LocalURI)
 			err = func() error {
-				if info, e := os.Stat(path); e == nil {
-					if !info.IsDir() && info.Size() == r.Size {
-						// r.LocalURI already exist
-						return nil
-					}
+				path := filepath.Join(config.UserData(), util.ReplaceForbiddenCharacters(book.Label().Text), r.LocalURI)
+				if util.FileIsExist(path, r.Size) {
+					// This fragment already exists on disk
+					return nil
 				}
 
 				src, err := connection.NewConnectionWithContext(ctx, r.URI)

@@ -289,12 +289,10 @@ func (p *Player) start(startFragment int) {
 		log.Debug("Fetching resource: %s; URI: %s; MimeType: %s; Size: %d", r.LocalURI, r.URI, r.MimeType, r.Size)
 
 		uri = filepath.Join(p.bookDir, r.LocalURI)
-		if info, e := os.Stat(uri); e == nil {
-			if !info.IsDir() && info.Size() == r.Size {
-				// fragment already exists on disk
-				// we use it to reduce the load on the server
-				src, _ = os.Open(uri)
-			}
+		if util.FileIsExist(uri, r.Size) {
+			// fragment already exists on disk
+			// we use it to reduce the load on the server
+			src, _ = os.Open(uri)
 		}
 
 		if src == nil {
