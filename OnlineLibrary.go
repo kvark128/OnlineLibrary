@@ -42,19 +42,20 @@ func main() {
 	gui.SetPauseTimerLabel(int(config.Conf.General.PauseTimer.Minutes()))
 
 	mng := new(manager.Manager)
-	go mng.Start(msgCH)
+	done := make(chan bool)
+	go mng.Start(msgCH, done)
 
 	// Trying to log in to the current library
 	if service, err := config.Conf.CurrentService(); err == nil {
-		msgCH <- msg.Message{msg.LIBRARY_LOGON, service.Name}
+		msgCH <- msg.Message{Code: msg.LIBRARY_LOGON, Data: service.Name}
 	}
 
 	gui.RunMainWindow()
 
-	msgCH <- msg.Message{msg.LIBRARY_LOGOFF, nil}
+	msgCH <- msg.Message{Code: msg.LIBRARY_LOGOFF}
 	close(msgCH)
 
-	mng.Wait()
+	<-done
 	config.Conf.Save()
 	log.Info("Exiting")
 }

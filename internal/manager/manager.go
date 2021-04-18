@@ -8,7 +8,6 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/kvark128/OnlineLibrary/internal/config"
@@ -36,7 +35,6 @@ type ContentList interface {
 }
 
 type Manager struct {
-	sync.WaitGroup
 	library       *Library
 	bookplayer    *player.Player
 	currentBook   *config.Book
@@ -45,9 +43,8 @@ type Manager struct {
 	userResponses []daisy.UserResponse
 }
 
-func (m *Manager) Start(msgCH chan msg.Message) {
-	m.Add(1)
-	defer m.Done()
+func (m *Manager) Start(msgCH chan msg.Message, done chan<- bool) {
+	defer func() { done <- true }()
 
 	for evt := range msgCH {
 		if m.library == nil && evt.Code != msg.LIBRARY_LOGON && evt.Code != msg.LIBRARY_ADD && evt.Code != msg.LOG_SET_LEVEL {
