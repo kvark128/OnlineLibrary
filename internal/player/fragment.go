@@ -1,6 +1,7 @@
 package player
 
 import (
+	"bufio"
 	"fmt"
 	"io"
 	"sync"
@@ -22,17 +23,18 @@ type Fragment struct {
 	dec        *minimp3.Decoder
 	sampleRate int
 	channels   int
-	buffer     []byte
 	wp         *waveout.WavePlayer
 	nWrite     int64
 }
+
+const buffer_size = 1024 * 16
 
 func NewFragment(mp3 io.Reader, speed, pitch float64, devName string) (*Fragment, int, error) {
 	f := &Fragment{}
 	f.dec = minimp3.NewDecoder(mp3)
 
-	f.buffer = make([]byte, 1024*16)
-	n, err := f.dec.Read(f.buffer)
+	buf := make([]byte, 32)
+	n, err := f.dec.Read(buf)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -46,9 +48,9 @@ func NewFragment(mp3 io.Reader, speed, pitch float64, devName string) (*Fragment
 	f.stream = sonic.NewStream(f.sampleRate, f.channels)
 	f.stream.SetSpeed(speed)
 	f.stream.SetPitch(pitch)
-	f.stream.Write(f.buffer[:n])
+	f.stream.Write(buf[:n])
 
-	wp, err := waveout.NewWavePlayer(f.channels, f.sampleRate, 16, len(f.buffer), devName)
+	wp, err := waveout.NewWavePlayer(f.channels, f.sampleRate, 16, buffer_size, devName)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -57,47 +59,30 @@ func NewFragment(mp3 io.Reader, speed, pitch float64, devName string) (*Fragment
 	return f, kbps, nil
 }
 
-func (f *Fragment) fillBuf(buf []byte) (int, error) {
-	f.Lock()
-	defer f.Unlock()
+func (f *Fragment) play(playing *util.Flag) {
+	var p int64
+	wp := bufio.NewWriterSize(f.wp, buffer_size)
 
-	var err error
-	var n int
-
-	for {
-		nSamples := f.stream.SamplesAvailable()
-		if err != nil || nSamples*f.channels*2 >= len(buf) {
-			break
-		}
-		n, err = f.dec.Read(buf)
-		f.stream.Write(buf[:n])
+	for playing.IsSet() {
+		gui.SetElapsedTime(f.Position())
+		n, err := io.CopyN(f.stream, f.dec, buffer_size)
 		if err != nil {
 			f.stream.Flush()
 		}
-	}
-
-	nRead, _ := f.stream.Read(buf)
-	return nRead, err
-}
-
-func (f *Fragment) play(playing *util.Flag) {
-	var p int
-	for playing.IsSet() {
-		gui.SetElapsedTime(f.Position())
-		n, err := f.fillBuf(f.buffer)
-		if _, err := f.wp.Write(f.buffer[:n]); err != nil {
+		if _, err := wp.ReadFrom(f.stream); err != nil {
 			log.Error("WavePlayer: %v", err)
 		}
-		f.nWrite += int64(float64(p) * f.stream.Speed())
+		f.nWrite += p
 		p = n
 
 		if err != nil {
+			wp.Flush()
 			break
 		}
 	}
 
 	f.wp.Sync()
-	f.nWrite += int64(float64(p) * f.stream.Speed())
+	f.nWrite += p
 	f.wp.Close()
 	gui.SetElapsedTime(0)
 }
@@ -190,18 +175,19 @@ func (f *Fragment) SetPosition(position time.Duration) error {
 	f.beRewind = true
 	f.stream.Flush()
 	for f.stream.SamplesAvailable() > 0 {
-		f.stream.Read(f.buffer)
+		f.stream.Read(make([]byte, buffer_size))
 	}
 
 	offsetInBytes := int64(position / (time.Second / time.Duration(f.sampleRate*f.channels*2)))
 	if f.nWrite == offsetInBytes {
 		return nil
 	}
-	f.nWrite = offsetInBytes
 
-	if _, err := f.dec.Seek(offsetInBytes, io.SeekStart); err != nil {
+	newPos, err := f.dec.Seek(offsetInBytes, io.SeekStart)
+	if err != nil {
 		return err
 	}
+	f.nWrite = newPos
 
 	gui.SetElapsedTime(position)
 	return nil
