@@ -190,7 +190,7 @@ func (m *Manager) Start(msgCH chan msg.Message, done chan<- bool) {
 			m.bookplayer.PlayPause()
 
 		case msg.PLAYER_STOP:
-			m.saveBookPosition(m.bookplayer)
+			m.setBookmark(config.ListeningPosition)
 			m.bookplayer.Stop()
 
 		case msg.PLAYER_OFFSET_FRAGMENT:
@@ -299,11 +299,7 @@ func (m *Manager) Start(msgCH chan msg.Message, done chan<- bool) {
 			if !ok {
 				break
 			}
-			if m.currentBook != nil {
-				bookmark := config.Bookmark{}
-				bookmark.Fragment, bookmark.Position = m.bookplayer.PositionInfo()
-				m.currentBook.SetBookmark(bookmarkID, bookmark)
-			}
+			m.setBookmark(bookmarkID)
 
 		case msg.BOOKMARK_FETCH:
 			bookmarkID, ok := evt.Data.(string)
@@ -353,7 +349,7 @@ func (m *Manager) Start(msgCH chan msg.Message, done chan<- bool) {
 }
 
 func (m *Manager) logoff() {
-	m.saveBookPosition(m.bookplayer)
+	m.setBookmark(config.ListeningPosition)
 	m.bookplayer.Stop()
 	gui.MainList.Clear()
 	gui.SetMainWindowTitle("")
@@ -509,17 +505,17 @@ func (m *Manager) updateContentList(contentList ContentList) {
 	gui.MainList.SetItems(labels, contentList.Label().Text, gui.BookMenu)
 }
 
-func (m *Manager) saveBookPosition(bookplayer *player.Player) {
+func (m *Manager) setBookmark(bookmarkID string) {
 	if m.currentBook != nil {
 		var bookmark config.Bookmark
-		bookmark.Fragment, bookmark.Position = bookplayer.PositionInfo()
-		m.currentBook.SetBookmark(config.ListeningPosition, bookmark)
+		bookmark.Fragment, bookmark.Position = m.bookplayer.PositionInfo()
+		m.currentBook.SetBookmark(bookmarkID, bookmark)
 		m.library.service.SetBook(*m.currentBook)
 	}
 }
 
 func (m *Manager) setBookplayer(book ContentItem) error {
-	m.saveBookPosition(m.bookplayer)
+	m.setBookmark(config.ListeningPosition)
 	m.bookplayer.Stop()
 
 	rsrc, err := book.Resources()
