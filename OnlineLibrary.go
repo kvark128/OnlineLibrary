@@ -51,11 +51,9 @@ func main() {
 	}
 
 	gui.RunMainWindow()
-
-	msgCH <- msg.Message{Code: msg.LIBRARY_LOGOFF}
 	close(msgCH)
-
 	<-done
+
 	config.Conf.Save()
 	log.Info("Exiting")
 }

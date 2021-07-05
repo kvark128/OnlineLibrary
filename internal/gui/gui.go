@@ -76,6 +76,11 @@ func Initialize(msgCH chan msg.Message) error {
 						OnTriggered: func() { msgCH <- msg.Message{msg.LIBRARY_REMOVE, nil} },
 					},
 					Action{
+						Text:        "Локальные книги",
+						Shortcut:    Shortcut{walk.ModControl, walk.KeyB},
+						OnTriggered: func() { msgCH <- msg.Message{msg.OPEN_LOCALBOOKS, nil} },
+					},
+					Action{
 						Text:        "Выйти из программы",
 						Shortcut:    Shortcut{walk.ModAlt, walk.KeyF4},
 						OnTriggered: func() { mainWindow.Close() },

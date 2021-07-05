@@ -58,7 +58,7 @@ func (m *Manager) Start(msgCH chan msg.Message, done chan<- bool) {
 			index := gui.MainList.CurrentIndex()
 			if m.contentList != nil {
 				book := m.contentList.Item(index)
-				if m.currentBook == nil || book.ID() != m.currentBook.ID {
+				if m.currentBook == nil || m.currentBook.ID != book.ID() {
 					if err := m.setBookplayer(book); err != nil {
 						log.Error("Set book player: %v", err)
 						gui.MessageBox("Ошибка", err.Error(), walk.MsgBoxOK|walk.MsgBoxIconError)
@@ -132,9 +132,6 @@ func (m *Manager) Start(msgCH chan msg.Message, done chan<- bool) {
 
 			config.Conf.SetService(service)
 			gui.SetLibraryMenu(msgCH, config.Conf.Services, service.Name)
-
-		case msg.LIBRARY_LOGOFF:
-			m.logoff()
 
 		case msg.LIBRARY_REMOVE:
 			msg := fmt.Sprintf("Вы действительно хотите удалить учётную запись %v?\nТакже будут удалены сохранённые позиции всех книг этой библиотеки.\nЭто действие не может быть отменено.", m.library.service.Name)
@@ -338,11 +335,21 @@ func (m *Manager) Start(msgCH chan msg.Message, done chan<- bool) {
 			log.SetLevel(level)
 			log.Info("Set log level to %s", level)
 
+		case msg.OPEN_LOCALBOOKS:
+			contentList, err := NewLocalContentList()
+			if err != nil {
+				gui.MessageBox("Ошибка", err.Error(), walk.MsgBoxOK|walk.MsgBoxIconError)
+				break
+			}
+			m.updateContentList(contentList)
+
 		default:
 			log.Warning("Unknown message: %v", evt.Code)
 
 		}
 	}
+
+	m.logoff()
 }
 
 func (m *Manager) logoff() {
@@ -475,25 +482,31 @@ func (m *Manager) setContent(contentID string) {
 		return
 	}
 
-	m.contentList = contentList
-	m.questions = nil
-
-	labels := make([]string, m.contentList.Len())
-	ids := make([]string, m.contentList.Len())
-	for i := range labels {
-		book := m.contentList.Item(i)
-		labels[i] = book.Label().Text
-		ids[i] = book.ID()
-	}
-
 	if contentID == daisy.Issued {
+		ids := make([]string, contentList.Len())
+		for i := range ids {
+			book := contentList.Item(i)
+			ids[i] = book.ID()
+		}
 		if m.currentBook != nil && !util.StringInSlice(m.currentBook.ID, ids) {
 			ids = append(ids, m.currentBook.ID)
 		}
 		m.library.service.Tidy(ids)
 	}
 
-	gui.MainList.SetItems(labels, m.contentList.Label().Text, gui.BookMenu)
+	m.updateContentList(contentList)
+}
+
+func (m *Manager) updateContentList(contentList ContentList) {
+	labels := make([]string, contentList.Len())
+	for i := range labels {
+		book := contentList.Item(i)
+		labels[i] = book.Label().Text
+	}
+
+	m.contentList = contentList
+	m.questions = nil
+	gui.MainList.SetItems(labels, contentList.Label().Text, gui.BookMenu)
 }
 
 func (m *Manager) saveBookPosition(bookplayer *player.Player) {
