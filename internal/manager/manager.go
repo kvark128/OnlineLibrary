@@ -511,7 +511,9 @@ func (m *Manager) updateContentList(contentList ContentList) {
 
 func (m *Manager) saveBookPosition(bookplayer *player.Player) {
 	if m.currentBook != nil {
-		m.currentBook.Fragment, m.currentBook.ElapsedTime = bookplayer.PositionInfo()
+		var bookmark config.Bookmark
+		bookmark.Fragment, bookmark.Position = bookplayer.PositionInfo()
+		m.currentBook.SetBookmark(config.ListeningPosition, bookmark)
 		m.library.service.SetBook(*m.currentBook)
 	}
 }
@@ -534,9 +536,11 @@ func (m *Manager) setBookplayer(book ContentItem) error {
 	}
 	m.bookplayer.SetTimerDuration(config.Conf.General.PauseTimer)
 	if book, err := m.library.service.Book(book.ID()); err == nil {
-		m.bookplayer.SetFragment(book.Fragment)
-		m.bookplayer.SetPosition(book.ElapsedTime)
 		m.currentBook = book
+		if bookmark, err := book.Bookmark(config.ListeningPosition); err == nil {
+			m.bookplayer.SetFragment(bookmark.Fragment)
+			m.bookplayer.SetPosition(bookmark.Position)
+		}
 	}
 	return nil
 }
