@@ -25,6 +25,8 @@ type ContentItem interface {
 	Label() daisy.Label
 	ID() string
 	Resources() ([]daisy.Resource, error)
+	Bookmark(string) (config.Bookmark, error)
+	SetBookmark(string, config.Bookmark)
 }
 
 type ContentList interface {
@@ -37,7 +39,7 @@ type ContentList interface {
 type Manager struct {
 	library       *Library
 	bookplayer    *player.Player
-	currentBook   *config.Book
+	currentBook   ContentItem
 	contentList   ContentList
 	questions     *daisy.Questions
 	userResponses []daisy.UserResponse
@@ -58,7 +60,7 @@ func (m *Manager) Start(msgCH chan msg.Message, done chan<- bool) {
 			index := gui.MainList.CurrentIndex()
 			if m.contentList != nil {
 				book := m.contentList.Item(index)
-				if m.currentBook == nil || m.currentBook.ID != book.ID() {
+				if m.currentBook == nil || m.currentBook.ID() != book.ID() {
 					if err := m.setBookplayer(book); err != nil {
 						log.Error("Set book player: %v", err)
 						gui.MessageBox("Ошибка", err.Error(), walk.MsgBoxOK|walk.MsgBoxIconError)
@@ -484,8 +486,8 @@ func (m *Manager) setContent(contentID string) {
 			book := contentList.Item(i)
 			ids[i] = book.ID()
 		}
-		if m.currentBook != nil && !util.StringInSlice(m.currentBook.ID, ids) {
-			ids = append(ids, m.currentBook.ID)
+		if m.currentBook != nil && !util.StringInSlice(m.currentBook.ID(), ids) {
+			ids = append(ids, m.currentBook.ID())
 		}
 		m.library.service.Tidy(ids)
 	}
@@ -510,7 +512,6 @@ func (m *Manager) setBookmark(bookmarkID string) {
 		var bookmark config.Bookmark
 		bookmark.Fragment, bookmark.Position = m.bookplayer.PositionInfo()
 		m.currentBook.SetBookmark(bookmarkID, bookmark)
-		m.library.service.SetBook(*m.currentBook)
 	}
 }
 
@@ -526,17 +527,11 @@ func (m *Manager) setBookplayer(book ContentItem) error {
 	gui.SetMainWindowTitle(book.Label().Text)
 	bookDir := filepath.Join(config.UserData(), util.ReplaceForbiddenCharacters(book.Label().Text))
 	m.bookplayer = player.NewPlayer(bookDir, rsrc, config.Conf.General.OutputDevice)
-	m.currentBook = &config.Book{
-		Name: book.Label().Text,
-		ID:   book.ID(),
-	}
+	m.currentBook = book
 	m.bookplayer.SetTimerDuration(config.Conf.General.PauseTimer)
-	if book, err := m.library.service.Book(book.ID()); err == nil {
-		m.currentBook = book
-		if bookmark, err := book.Bookmark(config.ListeningPosition); err == nil {
-			m.bookplayer.SetFragment(bookmark.Fragment)
-			m.bookplayer.SetPosition(bookmark.Position)
-		}
+	if bookmark, err := book.Bookmark(config.ListeningPosition); err == nil {
+		m.bookplayer.SetFragment(bookmark.Fragment)
+		m.bookplayer.SetPosition(bookmark.Position)
 	}
 	return nil
 }

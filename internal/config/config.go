@@ -3,7 +3,6 @@ package config
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"os"
 	"path/filepath"
 	"time"
@@ -80,7 +79,7 @@ func (s *Service) Book(id string) (*Book, error) {
 			return &s.RecentBooks[i], nil
 		}
 	}
-	return nil, fmt.Errorf("book with %s id not found", id)
+	return nil, BookNotFound
 }
 
 func (s *Service) SetCurrentBook(id string) {
@@ -112,8 +111,9 @@ type General struct {
 }
 
 type Config struct {
-	General  General    `json:"general,omitempty"`
-	Services []*Service `json:"services,omitempty"`
+	General    General    `json:"general,omitempty"`
+	Services   []*Service `json:"services,omitempty"`
+	LocalBooks []Book     `json:"local_books,omitempty"`
 }
 
 func (cfg *Config) SetService(service *Service) {
@@ -164,6 +164,25 @@ func (cfg *Config) CurrentService() (*Service, error) {
 		return cfg.Services[0], nil
 	}
 	return nil, errors.New("services list is empty")
+}
+
+func (cfg *Config) SetLocalBook(book Book) {
+	for i, b := range cfg.LocalBooks {
+		if b.ID == book.ID {
+			cfg.LocalBooks[i] = book
+			return
+		}
+	}
+	cfg.LocalBooks = append(cfg.LocalBooks, book)
+}
+
+func (cfg *Config) LocalBook(id string) (*Book, error) {
+	for i, b := range cfg.LocalBooks {
+		if b.ID == id {
+			return &cfg.LocalBooks[i], nil
+		}
+	}
+	return nil, BookNotFound
 }
 
 func UserData() string {

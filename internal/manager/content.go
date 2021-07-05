@@ -1,21 +1,35 @@
 package manager
 
 import (
+	"io/fs"
+	"os"
+	"path/filepath"
+
+	"github.com/kvark128/OnlineLibrary/internal/config"
 	daisy "github.com/kvark128/daisyonline"
 )
 
 type LibraryContentItem struct {
 	library *Library
+	book    *config.Book
 	id      string
 	label   daisy.Label
 }
 
 func NewLibraryContentItem(library *Library, id, name string) *LibraryContentItem {
-	return &LibraryContentItem{
+	ci := &LibraryContentItem{
 		library: library,
-		id:      id,
-		label:   daisy.Label{Text: name},
+		book: &config.Book{
+			Name: name,
+			ID:   id,
+		},
+		id:    id,
+		label: daisy.Label{Text: name},
 	}
+	if book, err := ci.library.service.Book(ci.id); err == nil {
+		ci.book = book
+	}
+	return ci
 }
 
 func (ci *LibraryContentItem) ID() string {
@@ -32,6 +46,15 @@ func (ci *LibraryContentItem) Resources() ([]daisy.Resource, error) {
 		return nil, err
 	}
 	return r.Resources, nil
+}
+
+func (ci *LibraryContentItem) Bookmark(bookmarkID string) (config.Bookmark, error) {
+	return ci.book.Bookmark(bookmarkID)
+}
+
+func (ci *LibraryContentItem) SetBookmark(bookmarkID string, bookmark config.Bookmark) {
+	ci.book.SetBookmark(bookmarkID, bookmark)
+	ci.library.service.SetBook(*ci.book)
 }
 
 type LibraryContentList struct {
@@ -68,4 +91,107 @@ func (cl *LibraryContentList) Len() int {
 func (cl *LibraryContentList) Item(index int) ContentItem {
 	book := cl.books.ContentItems[index]
 	return NewLibraryContentItem(cl.library, book.ID, book.Label.Text)
+}
+
+type LocalContentItem struct {
+	book  *config.Book
+	id    string
+	label daisy.Label
+	path  string
+}
+
+func NewLocalContentItem(path string) *LocalContentItem {
+	ci := &LocalContentItem{
+		book: &config.Book{
+			Name: filepath.Base(path),
+			ID:   filepath.Base(path),
+		},
+	}
+	ci.path = path
+	ci.label.Text = filepath.Base(path)
+	if book, err := config.Conf.LocalBook(ci.book.ID); err == nil {
+		ci.book = book
+	}
+	return ci
+}
+
+func (ci *LocalContentItem) Label() daisy.Label {
+	return ci.label
+}
+
+func (ci *LocalContentItem) ID() string {
+	return ci.label.Text
+}
+
+func (ci *LocalContentItem) Resources() ([]daisy.Resource, error) {
+	rsrc := make([]daisy.Resource, 0)
+
+	walker := func(targpath string, info fs.FileInfo, err error) error {
+		if err != nil || info.IsDir() {
+			return err
+		}
+		localURI, err := filepath.Rel(ci.path, targpath)
+		if err != nil {
+			return err
+		}
+		r := daisy.Resource{
+			LocalURI: localURI,
+			Size:     info.Size(),
+		}
+		rsrc = append(rsrc, r)
+		return nil
+	}
+
+	if err := filepath.Walk(ci.path, walker); err != nil {
+		return nil, err
+	}
+	return rsrc, nil
+}
+
+func (ci *LocalContentItem) Bookmark(bookmarkID string) (config.Bookmark, error) {
+	return ci.book.Bookmark(bookmarkID)
+}
+
+func (ci *LocalContentItem) SetBookmark(bookmarkID string, bookmark config.Bookmark) {
+	ci.book.SetBookmark(bookmarkID, bookmark)
+	config.Conf.SetLocalBook(*ci.book)
+}
+
+type LocalContentList struct {
+	books []string
+	id    string
+	label daisy.Label
+}
+
+func NewLocalContentList() (*LocalContentList, error) {
+	cl := &LocalContentList{}
+	userData := config.UserData()
+	entrys, err := os.ReadDir(userData)
+	if err != nil {
+		return nil, err
+	}
+	for _, e := range entrys {
+		if e.IsDir() {
+			path := filepath.Join(userData, e.Name())
+			cl.books = append(cl.books, path)
+		}
+	}
+	return cl, nil
+}
+
+func (cl *LocalContentList) Label() daisy.Label {
+	return cl.label
+}
+
+func (cl *LocalContentList) ID() string {
+	return cl.id
+}
+
+func (cl *LocalContentList) Len() int {
+	return len(cl.books)
+}
+
+func (cl *LocalContentList) Item(index int) ContentItem {
+	path := cl.books[index]
+	return NewLocalContentItem(path)
 }

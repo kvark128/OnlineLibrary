@@ -6,6 +6,7 @@ import (
 )
 
 var (
+	BookNotFound      = errors.New("book not found")
 	BookmarkNotFound  = errors.New("bookmark not found")
 	ListeningPosition = "listening_position"
 )
