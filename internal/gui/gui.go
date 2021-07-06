@@ -72,13 +72,13 @@ func Initialize(msgCH chan msg.Message) error {
 						OnTriggered: func() { msgCH <- msg.Message{msg.MENU_BACK, nil} },
 					},
 					Action{
-						Text:        "Удалить учётную запись",
-						OnTriggered: func() { msgCH <- msg.Message{msg.LIBRARY_REMOVE, nil} },
-					},
-					Action{
 						Text:        "Локальные книги",
 						Shortcut:    Shortcut{walk.ModControl, walk.KeyB},
 						OnTriggered: func() { msgCH <- msg.Message{msg.OPEN_LOCALBOOKS, nil} },
+					},
+					Action{
+						Text:        "Удалить учётную запись",
+						OnTriggered: func() { msgCH <- msg.Message{msg.LIBRARY_REMOVE, nil} },
 					},
 					Action{
 						Text:        "Выйти из программы",
