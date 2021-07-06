@@ -21,6 +21,11 @@ import (
 	"github.com/lxn/walk"
 )
 
+var (
+	NoActiveSession   = errors.New("no active session")
+	NoBookDescription = errors.New("no book description")
+)
+
 type ContentItem interface {
 	Label() daisy.Label
 	ID() string
@@ -47,6 +52,7 @@ type Manager struct {
 
 func (m *Manager) Start(msgCH chan msg.Message, done chan<- bool) {
 	defer func() { done <- true }()
+	defer m.cleaning()
 
 	if config.Conf.General.OpenLocalBooksAtStartup {
 		msgCH <- msg.Message{Code: msg.OPEN_LOCALBOOKS}
@@ -54,8 +60,8 @@ func (m *Manager) Start(msgCH chan msg.Message, done chan<- bool) {
 		msgCH <- msg.Message{Code: msg.LIBRARY_LOGON, Data: service.Name}
 	}
 
-	for evt := range msgCH {
-		switch evt.Code {
+	for message := range msgCH {
+		switch message.Code {
 		case msg.ACTIVATE_MENU:
 			index := gui.MainList.CurrentIndex()
 			if m.contentList != nil {
@@ -94,7 +100,7 @@ func (m *Manager) Start(msgCH chan msg.Message, done chan<- bool) {
 			m.setQuestions(daisy.UserResponse{QuestionID: daisy.Back})
 
 		case msg.LIBRARY_LOGON:
-			name, ok := evt.Data.(string)
+			name, ok := message.Data.(string)
 			if !ok {
 				break
 			}
@@ -185,11 +191,17 @@ func (m *Manager) Start(msgCH chan msg.Message, done chan<- bool) {
 			}
 
 		case msg.BOOK_DESCRIPTION:
-			if m.contentList != nil {
-				index := gui.MainList.CurrentIndex()
-				book := m.contentList.Item(index)
-				m.showBookDescription(book)
+			if m.contentList == nil {
+				break
 			}
+			index := gui.MainList.CurrentIndex()
+			book := m.contentList.Item(index)
+			text, err := m.bookDescription(book)
+			if err != nil {
+				gui.MessageBox("Ошибка", err.Error(), walk.MsgBoxOK|walk.MsgBoxIconError)
+				break
+			}
+			gui.MessageBox("Информация о книге", text, walk.MsgBoxOK|walk.MsgBoxIconWarning)
 
 		case msg.PLAYER_PLAY_PAUSE:
 			m.bookplayer.PlayPause()
@@ -199,7 +211,7 @@ func (m *Manager) Start(msgCH chan msg.Message, done chan<- bool) {
 			m.bookplayer.Stop()
 
 		case msg.PLAYER_OFFSET_FRAGMENT:
-			offset, ok := evt.Data.(int)
+			offset, ok := message.Data.(int)
 			if !ok {
 				log.Error("Invalid offset fragment")
 				break
@@ -236,7 +248,7 @@ func (m *Manager) Start(msgCH chan msg.Message, done chan<- bool) {
 			m.bookplayer.ChangeVolume(-1)
 
 		case msg.PLAYER_OFFSET_POSITION:
-			offset, ok := evt.Data.(time.Duration)
+			offset, ok := message.Data.(time.Duration)
 			if !ok {
 				log.Error("Invalid offset position")
 				break
@@ -245,7 +257,7 @@ func (m *Manager) Start(msgCH chan msg.Message, done chan<- bool) {
 			m.bookplayer.SetPosition(pos + offset)
 
 		case msg.PLAYER_GOTO_FRAGMENT:
-			fragment, ok := evt.Data.(int)
+			fragment, ok := message.Data.(int)
 			if !ok {
 				var text string
 				curFragment, _ := m.bookplayer.PositionInfo()
@@ -274,7 +286,7 @@ func (m *Manager) Start(msgCH chan msg.Message, done chan<- bool) {
 			m.bookplayer.SetPosition(position)
 
 		case msg.PLAYER_OUTPUT_DEVICE:
-			device, ok := evt.Data.(string)
+			device, ok := message.Data.(string)
 			if !ok {
 				log.Error("set output device: invalid device")
 				break
@@ -300,14 +312,14 @@ func (m *Manager) Start(msgCH chan msg.Message, done chan<- bool) {
 			m.bookplayer.SetTimerDuration(config.Conf.General.PauseTimer)
 
 		case msg.BOOKMARK_SET:
-			bookmarkID, ok := evt.Data.(string)
+			bookmarkID, ok := message.Data.(string)
 			if !ok {
 				break
 			}
 			m.setBookmark(bookmarkID)
 
 		case msg.BOOKMARK_FETCH:
-			bookmarkID, ok := evt.Data.(string)
+			bookmarkID, ok := message.Data.(string)
 			if !ok {
 				break
 			}
@@ -327,7 +339,7 @@ func (m *Manager) Start(msgCH chan msg.Message, done chan<- bool) {
 			}
 
 		case msg.LOG_SET_LEVEL:
-			level, ok := evt.Data.(log.Level)
+			level, ok := message.Data.(log.Level)
 			if !ok {
 				log.Error("Set log level: invalid level")
 				break
@@ -342,16 +354,15 @@ func (m *Manager) Start(msgCH chan msg.Message, done chan<- bool) {
 				gui.MessageBox("Ошибка", err.Error(), walk.MsgBoxOK|walk.MsgBoxIconError)
 				break
 			}
+			m.cleaning()
 			m.updateContentList(contentList)
 			config.Conf.General.OpenLocalBooksAtStartup = true
 
 		default:
-			log.Warning("Unknown message: %v", evt.Code)
+			log.Warning("Unknown message: %v", message.Code)
 
 		}
 	}
-
-	m.cleaning()
 }
 
 func (m *Manager) cleaning() {
@@ -621,9 +632,7 @@ func (m *Manager) downloadBook(book ContentItem) {
 
 func (m *Manager) removeBook(book ContentItem) error {
 	if m.library == nil {
-		msg := "This operation requires login to the library"
-		gui.MessageBox("Ошибка", msg, walk.MsgBoxOK|walk.MsgBoxIconError)
-		return nil
+		return NoActiveSession
 	}
 
 	_, err := m.library.ReturnContent(book.ID())
@@ -632,35 +641,26 @@ func (m *Manager) removeBook(book ContentItem) error {
 
 func (m *Manager) issueBook(book ContentItem) error {
 	if m.library == nil {
-		msg := "This operation requires login to the library"
-		gui.MessageBox("Ошибка", msg, walk.MsgBoxOK|walk.MsgBoxIconError)
-		return nil
+		return NoActiveSession
 	}
 
 	_, err := m.library.IssueContent(book.ID())
 	return err
 }
 
-func (m *Manager) showBookDescription(book ContentItem) {
+func (m *Manager) bookDescription(book ContentItem) (string, error) {
 	if m.library == nil {
-		msg := "This operation requires login to the library"
-		gui.MessageBox("Ошибка", msg, walk.MsgBoxOK|walk.MsgBoxIconError)
-		return
+		return "", NoActiveSession
 	}
 
 	md, err := m.library.GetContentMetadata(book.ID())
 	if err != nil {
-		msg := fmt.Sprintf("GetContentMetadata: %v", err)
-		log.Error(msg)
-		gui.MessageBox("Ошибка", msg, walk.MsgBoxOK|walk.MsgBoxIconError)
-		return
+		return "", err
 	}
 
 	text := fmt.Sprintf("%v", strings.Join(md.Metadata.Description, "\r\n"))
 	if text == "" {
-		gui.MessageBox("Ошибка", "Нет доступной информации о книге", walk.MsgBoxOK|walk.MsgBoxIconError)
-		return
+		return "", NoBookDescription
 	}
-
-	gui.MessageBox("Информация о книге", text, walk.MsgBoxOK|walk.MsgBoxIconWarning)
+	return text, nil
 }
