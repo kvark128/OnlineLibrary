@@ -164,7 +164,9 @@ type LocalContentList struct {
 }
 
 func NewLocalContentList() (*LocalContentList, error) {
-	cl := &LocalContentList{}
+	cl := &LocalContentList{
+		label: daisy.Label{Text: "Локальные книги"},
+	}
 	userData := config.UserData()
 	entrys, err := os.ReadDir(userData)
 	if err != nil {
