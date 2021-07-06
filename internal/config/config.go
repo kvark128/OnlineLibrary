@@ -114,7 +114,7 @@ type General struct {
 type Config struct {
 	General    General    `json:"general,omitempty"`
 	Services   []*Service `json:"services,omitempty"`
-	LocalBooks []Book     `json:"local_books,omitempty"`
+	LocalBooks BookSet    `json:"local_books,omitempty"`
 }
 
 func (cfg *Config) SetService(service *Service) {
@@ -165,25 +165,6 @@ func (cfg *Config) CurrentService() (*Service, error) {
 		return cfg.Services[0], nil
 	}
 	return nil, errors.New("services list is empty")
-}
-
-func (cfg *Config) SetLocalBook(book Book) {
-	for i, b := range cfg.LocalBooks {
-		if b.ID == book.ID {
-			cfg.LocalBooks[i] = book
-			return
-		}
-	}
-	cfg.LocalBooks = append(cfg.LocalBooks, book)
-}
-
-func (cfg *Config) LocalBook(id string) (*Book, error) {
-	for i, b := range cfg.LocalBooks {
-		if b.ID == id {
-			return &cfg.LocalBooks[i], nil
-		}
-	}
-	return nil, BookNotFound
 }
 
 func UserData() string {

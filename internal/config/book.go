@@ -42,3 +42,37 @@ func (b *Book) Bookmark(id string) (Bookmark, error) {
 	}
 	return Bookmark{}, BookmarkNotFound
 }
+
+type BookSet []Book
+
+func (setP *BookSet) Book(id string) (Book, error) {
+	for _, b := range *setP {
+		if b.ID == id {
+			return b, nil
+		}
+	}
+	return Book{}, BookNotFound
+}
+
+func (setP *BookSet) SetBook(book Book) {
+	set := *setP
+	defer func() { *setP = set }()
+
+	for i, b := range set {
+		if b.ID == book.ID {
+			set[i] = book
+			set[0], set[i] = set[i], set[0]
+			return
+		}
+	}
+	set = append(set, book)
+	i := len(set) - 1
+	set[0], set[i] = set[i], set[0]
+}
+
+func (setP *BookSet) LastBook() (Book, error) {
+	if len(*setP) == 0 {
+		return Book{}, BookNotFound
+	}
+	return (*setP)[0], nil
+}

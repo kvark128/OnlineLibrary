@@ -358,6 +358,17 @@ func (m *Manager) Start(msgCH chan msg.Message, done chan<- bool) {
 			m.cleaning()
 			m.updateContentList(contentList)
 			config.Conf.General.OpenLocalBooksAtStartup = true
+			book, err := config.Conf.LocalBooks.LastBook()
+			if err != nil {
+				break
+			}
+			for i := contentList.Len() - 1; i >= 0; i-- {
+				item := contentList.Item(i)
+				if item.ID() == book.ID {
+					m.setBookplayer(item)
+					break
+				}
+			}
 
 		default:
 			log.Warning("Unknown message: %v", message.Code)

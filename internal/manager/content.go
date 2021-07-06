@@ -109,8 +109,8 @@ func NewLocalContentItem(path string) *LocalContentItem {
 	}
 	ci.path = path
 	ci.label.Text = filepath.Base(path)
-	if book, err := config.Conf.LocalBook(ci.book.ID); err == nil {
-		ci.book = book
+	if book, err := config.Conf.LocalBooks.Book(ci.book.ID); err == nil {
+		ci.book = &book
 	}
 	return ci
 }
@@ -154,7 +154,7 @@ func (ci *LocalContentItem) Bookmark(bookmarkID string) (config.Bookmark, error)
 
 func (ci *LocalContentItem) SetBookmark(bookmarkID string, bookmark config.Bookmark) {
 	ci.book.SetBookmark(bookmarkID, bookmark)
-	config.Conf.SetLocalBook(*ci.book)
+	config.Conf.LocalBooks.SetBook(*ci.book)
 }
 
 type LocalContentList struct {
