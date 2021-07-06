@@ -48,6 +48,7 @@ type Manager struct {
 	contentList   ContentList
 	questions     *daisy.Questions
 	userResponses []daisy.UserResponse
+	lastInputText string
 }
 
 func (m *Manager) Start(msgCH chan msg.Message, done chan<- bool) {
@@ -396,14 +397,11 @@ func (m *Manager) logon(service *config.Service) error {
 	m.setQuestions(daisy.UserResponse{QuestionID: daisy.Default})
 	config.Conf.General.OpenLocalBooksAtStartup = false
 
-	id := m.library.service.CurrentBook()
-	if id == "" {
-		return nil
-	}
-
-	book, _ := m.library.service.Book(id)
-	if err := m.setBookplayer(NewLibraryContentItem(m.library, book.ID, book.Name)); err != nil {
-		log.Error("Set book player: %v", err)
+	if id := m.library.service.CurrentBook(); id != "" {
+		book, _ := m.library.service.Book(id)
+		if err := m.setBookplayer(NewLibraryContentItem(m.library, book.ID, book.Name)); err != nil {
+			log.Error("Set book player: %v", err)
+		}
 	}
 	return nil
 }
@@ -434,6 +432,7 @@ func (m *Manager) setQuestions(response ...daisy.UserResponse) {
 	}
 
 	if questions.Label.Text != "" {
+		// We have received a notification from the library. Show it to the user
 		gui.MessageBox("Предупреждение", questions.Label.Text, walk.MsgBoxOK|walk.MsgBoxIconWarning)
 		// Return to the main menu of the library
 		m.setQuestions(daisy.UserResponse{QuestionID: daisy.Default})
@@ -441,6 +440,7 @@ func (m *Manager) setQuestions(response ...daisy.UserResponse) {
 	}
 
 	if questions.ContentListRef != "" {
+		// We got a list of content. Show it to the user
 		m.setContent(questions.ContentListRef)
 		return
 	}
@@ -458,24 +458,24 @@ func (m *Manager) setQuestions(response ...daisy.UserResponse) {
 
 func (m *Manager) setMultipleChoiceQuestion(index int) {
 	choiceQuestion := m.questions.MultipleChoiceQuestion[index]
-	m.contentList = nil
-
 	var labels []string
 	for _, c := range choiceQuestion.Choices.Choice {
 		labels = append(labels, c.Label.Text)
 	}
 
+	m.contentList = nil
 	gui.MainList.SetItems(labels, choiceQuestion.Label.Text, nil)
 }
 
 func (m *Manager) setInputQuestion() {
 	for _, inputQuestion := range m.questions.InputQuestion {
 		var text string
-		if gui.TextEntryDialog("Поиск", inputQuestion.Label.Text, "", &text) != walk.DlgCmdOK {
+		if gui.TextEntryDialog("Ввод текста", inputQuestion.Label.Text, m.lastInputText, &text) != walk.DlgCmdOK {
 			// Return to the main menu of the library
 			m.setQuestions(daisy.UserResponse{QuestionID: daisy.Default})
 			return
 		}
+		m.lastInputText = text
 		m.userResponses = append(m.userResponses, daisy.UserResponse{QuestionID: inputQuestion.ID, Value: text})
 	}
 
