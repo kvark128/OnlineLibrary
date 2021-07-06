@@ -48,13 +48,13 @@ type Manager struct {
 func (m *Manager) Start(msgCH chan msg.Message, done chan<- bool) {
 	defer func() { done <- true }()
 
-	for evt := range msgCH {
-		if m.library == nil && evt.Code != msg.LIBRARY_LOGON && evt.Code != msg.LIBRARY_ADD && evt.Code != msg.LOG_SET_LEVEL {
-			// If the library is nil, we can only log in or add a new account
-			log.Warning("Message: %v: library is nil", evt.Code)
-			continue
-		}
+	if config.Conf.General.OpenLocalBooksAtStartup {
+		msgCH <- msg.Message{Code: msg.OPEN_LOCALBOOKS}
+	} else if service, err := config.Conf.CurrentService(); err == nil {
+		msgCH <- msg.Message{Code: msg.LIBRARY_LOGON, Data: service.Name}
+	}
 
+	for evt := range msgCH {
 		switch evt.Code {
 		case msg.ACTIVATE_MENU:
 			index := gui.MainList.CurrentIndex()
@@ -136,12 +136,15 @@ func (m *Manager) Start(msgCH chan msg.Message, done chan<- bool) {
 			gui.SetLibraryMenu(msgCH, config.Conf.Services, service.Name)
 
 		case msg.LIBRARY_REMOVE:
+			if m.library == nil {
+				break
+			}
 			msg := fmt.Sprintf("Вы действительно хотите удалить учётную запись %v?\nТакже будут удалены сохранённые позиции всех книг этой библиотеки.\nЭто действие не может быть отменено.", m.library.service.Name)
 			if gui.MessageBox("Удаление учётной записи", msg, walk.MsgBoxYesNo|walk.MsgBoxIconQuestion) != walk.DlgCmdYes {
 				break
 			}
 			config.Conf.RemoveService(m.library.service)
-			m.logoff()
+			m.cleaning()
 			gui.SetLibraryMenu(msgCH, config.Conf.Services, "")
 
 		case msg.ISSUE_BOOK:
@@ -340,6 +343,7 @@ func (m *Manager) Start(msgCH chan msg.Message, done chan<- bool) {
 				break
 			}
 			m.updateContentList(contentList)
+			config.Conf.General.OpenLocalBooksAtStartup = true
 
 		default:
 			log.Warning("Unknown message: %v", evt.Code)
@@ -347,25 +351,27 @@ func (m *Manager) Start(msgCH chan msg.Message, done chan<- bool) {
 		}
 	}
 
-	m.logoff()
+	m.cleaning()
 }
 
-func (m *Manager) logoff() {
+func (m *Manager) cleaning() {
 	m.setBookmark(config.ListeningPosition)
 	m.bookplayer.Stop()
+	m.bookplayer = nil
 	gui.MainList.Clear()
 	gui.SetMainWindowTitle("")
-
-	if _, err := m.library.LogOff(); err != nil {
-		log.Warning("logoff: %v", err)
-	}
-
-	m.bookplayer = nil
 	m.currentBook = nil
 	m.contentList = nil
 	m.questions = nil
-	m.library = nil
 	m.userResponses = nil
+
+	if m.library != nil {
+		_, err := m.library.LogOff()
+		if err != nil {
+			log.Warning("library logoff: %v", err)
+		}
+		m.library = nil
+	}
 }
 
 func (m *Manager) logon(service *config.Service) error {
@@ -374,12 +380,10 @@ func (m *Manager) logon(service *config.Service) error {
 		return err
 	}
 
-	if m.library != nil {
-		m.logoff()
-	}
-
+	m.cleaning()
 	m.library = library
 	m.setQuestions(daisy.UserResponse{QuestionID: daisy.Default})
+	config.Conf.General.OpenLocalBooksAtStartup = false
 
 	id := m.library.service.CurrentBook()
 	if id == "" {
@@ -394,6 +398,12 @@ func (m *Manager) logon(service *config.Service) error {
 }
 
 func (m *Manager) setQuestions(response ...daisy.UserResponse) {
+	if m.library == nil {
+		msg := "This operation requires login to the library"
+		gui.MessageBox("Ошибка", msg, walk.MsgBoxOK|walk.MsgBoxIconError)
+		return
+	}
+
 	if len(response) == 0 {
 		log.Error("len(response) == 0")
 		m.questions = nil
@@ -462,6 +472,12 @@ func (m *Manager) setInputQuestion() {
 }
 
 func (m *Manager) setContent(contentID string) {
+	if m.library == nil {
+		msg := "This operation requires login to the library"
+		gui.MessageBox("Ошибка", msg, walk.MsgBoxOK|walk.MsgBoxIconError)
+		return
+	}
+
 	log.Info("Content set: %s", contentID)
 	contentList, err := NewLibraryContentList(m.library, contentID)
 	if err != nil {
@@ -604,16 +620,34 @@ func (m *Manager) downloadBook(book ContentItem) {
 }
 
 func (m *Manager) removeBook(book ContentItem) error {
+	if m.library == nil {
+		msg := "This operation requires login to the library"
+		gui.MessageBox("Ошибка", msg, walk.MsgBoxOK|walk.MsgBoxIconError)
+		return nil
+	}
+
 	_, err := m.library.ReturnContent(book.ID())
 	return err
 }
 
 func (m *Manager) issueBook(book ContentItem) error {
+	if m.library == nil {
+		msg := "This operation requires login to the library"
+		gui.MessageBox("Ошибка", msg, walk.MsgBoxOK|walk.MsgBoxIconError)
+		return nil
+	}
+
 	_, err := m.library.IssueContent(book.ID())
 	return err
 }
 
 func (m *Manager) showBookDescription(book ContentItem) {
+	if m.library == nil {
+		msg := "This operation requires login to the library"
+		gui.MessageBox("Ошибка", msg, walk.MsgBoxOK|walk.MsgBoxIconError)
+		return
+	}
+
 	md, err := m.library.GetContentMetadata(book.ID())
 	if err != nil {
 		msg := fmt.Sprintf("GetContentMetadata: %v", err)

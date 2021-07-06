@@ -44,12 +44,6 @@ func main() {
 	mng := new(manager.Manager)
 	done := make(chan bool)
 	go mng.Start(msgCH, done)
-
-	// Trying to log in to the current library
-	if service, err := config.Conf.CurrentService(); err == nil {
-		msgCH <- msg.Message{Code: msg.LIBRARY_LOGON, Data: service.Name}
-	}
-
 	gui.RunMainWindow()
 	close(msgCH)
 	<-done
