@@ -11,7 +11,7 @@ import (
 
 type LibraryContentItem struct {
 	library *Library
-	book    *config.Book
+	book    config.Book
 	id      string
 	label   daisy.Label
 }
@@ -19,7 +19,7 @@ type LibraryContentItem struct {
 func NewLibraryContentItem(library *Library, id, name string) *LibraryContentItem {
 	ci := &LibraryContentItem{
 		library: library,
-		book: &config.Book{
+		book: config.Book{
 			Name: name,
 			ID:   id,
 		},
@@ -27,7 +27,7 @@ func NewLibraryContentItem(library *Library, id, name string) *LibraryContentIte
 		label: daisy.Label{Text: name},
 	}
 	if book, err := ci.library.service.RecentBooks.Book(ci.id); err == nil {
-		ci.book = &book
+		ci.book = book
 	}
 	return ci
 }
@@ -54,7 +54,7 @@ func (ci *LibraryContentItem) Bookmark(bookmarkID string) (config.Bookmark, erro
 
 func (ci *LibraryContentItem) SetBookmark(bookmarkID string, bookmark config.Bookmark) {
 	ci.book.SetBookmark(bookmarkID, bookmark)
-	ci.library.service.RecentBooks.SetBook(*ci.book)
+	ci.library.service.RecentBooks.SetBook(ci.book)
 }
 
 type LibraryContentList struct {
@@ -94,7 +94,7 @@ func (cl *LibraryContentList) Item(index int) ContentItem {
 }
 
 type LocalContentItem struct {
-	book  *config.Book
+	book  config.Book
 	id    string
 	label daisy.Label
 	path  string
@@ -102,7 +102,7 @@ type LocalContentItem struct {
 
 func NewLocalContentItem(path string) *LocalContentItem {
 	ci := &LocalContentItem{
-		book: &config.Book{
+		book: config.Book{
 			Name: filepath.Base(path),
 			ID:   filepath.Base(path),
 		},
@@ -110,7 +110,7 @@ func NewLocalContentItem(path string) *LocalContentItem {
 	ci.path = path
 	ci.label.Text = filepath.Base(path)
 	if book, err := config.Conf.LocalBooks.Book(ci.book.ID); err == nil {
-		ci.book = &book
+		ci.book = book
 	}
 	return ci
 }
@@ -154,7 +154,7 @@ func (ci *LocalContentItem) Bookmark(bookmarkID string) (config.Bookmark, error)
 
 func (ci *LocalContentItem) SetBookmark(bookmarkID string, bookmark config.Bookmark) {
 	ci.book.SetBookmark(bookmarkID, bookmark)
-	config.Conf.LocalBooks.SetBook(*ci.book)
+	config.Conf.LocalBooks.SetBook(ci.book)
 }
 
 type LocalContentList struct {
