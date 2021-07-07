@@ -408,8 +408,7 @@ func (m *Manager) setLibrary(service *config.Service) error {
 	m.setQuestions(daisy.UserResponse{QuestionID: daisy.Default})
 	config.Conf.General.OpenLocalBooksAtStartup = false
 
-	if id := m.library.service.CurrentBook(); id != "" {
-		book, _ := m.library.service.Book(id)
+	if book, err := m.library.service.RecentBooks.LastBook(); err == nil {
 		if err := m.setBookplayer(NewLibraryContentItem(m.library, book.ID, book.Name)); err != nil {
 			log.Error("Set book player: %v", err)
 		}
@@ -527,7 +526,7 @@ func (m *Manager) setContent(contentID string) {
 		if m.currentBook != nil && !util.StringInSlice(m.currentBook.ID(), ids) {
 			ids = append(ids, m.currentBook.ID())
 		}
-		m.library.service.Tidy(ids)
+		m.library.service.RecentBooks.Tidy(ids)
 	}
 
 	m.updateContentList(contentList)

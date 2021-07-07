@@ -3,6 +3,8 @@ package config
 import (
 	"errors"
 	"time"
+
+	"github.com/kvark128/OnlineLibrary/internal/util"
 )
 
 var (
@@ -75,4 +77,14 @@ func (setP *BookSet) LastBook() (Book, error) {
 		return Book{}, BookNotFound
 	}
 	return (*setP)[0], nil
+}
+
+func (setP *BookSet) Tidy(ids []string) {
+	books := make([]Book, 0, len(ids))
+	for _, b := range *setP {
+		if util.StringInSlice(b.ID, ids) {
+			books = append(books, b)
+		}
+	}
+	*setP = books
 }

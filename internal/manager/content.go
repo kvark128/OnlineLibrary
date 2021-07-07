@@ -26,8 +26,8 @@ func NewLibraryContentItem(library *Library, id, name string) *LibraryContentIte
 		id:    id,
 		label: daisy.Label{Text: name},
 	}
-	if book, err := ci.library.service.Book(ci.id); err == nil {
-		ci.book = book
+	if book, err := ci.library.service.RecentBooks.Book(ci.id); err == nil {
+		ci.book = &book
 	}
 	return ci
 }
@@ -54,7 +54,7 @@ func (ci *LibraryContentItem) Bookmark(bookmarkID string) (config.Bookmark, erro
 
 func (ci *LibraryContentItem) SetBookmark(bookmarkID string, bookmark config.Bookmark) {
 	ci.book.SetBookmark(bookmarkID, bookmark)
-	ci.library.service.SetBook(*ci.book)
+	ci.library.service.RecentBooks.SetBook(*ci.book)
 }
 
 type LibraryContentList struct {

@@ -49,54 +49,7 @@ type Service struct {
 	Name        string      `json:"name"`
 	URL         string      `json:"url"`
 	Credentials Credentials `json:"credentials"`
-	RecentBooks []Book      `json:"recent_books,omitempty"`
-}
-
-func (s *Service) SetBook(book Book) {
-	defer s.SetCurrentBook(book.ID)
-	for i, b := range s.RecentBooks {
-		if book.ID == b.ID {
-			s.RecentBooks[i] = book
-			return
-		}
-	}
-	s.RecentBooks = append(s.RecentBooks, book)
-}
-
-func (s *Service) Tidy(ids []string) {
-	books := make([]Book, 0, len(ids))
-	for _, b := range s.RecentBooks {
-		if util.StringInSlice(b.ID, ids) {
-			books = append(books, b)
-		}
-	}
-	s.RecentBooks = books
-}
-
-func (s *Service) Book(id string) (*Book, error) {
-	for i, b := range s.RecentBooks {
-		if b.ID == id {
-			return &s.RecentBooks[i], nil
-		}
-	}
-	return nil, BookNotFound
-}
-
-func (s *Service) SetCurrentBook(id string) {
-	for i, b := range s.RecentBooks {
-		if b.ID == id {
-			copy(s.RecentBooks[1:i+1], s.RecentBooks[0:i])
-			s.RecentBooks[0] = b
-			break
-		}
-	}
-}
-
-func (s *Service) CurrentBook() string {
-	if len(s.RecentBooks) != 0 {
-		return s.RecentBooks[0].ID
-	}
-	return ""
+	RecentBooks BookSet     `json:"recent_books,omitempty"`
 }
 
 type Credentials struct {
