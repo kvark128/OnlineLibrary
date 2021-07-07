@@ -112,9 +112,9 @@ func (m *Manager) Start(msgCH chan msg.Message, done chan<- bool) {
 				break
 			}
 
-			if err := m.logon(service); err != nil {
-				log.Error("logon: %v", err)
-				gui.MessageBox("Ошибка", fmt.Sprintf("logon: %v", err), walk.MsgBoxOK|walk.MsgBoxIconError)
+			if err := m.setLibrary(service); err != nil {
+				log.Error("setLibrary: %v", err)
+				gui.MessageBox("Ошибка", fmt.Sprintf("setLibrary: %v", err), walk.MsgBoxOK|walk.MsgBoxIconError)
 				break
 			}
 
@@ -133,9 +133,9 @@ func (m *Manager) Start(msgCH chan msg.Message, done chan<- bool) {
 				break
 			}
 
-			if err := m.logon(service); err != nil {
-				log.Error("logon: %v", err)
-				gui.MessageBox("Ошибка", fmt.Sprintf("logon: %v", err), walk.MsgBoxOK|walk.MsgBoxIconError)
+			if err := m.setLibrary(service); err != nil {
+				log.Error("setLibrary: %v", err)
+				gui.MessageBox("Ошибка", fmt.Sprintf("setLibrary: %v", err), walk.MsgBoxOK|walk.MsgBoxIconError)
 				break
 			}
 
@@ -397,10 +397,10 @@ func (m *Manager) cleaning() {
 	}
 }
 
-func (m *Manager) logon(service *config.Service) error {
+func (m *Manager) setLibrary(service *config.Service) error {
 	library, err := NewLibrary(service)
 	if err != nil {
-		return err
+		return fmt.Errorf("creating library: %w", err)
 	}
 
 	m.cleaning()

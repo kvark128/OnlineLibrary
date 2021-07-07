@@ -16,20 +16,27 @@ type Library struct {
 
 func NewLibrary(service *config.Service) (*Library, error) {
 	client := daisy.NewClient(service.URL, time.Second*10)
-	if ok, err := client.LogOn(service.Credentials.Username, service.Credentials.Password); err != nil {
-		return nil, err
-	} else if !ok {
-		return nil, fmt.Errorf("The LogOn operation returned false")
+	success, err := client.LogOn(service.Credentials.Username, service.Credentials.Password)
+	if err != nil {
+		return nil, fmt.Errorf("logOn operation: %w", err)
+	}
+
+	if !success {
+		return nil, fmt.Errorf("logOn operation returned false")
 	}
 
 	serviceAttributes, err := client.GetServiceAttributes()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("getServiceAttributes operation: %w", err)
 	}
 
-	_, err = client.SetReadingSystemAttributes(&config.ReadingSystemAttributes)
+	success, err = client.SetReadingSystemAttributes(&config.ReadingSystemAttributes)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("setReadingSystemAttributes operation: %w", err)
+	}
+
+	if !success {
+		return nil, fmt.Errorf("setReadingSystemAttributes operation returned false")
 	}
 
 	library := &Library{
