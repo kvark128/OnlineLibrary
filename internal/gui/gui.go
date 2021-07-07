@@ -73,7 +73,7 @@ func Initialize(msgCH chan msg.Message) error {
 					},
 					Action{
 						Text:        "Локальные книги",
-						Shortcut:    Shortcut{walk.ModControl, walk.KeyB},
+						Shortcut:    Shortcut{walk.ModControl, walk.KeyL},
 						OnTriggered: func() { msgCH <- msg.Message{msg.OPEN_LOCALBOOKS, nil} },
 					},
 					Action{
@@ -120,7 +120,7 @@ func Initialize(msgCH chan msg.Message) error {
 				Items: []MenuItem{
 					Action{
 						Text:        "Воспроизвести / Приостановить",
-						Shortcut:    Shortcut{walk.ModControl, walk.KeyK},
+						Shortcut:    Shortcut{Key: walk.KeySpace},
 						OnTriggered: func() { msgCH <- msg.Message{msg.PLAYER_PLAY_PAUSE, nil} },
 					},
 					Action{
@@ -153,12 +153,12 @@ func Initialize(msgCH chan msg.Message) error {
 							},
 							Action{
 								Text:        "На следующий фрагмент",
-								Shortcut:    Shortcut{walk.ModControl, walk.KeyL},
+								Shortcut:    Shortcut{walk.ModControl, walk.KeyNext},
 								OnTriggered: func() { msgCH <- next_fragment },
 							},
 							Action{
 								Text:        "На предыдущий фрагмент",
-								Shortcut:    Shortcut{walk.ModControl, walk.KeyJ},
+								Shortcut:    Shortcut{walk.ModControl, walk.KeyPrior},
 								OnTriggered: func() { msgCH <- previous_fragment },
 							},
 						},
