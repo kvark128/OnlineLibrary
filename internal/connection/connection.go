@@ -7,12 +7,12 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/kvark128/OnlineLibrary/internal/config"
 	"github.com/kvark128/OnlineLibrary/internal/log"
 )
 
 const (
 	buf_size = 1024 * 256
-	timeout  = time.Second * 5
 )
 
 type Connection struct {
@@ -53,7 +53,7 @@ func NewConnectionWithContext(ctx context.Context, url string) (*Connection, err
 
 func (c *Connection) createResponse(nAttempts int) error {
 	ctx, cancelFunc := context.WithCancel(c.ctx)
-	c.timer = time.AfterFunc(timeout, cancelFunc)
+	c.timer = time.AfterFunc(config.HTTPTimeout, cancelFunc)
 	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, c.url, nil)
 	req.Header.Set("Range", fmt.Sprintf("bytes=%d-", c.reads))
 
@@ -113,7 +113,7 @@ func (c *Connection) fillBuf() {
 
 	chunk := c.buf[c.wBuf : c.wBuf+chunkSize]
 	for {
-		c.timer.Reset(timeout)
+		c.timer.Reset(config.HTTPTimeout)
 		n, err := c.resp.Body.Read(chunk)
 		c.timer.Stop()
 		c.wBuf += n

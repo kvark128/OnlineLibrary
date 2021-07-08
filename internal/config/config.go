@@ -18,6 +18,7 @@ const (
 	ProgramVersion = "2020.12.01"
 	ConfigFile     = "config.json"
 	LogFile        = "session.log"
+	HTTPTimeout    = time.Second * 12
 )
 
 // Supported mime types of content

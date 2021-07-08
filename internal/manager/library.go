@@ -2,7 +2,6 @@ package manager
 
 import (
 	"fmt"
-	"time"
 
 	"github.com/kvark128/OnlineLibrary/internal/config"
 	daisy "github.com/kvark128/daisyonline"
@@ -15,7 +14,7 @@ type Library struct {
 }
 
 func NewLibrary(service *config.Service) (*Library, error) {
-	client := daisy.NewClient(service.URL, time.Second*10)
+	client := daisy.NewClient(service.URL, config.HTTPTimeout)
 	success, err := client.LogOn(service.Credentials.Username, service.Credentials.Password)
 	if err != nil {
 		return nil, fmt.Errorf("logOn operation: %w", err)
