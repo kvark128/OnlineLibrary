@@ -370,6 +370,19 @@ func (m *Manager) Start(msgCH chan msg.Message, done chan<- bool) {
 				}
 			}
 
+		case msg.LIBRARY_INFO:
+			if m.library == nil {
+				break
+			}
+			var lines []string
+			attrs := m.library.serviceAttributes
+			lines = append(lines, fmt.Sprintf("Имя: «%v» (%v)", attrs.Service.Label.Text, attrs.Service.ID))
+			lines = append(lines, fmt.Sprintf("Поддержка команды back: %v", attrs.SupportsServerSideBack))
+			lines = append(lines, fmt.Sprintf("Поддержка команды search: %v", attrs.SupportsSearch))
+			lines = append(lines, fmt.Sprintf("Поддержка аудиометок: %v", attrs.SupportsAudioLabels))
+			lines = append(lines, fmt.Sprintf("Поддерживаемые опциональные операции: %v", attrs.SupportedOptionalOperations.Operation))
+			gui.MessageBox("Информация о библиотеке", strings.Join(lines, "\r\n"), walk.MsgBoxOK|walk.MsgBoxIconWarning)
+
 		default:
 			log.Warning("Unknown message: %v", message.Code)
 

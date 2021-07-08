@@ -77,6 +77,10 @@ func Initialize(msgCH chan msg.Message) error {
 						OnTriggered: func() { msgCH <- msg.Message{msg.OPEN_LOCALBOOKS, nil} },
 					},
 					Action{
+						Text:        "Информация о библиотеке",
+						OnTriggered: func() { msgCH <- msg.Message{Code: msg.LIBRARY_INFO} },
+					},
+					Action{
 						Text:        "Удалить учётную запись",
 						OnTriggered: func() { msgCH <- msg.Message{msg.LIBRARY_REMOVE, nil} },
 					},
