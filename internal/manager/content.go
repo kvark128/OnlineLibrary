@@ -1,6 +1,7 @@
 package manager
 
 import (
+	"encoding/xml"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -55,6 +56,10 @@ func (ci *LibraryContentItem) Bookmark(bookmarkID string) (config.Bookmark, erro
 func (ci *LibraryContentItem) SetBookmark(bookmarkID string, bookmark config.Bookmark) {
 	ci.book.SetBookmark(bookmarkID, bookmark)
 	ci.library.service.RecentBooks.SetBook(ci.book)
+}
+
+func (ci *LibraryContentItem) ContentMetadata() (*daisy.ContentMetadata, error) {
+	return ci.library.GetContentMetadata(ci.id)
 }
 
 type LibraryContentList struct {
@@ -155,6 +160,21 @@ func (ci *LocalContentItem) Bookmark(bookmarkID string) (config.Bookmark, error)
 func (ci *LocalContentItem) SetBookmark(bookmarkID string, bookmark config.Bookmark) {
 	ci.book.SetBookmark(bookmarkID, bookmark)
 	config.Conf.LocalBooks.SetBook(ci.book)
+}
+
+func (ci *LocalContentItem) ContentMetadata() (*daisy.ContentMetadata, error) {
+	path := filepath.Join(ci.path, MetadataFileName)
+	f, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+	md := new(daisy.ContentMetadata)
+	d := xml.NewDecoder(f)
+	if err := d.Decode(md); err != nil {
+		return nil, err
+	}
+	return md, nil
 }
 
 type LocalContentList struct {

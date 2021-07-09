@@ -2,6 +2,7 @@ package manager
 
 import (
 	"context"
+	"encoding/xml"
 	"errors"
 	"fmt"
 	"io"
@@ -21,6 +22,8 @@ import (
 	"github.com/lxn/walk"
 )
 
+const MetadataFileName = "metadata.xml"
+
 var (
 	NoActiveSession   = errors.New("no active session")
 	NoBookDescription = errors.New("no book description")
@@ -32,6 +35,7 @@ type ContentItem interface {
 	Resources() ([]daisy.Resource, error)
 	Bookmark(string) (config.Bookmark, error)
 	SetBookmark(string, config.Bookmark)
+	ContentMetadata() (*daisy.ContentMetadata, error)
 }
 
 type ContentList interface {
@@ -185,10 +189,14 @@ func (m *Manager) Start(msgCH chan msg.Message, done chan<- bool) {
 			}
 
 		case msg.DOWNLOAD_BOOK:
-			if m.contentList != nil {
-				index := gui.MainList.CurrentIndex()
-				book := m.contentList.Item(index)
-				m.downloadBook(book)
+			if m.contentList == nil {
+				break
+			}
+			index := gui.MainList.CurrentIndex()
+			book := m.contentList.Item(index)
+			if err := m.downloadBook(book); err != nil {
+				log.Error("Book downloading: %v", err)
+				gui.MessageBox("Ошибка", err.Error(), walk.MsgBoxOK|walk.MsgBoxIconError)
 			}
 
 		case msg.BOOK_DESCRIPTION:
@@ -586,13 +594,30 @@ func (m *Manager) setBookplayer(book ContentItem) error {
 	return nil
 }
 
-func (m *Manager) downloadBook(book ContentItem) {
+func (m *Manager) downloadBook(book ContentItem) error {
+	if m.library == nil {
+		return NoActiveSession
+	}
+
 	rsrc, err := book.Resources()
 	if err != nil {
-		msg := fmt.Sprintf("GetContentResources: %v", err)
-		log.Error(msg)
-		gui.MessageBox("Ошибка", msg, walk.MsgBoxOK|walk.MsgBoxIconError)
-		return
+		return fmt.Errorf("getContentResources: %w", err)
+	}
+
+	if md, err := book.ContentMetadata(); err == nil {
+		path := filepath.Join(config.UserData(), util.ReplaceForbiddenCharacters(book.Label().Text), MetadataFileName)
+		f, err := util.CreateSecureFile(path)
+		if err != nil {
+			log.Warning("creating metadata.xml: %v", err)
+		} else {
+			defer f.Close()
+			e := xml.NewEncoder(f)
+			e.Indent("", "\t") // for readability
+			if err := e.Encode(md); err != nil {
+				f.Corrupted()
+				log.Error("Writing to metadata.xml: %v", err)
+			}
+		}
 	}
 
 	// Book downloading should not block handling of other messages
@@ -651,6 +676,7 @@ func (m *Manager) downloadBook(book ContentItem) {
 			gui.MessageBox("Уведомление", "Книга успешно загружена", walk.MsgBoxOK|walk.MsgBoxIconWarning)
 		}
 	}()
+	return nil
 }
 
 func (m *Manager) removeBook(book ContentItem) error {
@@ -672,11 +698,7 @@ func (m *Manager) issueBook(book ContentItem) error {
 }
 
 func (m *Manager) bookDescription(book ContentItem) (string, error) {
-	if m.library == nil {
-		return "", NoActiveSession
-	}
-
-	md, err := m.library.GetContentMetadata(book.ID())
+	md, err := book.ContentMetadata()
 	if err != nil {
 		return "", err
 	}
