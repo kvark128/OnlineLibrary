@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -22,7 +23,10 @@ import (
 	"github.com/lxn/walk"
 )
 
-const MetadataFileName = "metadata.xml"
+const (
+	MetadataFileName = "metadata.xml"
+	CRLF             = "\r\n"
+)
 
 var (
 	NoActiveSession   = errors.New("no active session")
@@ -73,8 +77,7 @@ func (m *Manager) Start(msgCH chan msg.Message, done chan<- bool) {
 				book := m.contentList.Item(index)
 				if m.currentBook == nil || m.currentBook.ID() != book.ID() {
 					if err := m.setBookplayer(book); err != nil {
-						log.Error("Set book player: %v", err)
-						gui.MessageBox("Ошибка", err.Error(), walk.MsgBoxOK|walk.MsgBoxIconError)
+						m.messageBoxError(fmt.Errorf("Set book player: %w", err))
 						break
 					}
 				}
@@ -117,8 +120,7 @@ func (m *Manager) Start(msgCH chan msg.Message, done chan<- bool) {
 			}
 
 			if err := m.setLibrary(service); err != nil {
-				log.Error("setLibrary: %v", err)
-				gui.MessageBox("Ошибка", fmt.Sprintf("setLibrary: %v", err), walk.MsgBoxOK|walk.MsgBoxIconError)
+				m.messageBoxError(fmt.Errorf("Set library: %w", err))
 				break
 			}
 
@@ -138,8 +140,7 @@ func (m *Manager) Start(msgCH chan msg.Message, done chan<- bool) {
 			}
 
 			if err := m.setLibrary(service); err != nil {
-				log.Error("setLibrary: %v", err)
-				gui.MessageBox("Ошибка", fmt.Sprintf("setLibrary: %v", err), walk.MsgBoxOK|walk.MsgBoxIconError)
+				m.messageBoxError(fmt.Errorf("setLibrary: %w", err))
 				break
 			}
 
@@ -150,7 +151,7 @@ func (m *Manager) Start(msgCH chan msg.Message, done chan<- bool) {
 			if m.library == nil {
 				break
 			}
-			msg := fmt.Sprintf("Вы действительно хотите удалить учётную запись %v?\nТакже будут удалены сохранённые позиции всех книг этой библиотеки.\nЭто действие не может быть отменено.", m.library.service.Name)
+			msg := fmt.Sprintf("Вы действительно хотите удалить учётную запись %v?%sТакже будут удалены сохранённые позиции всех книг этой библиотеки.%sЭто действие не может быть отменено.", m.library.service.Name, CRLF, CRLF)
 			if gui.MessageBox("Удаление учётной записи", msg, walk.MsgBoxYesNo|walk.MsgBoxIconQuestion) != walk.DlgCmdYes {
 				break
 			}
@@ -165,8 +166,7 @@ func (m *Manager) Start(msgCH chan msg.Message, done chan<- bool) {
 			}
 			book := m.contentList.Item(gui.MainList.CurrentIndex())
 			if err := m.issueBook(book); err != nil {
-				log.Error("Issue book: %v", err)
-				gui.MessageBox("Ошибка", err.Error(), walk.MsgBoxOK|walk.MsgBoxIconError)
+				m.messageBoxError(fmt.Errorf("Issue book: %w", err))
 				break
 			}
 			gui.MessageBox("Уведомление", fmt.Sprintf("«%s» добавлена на книжную полку", book.Label().Text), walk.MsgBoxOK|walk.MsgBoxIconWarning)
@@ -178,8 +178,7 @@ func (m *Manager) Start(msgCH chan msg.Message, done chan<- bool) {
 			}
 			book := m.contentList.Item(gui.MainList.CurrentIndex())
 			if err := m.removeBook(book); err != nil {
-				log.Error("Removing book: %v", err)
-				gui.MessageBox("Ошибка", err.Error(), walk.MsgBoxOK|walk.MsgBoxIconError)
+				m.messageBoxError(fmt.Errorf("Removing book: %w", err))
 				break
 			}
 			gui.MessageBox("Уведомление", fmt.Sprintf("«%s» удалена с книжной полки", book.Label().Text), walk.MsgBoxOK|walk.MsgBoxIconWarning)
@@ -195,8 +194,7 @@ func (m *Manager) Start(msgCH chan msg.Message, done chan<- bool) {
 			index := gui.MainList.CurrentIndex()
 			book := m.contentList.Item(index)
 			if err := m.downloadBook(book); err != nil {
-				log.Error("Book downloading: %v", err)
-				gui.MessageBox("Ошибка", err.Error(), walk.MsgBoxOK|walk.MsgBoxIconError)
+				m.messageBoxError(fmt.Errorf("Book downloading: %w", err))
 			}
 
 		case msg.BOOK_DESCRIPTION:
@@ -207,7 +205,7 @@ func (m *Manager) Start(msgCH chan msg.Message, done chan<- bool) {
 			book := m.contentList.Item(index)
 			text, err := m.bookDescription(book)
 			if err != nil {
-				gui.MessageBox("Ошибка", err.Error(), walk.MsgBoxOK|walk.MsgBoxIconError)
+				m.messageBoxError(fmt.Errorf("book description: %w", err))
 				break
 			}
 			gui.MessageBox("Информация о книге", text, walk.MsgBoxOK|walk.MsgBoxIconWarning)
@@ -360,7 +358,7 @@ func (m *Manager) Start(msgCH chan msg.Message, done chan<- bool) {
 		case msg.OPEN_LOCALBOOKS:
 			contentList, err := NewLocalContentList()
 			if err != nil {
-				gui.MessageBox("Ошибка", err.Error(), walk.MsgBoxOK|walk.MsgBoxIconError)
+				m.messageBoxError(err)
 				break
 			}
 			m.cleaning()
@@ -389,7 +387,7 @@ func (m *Manager) Start(msgCH chan msg.Message, done chan<- bool) {
 			lines = append(lines, fmt.Sprintf("Поддержка команды search: %v", attrs.SupportsSearch))
 			lines = append(lines, fmt.Sprintf("Поддержка аудиометок: %v", attrs.SupportsAudioLabels))
 			lines = append(lines, fmt.Sprintf("Поддерживаемые опциональные операции: %v", attrs.SupportedOptionalOperations.Operation))
-			gui.MessageBox("Информация о библиотеке", strings.Join(lines, "\r\n"), walk.MsgBoxOK|walk.MsgBoxIconWarning)
+			gui.MessageBox("Информация о библиотеке", strings.Join(lines, CRLF), walk.MsgBoxOK|walk.MsgBoxIconWarning)
 
 		default:
 			log.Warning("Unknown message: %v", message.Code)
@@ -439,8 +437,7 @@ func (m *Manager) setLibrary(service *config.Service) error {
 
 func (m *Manager) setQuestions(response ...daisy.UserResponse) {
 	if m.library == nil {
-		msg := "This operation requires login to the library"
-		gui.MessageBox("Ошибка", msg, walk.MsgBoxOK|walk.MsgBoxIconError)
+		m.messageBoxError(NoActiveSession)
 		return
 	}
 
@@ -454,9 +451,7 @@ func (m *Manager) setQuestions(response ...daisy.UserResponse) {
 	ur := daisy.UserResponses{UserResponse: response}
 	questions, err := m.library.GetQuestions(&ur)
 	if err != nil {
-		msg := fmt.Sprintf("GetQuestions: %s", err)
-		log.Error(msg)
-		gui.MessageBox("Ошибка", msg, walk.MsgBoxOK|walk.MsgBoxIconError)
+		m.messageBoxError(fmt.Errorf("GetQuestions: %w", err))
 		m.questions = nil
 		gui.MainList.Clear()
 		return
@@ -515,17 +510,14 @@ func (m *Manager) setInputQuestion() {
 
 func (m *Manager) setContent(contentID string) {
 	if m.library == nil {
-		msg := "This operation requires login to the library"
-		gui.MessageBox("Ошибка", msg, walk.MsgBoxOK|walk.MsgBoxIconError)
+		m.messageBoxError(NoActiveSession)
 		return
 	}
 
 	log.Info("Content set: %s", contentID)
 	contentList, err := NewLibraryContentList(m.library, contentID)
 	if err != nil {
-		msg := fmt.Sprintf("GetContentList: %s", err)
-		log.Error(msg)
-		gui.MessageBox("Ошибка", msg, walk.MsgBoxOK|walk.MsgBoxIconError)
+		m.messageBoxError(fmt.Errorf("GetContentList: %w", err))
 		m.questions = nil
 		gui.MainList.Clear()
 		return
@@ -604,18 +596,21 @@ func (m *Manager) downloadBook(book ContentItem) error {
 		return fmt.Errorf("getContentResources: %w", err)
 	}
 
+	// Path to the directory where we will download a resources. Make sure that it does not contain prohibited characters
+	bookDir := filepath.Join(config.UserData(), util.ReplaceForbiddenCharacters(book.Label().Text))
+
 	if md, err := book.ContentMetadata(); err == nil {
-		path := filepath.Join(config.UserData(), util.ReplaceForbiddenCharacters(book.Label().Text), MetadataFileName)
+		path := filepath.Join(bookDir, MetadataFileName)
 		f, err := util.CreateSecureFile(path)
 		if err != nil {
-			log.Warning("creating metadata.xml: %v", err)
+			log.Warning("creating %v: %v", MetadataFileName, err)
 		} else {
 			defer f.Close()
 			e := xml.NewEncoder(f)
 			e.Indent("", "\t") // for readability
 			if err := e.Encode(md); err != nil {
 				f.Corrupted()
-				log.Error("Writing to metadata.xml: %v", err)
+				log.Error("Writing to %v: %v", MetadataFileName, err)
 			}
 		}
 	}
@@ -629,7 +624,7 @@ func (m *Manager) downloadBook(book ContentItem) error {
 
 		for _, r := range rsrc {
 			err = func() error {
-				path := filepath.Join(config.UserData(), util.ReplaceForbiddenCharacters(book.Label().Text), r.LocalURI)
+				path := filepath.Join(bookDir, r.LocalURI)
 				if util.FileIsExist(path, r.Size) {
 					// This fragment already exists on disk
 					return nil
@@ -703,9 +698,21 @@ func (m *Manager) bookDescription(book ContentItem) (string, error) {
 		return "", err
 	}
 
-	text := fmt.Sprintf("%v", strings.Join(md.Metadata.Description, "\r\n"))
+	text := fmt.Sprintf("%v", strings.Join(md.Metadata.Description, CRLF))
 	if text == "" {
 		return "", NoBookDescription
 	}
 	return text, nil
+}
+
+func (m *Manager) messageBoxError(err error) {
+	msg := err.Error()
+	log.Error(msg)
+	switch {
+	case errors.As(err, new(net.Error)):
+		msg = "Ошибка сети. Пожалуйста, проверьте ваше подключение к интернету."
+	case errors.Is(err, NoActiveSession):
+		msg = "Нет активного подключения к библиотеке"
+	}
+	gui.MessageBox("Ошибка", msg, walk.MsgBoxOK|walk.MsgBoxIconError)
 }
