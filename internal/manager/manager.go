@@ -29,25 +29,9 @@ const (
 )
 
 var (
-	NoActiveSession   = errors.New("no active session")
-	NoBookDescription = errors.New("no book description")
+	NoBookDescription     = errors.New("no book description")
+	OperationNotSupported = errors.New("operation not supported")
 )
-
-type ContentItem interface {
-	Label() daisy.Label
-	ID() string
-	Resources() ([]daisy.Resource, error)
-	Bookmark(string) (config.Bookmark, error)
-	SetBookmark(string, config.Bookmark)
-	ContentMetadata() (*daisy.ContentMetadata, error)
-}
-
-type ContentList interface {
-	Label() daisy.Label
-	ID() string
-	Len() int
-	Item(int) ContentItem
-}
 
 type Manager struct {
 	library       *Library
@@ -437,7 +421,7 @@ func (m *Manager) setLibrary(service *config.Service) error {
 
 func (m *Manager) setQuestions(response ...daisy.UserResponse) {
 	if m.library == nil {
-		m.messageBoxError(NoActiveSession)
+		m.messageBoxError(OperationNotSupported)
 		return
 	}
 
@@ -510,7 +494,7 @@ func (m *Manager) setInputQuestion() {
 
 func (m *Manager) setContent(contentID string) {
 	if m.library == nil {
-		m.messageBoxError(NoActiveSession)
+		m.messageBoxError(OperationNotSupported)
 		return
 	}
 
@@ -588,7 +572,7 @@ func (m *Manager) setBookplayer(book ContentItem) error {
 
 func (m *Manager) downloadBook(book ContentItem) error {
 	if m.library == nil {
-		return NoActiveSession
+		return OperationNotSupported
 	}
 
 	rsrc, err := book.Resources()
@@ -675,21 +659,19 @@ func (m *Manager) downloadBook(book ContentItem) error {
 }
 
 func (m *Manager) removeBook(book ContentItem) error {
-	if m.library == nil {
-		return NoActiveSession
+	returner, ok := book.(Returner)
+	if !ok {
+		return OperationNotSupported
 	}
-
-	_, err := m.library.ReturnContent(book.ID())
-	return err
+	return returner.Return()
 }
 
 func (m *Manager) issueBook(book ContentItem) error {
-	if m.library == nil {
-		return NoActiveSession
+	issuer, ok := book.(Issuer)
+	if !ok {
+		return OperationNotSupported
 	}
-
-	_, err := m.library.IssueContent(book.ID())
-	return err
+	return issuer.Issue()
 }
 
 func (m *Manager) bookDescription(book ContentItem) (string, error) {
@@ -711,8 +693,8 @@ func (m *Manager) messageBoxError(err error) {
 	switch {
 	case errors.As(err, new(net.Error)):
 		msg = "Ошибка сети. Пожалуйста, проверьте ваше подключение к интернету."
-	case errors.Is(err, NoActiveSession):
-		msg = "Нет активного подключения к библиотеке"
+	case errors.Is(err, OperationNotSupported):
+		msg = "Операция не поддерживается"
 	}
 	gui.MessageBox("Ошибка", msg, walk.MsgBoxOK|walk.MsgBoxIconError)
 }

@@ -62,6 +62,16 @@ func (ci *LibraryContentItem) ContentMetadata() (*daisy.ContentMetadata, error) 
 	return ci.library.GetContentMetadata(ci.id)
 }
 
+func (ci *LibraryContentItem) Issue() error {
+	_, err := ci.library.IssueContent(ci.id)
+	return err
+}
+
+func (ci *LibraryContentItem) Return() error {
+	_, err := ci.library.ReturnContent(ci.id)
+	return err
+}
+
 type LibraryContentList struct {
 	library *Library
 	books   *daisy.ContentList
