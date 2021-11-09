@@ -17,14 +17,13 @@ import (
 
 type Fragment struct {
 	sync.Mutex
-	paused     bool
-	beRewind   bool
-	stream     *sonic.Stream
-	dec        *minimp3.Decoder
-	sampleRate int
-	channels   int
-	wp         *waveout.WavePlayer
-	nWrite     int64
+	paused         bool
+	beRewind       bool
+	stream         *sonic.Stream
+	dec            *minimp3.Decoder
+	pcmBytesPerSec int
+	wp             *waveout.WavePlayer
+	nWrite         int64
 }
 
 const buffer_size = 1024 * 16
@@ -39,26 +38,27 @@ func NewFragment(mp3 io.Reader, speed, pitch float64, devName string) (*Fragment
 		return nil, 0, err
 	}
 
-	f.sampleRate = f.dec.SampleRate()
-	f.channels = f.dec.Channels()
-	kbps := f.dec.Bitrate()
+	sampleRate := f.dec.SampleRate()
+	channels := f.dec.Channels()
+	bitrate := f.dec.Bitrate()
+	f.pcmBytesPerSec = sampleRate * channels * 2
 
-	if f.sampleRate == 0 || f.channels == 0 || kbps == 0 {
+	if f.pcmBytesPerSec == 0 || bitrate == 0 {
 		return nil, 0, fmt.Errorf("invalid mp3 format")
 	}
 
-	f.stream = sonic.NewStream(f.sampleRate, f.channels)
+	f.stream = sonic.NewStream(sampleRate, channels)
 	f.stream.SetSpeed(speed)
 	f.stream.SetPitch(pitch)
 	f.stream.Write(buf[:n])
 
-	wp, err := waveout.NewWavePlayer(f.channels, f.sampleRate, 16, buffer_size, devName)
+	wp, err := waveout.NewWavePlayer(channels, sampleRate, 16, buffer_size, devName)
 	if err != nil {
 		return nil, 0, err
 	}
 	f.wp = wp
 
-	return f, kbps, nil
+	return f, bitrate, nil
 }
 
 func (f *Fragment) play(playing *util.Flag) {
@@ -104,7 +104,7 @@ func (f *Fragment) setPitch(pitch float64) {
 func (f *Fragment) Position() time.Duration {
 	f.Lock()
 	defer f.Unlock()
-	return time.Second / time.Duration(f.sampleRate*f.channels*2) * time.Duration(f.nWrite)
+	return time.Second / time.Duration(f.pcmBytesPerSec) * time.Duration(f.nWrite)
 }
 
 func (f *Fragment) pause(pause bool) bool {
@@ -180,7 +180,7 @@ func (f *Fragment) SetPosition(position time.Duration) error {
 		f.stream.Read(make([]byte, buffer_size))
 	}
 
-	offsetInBytes := int64(position / (time.Second / time.Duration(f.sampleRate*f.channels*2)))
+	offsetInBytes := int64(position / (time.Second / time.Duration(f.pcmBytesPerSec)))
 	if f.nWrite == offsetInBytes {
 		return nil
 	}
