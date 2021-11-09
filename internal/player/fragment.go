@@ -39,8 +39,10 @@ func NewFragment(mp3 io.Reader, speed, pitch float64, devName string) (*Fragment
 		return nil, 0, err
 	}
 
-	var kbps int
-	f.sampleRate, f.channels, kbps, _, _, _ = f.dec.LastFrameInfo()
+	f.sampleRate = f.dec.SampleRate()
+	f.channels = f.dec.Channels()
+	kbps := f.dec.Bitrate()
+
 	if f.sampleRate == 0 || f.channels == 0 || kbps == 0 {
 		return nil, 0, fmt.Errorf("invalid mp3 format")
 	}
