@@ -6,6 +6,8 @@ github.com/kvark128/minimp3 v0.0.0-20210118111654-8e3d819290c1 h1:LXYB7tXya5a79x
 github.com/kvark128/minimp3 v0.0.0-20210118111654-8e3d819290c1/go.mod h1:buYWRXcBQshGxgbIUSADJ4H6hsVnPl6pIVQm0Q86jAo=
 github.com/kvark128/minimp3 v0.0.0-20211109150238-df4e4f698741 h1:IgZ/HOdMK8WjvKvWr2zMdWRqSjCp9FU6JINJLN0yepE=
 github.com/kvark128/minimp3 v0.0.0-20211109150238-df4e4f698741/go.mod h1:hIq9nAqNcwTySvnFhCe1C8xC/STIr2Fe5vJ52zk1jkE=
+github.com/kvark128/minimp3 v0.0.0-20211109174940-101188771a65 h1:8qfVQv7MSACDXadEwl1yjUKJ68yC9B7nR4cioEoCfH0=
+github.com/kvark128/minimp3 v0.0.0-20211109174940-101188771a65/go.mod h1:hIq9nAqNcwTySvnFhCe1C8xC/STIr2Fe5vJ52zk1jkE=
 github.com/kvark128/sonic v0.0.0-20210406134037-840d5585e177 h1:QcTe9xDtcIQ0MWs6i9eux5Nmw84/7yHynR1E6uD92fQ=
 github.com/kvark128/sonic v0.0.0-20210406134037-840d5585e177/go.mod h1:3G6It5DwhlZxEguSRoUx+RLy5o4PCba33RZ8De34dfk=
 github.com/kvark128/sonic v0.0.0-20210516073458-3adefdd412bd h1:qRjd+/wVuf1NOBlhOBnpctG9MVlypzLv4zVq7MHo23o=

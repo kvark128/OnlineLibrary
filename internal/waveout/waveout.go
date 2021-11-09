@@ -313,7 +313,10 @@ func (wp *WavePlayer) Stop() {
 	// Pausing first seems to make waveOutReset respond faster on some systems.
 	mmcall(procWaveOutPause, wp.waveout)
 	mmcall(procWaveOutReset, wp.waveout)
-	wp.pause = false
+
+	if wp.pause {
+		mmcall(procWaveOutPause, wp.waveout)
+	}
 }
 
 func (wp *WavePlayer) GetVolume() (uint16, uint16) {

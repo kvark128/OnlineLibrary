@@ -18,47 +18,46 @@ import (
 type Fragment struct {
 	sync.Mutex
 	paused         bool
-	beRewind       bool
 	stream         *sonic.Stream
 	dec            *minimp3.Decoder
 	pcmBytesPerSec int
+	Bitrate        int
 	wp             *waveout.WavePlayer
 	nWrite         int64
 }
 
 const buffer_size = 1024 * 16
 
-func NewFragment(mp3 io.Reader, speed, pitch float64, devName string) (*Fragment, int, error) {
-	f := &Fragment{}
-	f.dec = minimp3.NewDecoder(mp3)
-
-	buf := make([]byte, 32)
-	n, err := f.dec.Read(buf)
-	if err != nil {
-		return nil, 0, err
+func NewFragment(mp3 io.Reader, devName string) (*Fragment, error) {
+	dec := minimp3.NewDecoder(mp3)
+	// Reading into an empty buffer will fill the internal buffer of the decoder, so you can get the audio data parameters
+	if _, err := dec.Read([]byte{}); err != nil {
+		return nil, err
 	}
 
-	sampleRate := f.dec.SampleRate()
-	channels := f.dec.Channels()
-	bitrate := f.dec.Bitrate()
-	f.pcmBytesPerSec = sampleRate * channels * 2
+	sampleRate := dec.SampleRate()
+	channels := dec.Channels()
+	bitrate := dec.Bitrate()
+	pcmBytesPerSec := sampleRate * channels * 2
 
-	if f.pcmBytesPerSec == 0 || bitrate == 0 {
-		return nil, 0, fmt.Errorf("invalid mp3 format")
+	if pcmBytesPerSec == 0 || bitrate == 0 {
+		return nil, fmt.Errorf("invalid mp3 format")
 	}
-
-	f.stream = sonic.NewStream(sampleRate, channels)
-	f.stream.SetSpeed(speed)
-	f.stream.SetPitch(pitch)
-	f.stream.Write(buf[:n])
 
 	wp, err := waveout.NewWavePlayer(channels, sampleRate, 16, buffer_size, devName)
 	if err != nil {
-		return nil, 0, err
+		return nil, err
 	}
-	f.wp = wp
 
-	return f, bitrate, nil
+	f := &Fragment{
+		pcmBytesPerSec: pcmBytesPerSec,
+		Bitrate:        bitrate,
+		stream:         sonic.NewStream(sampleRate, channels),
+		dec:            dec,
+		wp:             wp,
+	}
+
+	return f, nil
 }
 
 func (f *Fragment) play(playing *util.Flag) {
@@ -116,11 +115,6 @@ func (f *Fragment) pause(pause bool) bool {
 	}
 	f.paused = pause
 
-	if f.beRewind {
-		f.beRewind = false
-		f.wp.Stop()
-		return true
-	}
 	f.wp.Pause(f.paused)
 	return true
 }
@@ -174,7 +168,7 @@ func (f *Fragment) SetPosition(position time.Duration) error {
 		position = 0
 	}
 
-	f.beRewind = true
+	f.wp.Stop()
 	f.stream.Flush()
 	for f.stream.SamplesAvailable() > 0 {
 		f.stream.Read(make([]byte, buffer_size))

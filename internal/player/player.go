@@ -316,12 +316,15 @@ func (p *Player) start(startFragment int) {
 		outputDevice := p.outputDevice
 		p.Unlock()
 
-		fragment, kbps, err := NewFragment(src, speed, pitch, outputDevice)
+		fragment, err := NewFragment(src, outputDevice)
 		if err != nil {
 			log.Error("New fragment for %v: %v", uri, err)
 			src.Close()
 			continue
 		}
+
+		fragment.setSpeed(speed)
+		fragment.setPitch(pitch)
 
 		if err := fragment.SetPosition(offset); err != nil {
 			log.Error("Set fragment position: %v", err)
@@ -338,7 +341,7 @@ func (p *Player) start(startFragment int) {
 		p.fragment = fragment
 		p.fragmentIndex = startFragment + index
 		gui.SetFragments(p.fragmentIndex, len(p.playList))
-		gui.SetTotalTime(time.Second * time.Duration(r.Size/int64(kbps*1000/8)))
+		gui.SetTotalTime(time.Second * time.Duration(r.Size/int64(p.fragment.Bitrate*1000/8)))
 		p.offset = 0
 		p.Unlock()
 
