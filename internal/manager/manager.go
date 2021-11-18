@@ -602,15 +602,23 @@ func (m *Manager) downloadBook(book ContentItem) error {
 	// Book downloading should not block handling of other messages
 	go func() {
 		var err error
+		var totalSize, downloadedSize int64
 		ctx, cancelFunc := context.WithCancel(context.TODO())
-		dlg := gui.NewProgressDialog("Загрузка книги", fmt.Sprintf("Загрузка %s", book.Label().Text), len(rsrc), cancelFunc)
+		label := "Загрузка «%s»\nСкорость: %d Кб/с"
+		dlg := gui.NewProgressDialog("Загрузка книги", fmt.Sprintf(label, book.Label().Text, 0), 100, cancelFunc)
 		dlg.Show()
+
+		for _, r := range rsrc {
+			totalSize += r.Size
+		}
 
 		for _, r := range rsrc {
 			err = func() error {
 				path := filepath.Join(bookDir, r.LocalURI)
 				if util.FileIsExist(path, r.Size) {
 					// This fragment already exists on disk
+					downloadedSize += r.Size
+					dlg.SetValue(int(downloadedSize / (totalSize / 100)))
 					return nil
 				}
 
@@ -626,8 +634,24 @@ func (m *Manager) downloadBook(book ContentItem) error {
 				}
 				defer dst.Close()
 
-				n, err := io.CopyBuffer(dst, src, make([]byte, 512*1024))
-				if err == nil && r.Size != n {
+				var fragmentSize int64
+				for err == nil {
+					var n int64
+					t := time.Now()
+					n, err = io.CopyN(dst, src, 512*1024)
+					sec := time.Since(t).Seconds()
+					speed := int(float64(n) / 1024 / sec)
+					dlg.SetLabel(fmt.Sprintf(label, book.Label().Text, speed))
+					downloadedSize += n
+					fragmentSize += n
+					dlg.SetValue(int(downloadedSize / (totalSize / 100)))
+				}
+
+				if err == io.EOF {
+					err = nil
+				}
+
+				if err == nil && r.Size != fragmentSize {
 					err = errors.New("resource size mismatch")
 				}
 
@@ -640,8 +664,6 @@ func (m *Manager) downloadBook(book ContentItem) error {
 			if err != nil {
 				break
 			}
-
-			dlg.IncreaseValue(1)
 		}
 
 		dlg.Cancel()

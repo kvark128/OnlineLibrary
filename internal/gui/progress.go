@@ -6,11 +6,12 @@ import (
 )
 
 type ProgressDialog struct {
-	dlg *walk.Dialog
-	pb  *walk.ProgressBar
+	dlg   *walk.Dialog
+	label *walk.TextLabel
+	pb    *walk.ProgressBar
 }
 
-func NewProgressDialog(title, msg string, maxValue int, cancelFN func()) *ProgressDialog {
+func NewProgressDialog(title, label string, maxValue int, cancelFN func()) *ProgressDialog {
 	pd := &ProgressDialog{}
 	var CancelPB *walk.PushButton
 
@@ -21,7 +22,10 @@ func NewProgressDialog(title, msg string, maxValue int, cancelFN func()) *Progre
 		CancelButton: &CancelPB,
 		Children: []Widget{
 
-			TextLabel{Text: msg},
+			TextLabel{
+				Text:     label,
+				AssignTo: &pd.label,
+			},
 
 			ProgressBar{
 				MaxValue: maxValue,
@@ -54,14 +58,22 @@ func (pd *ProgressDialog) Show() {
 	})
 }
 
-func (pd *ProgressDialog) IncreaseValue(value int) int {
-	valueCH := make(chan int)
+func (pd *ProgressDialog) SetLabel(label string) {
+	doneCH := make(chan bool)
 	pd.dlg.Synchronize(func() {
-		newValue := pd.pb.Value() + value
-		pd.pb.SetValue(newValue)
-		valueCH <- newValue
+		pd.label.SetText(label)
+		doneCH <- true
 	})
-	return <-valueCH
+	<-doneCH
+}
+
+func (pd *ProgressDialog) SetValue(value int) {
+	doneCH := make(chan bool)
+	pd.dlg.Synchronize(func() {
+		pd.pb.SetValue(value)
+		doneCH <- true
+	})
+	<-doneCH
 }
 
 func (pd *ProgressDialog) Cancel() {
