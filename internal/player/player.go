@@ -28,7 +28,7 @@ const (
 
 	DEFAULT_VOLUME = sonic.DEFAULT_VOLUME
 	MIN_VOLUME     = 0.0
-	MAX_VOLUME     = sonic.DEFAULT_VOLUME * 2
+	MAX_VOLUME     = sonic.DEFAULT_VOLUME * 1.5
 )
 
 // Extensions of supported formats
@@ -158,12 +158,11 @@ func (p *Player) SetSpeed(speed float64) {
 	defer p.Unlock()
 	switch {
 	case speed < MIN_SPEED:
-		p.speed = MIN_SPEED
+		speed = MIN_SPEED
 	case speed > MAX_SPEED:
-		p.speed = MAX_SPEED
-	default:
-		p.speed = speed
+		speed = MAX_SPEED
 	}
+	p.speed = speed
 	if p.fragment != nil {
 		p.fragment.setSpeed(p.speed)
 	}
@@ -187,12 +186,11 @@ func (p *Player) SetPitch(pitch float64) {
 	defer p.Unlock()
 	switch {
 	case pitch < MIN_PITCH:
-		p.pitch = MIN_PITCH
+		pitch = MIN_PITCH
 	case pitch > MAX_PITCH:
-		p.pitch = MAX_PITCH
-	default:
-		p.pitch = pitch
+		pitch = MAX_PITCH
 	}
+	p.pitch = pitch
 	if p.fragment != nil {
 		p.fragment.setPitch(p.pitch)
 	}

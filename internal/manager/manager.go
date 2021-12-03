@@ -233,12 +233,12 @@ func (m *Manager) Start(msgCH chan msg.Message, done chan<- bool) {
 			m.bookplayer.SetPitch(value - 0.05)
 
 		case msg.PLAYER_VOLUME_UP:
-			val := m.bookplayer.Volume()
-			m.bookplayer.SetVolume(val + 0.1)
+			volume := m.bookplayer.Volume()
+			m.bookplayer.SetVolume(volume + 0.05)
 
 		case msg.PLAYER_VOLUME_DOWN:
-			val := m.bookplayer.Volume()
-			m.bookplayer.SetVolume(val - 0.1)
+			volume := m.bookplayer.Volume()
+			m.bookplayer.SetVolume(volume - 0.05)
 
 		case msg.PLAYER_OFFSET_POSITION:
 			offset, ok := message.Data.(time.Duration)
@@ -385,7 +385,7 @@ func (m *Manager) Start(msgCH chan msg.Message, done chan<- bool) {
 func (m *Manager) cleaning() {
 	m.setBookmark(config.ListeningPosition)
 	if m.bookplayer != nil {
-		config.Conf.General.Volume = int(m.bookplayer.Volume()/0.1) - 10
+		config.Conf.General.Volume = int(m.bookplayer.Volume()/0.05) - 20
 		m.bookplayer.Stop()
 		m.bookplayer = nil
 	}
@@ -557,7 +557,7 @@ func (m *Manager) setBookmark(bookmarkID string) {
 func (m *Manager) setBookplayer(book ContentItem) error {
 	m.setBookmark(config.ListeningPosition)
 	if m.bookplayer != nil {
-		config.Conf.General.Volume = int(m.bookplayer.Volume()/0.1) - 10
+		config.Conf.General.Volume = int(m.bookplayer.Volume()/0.05) - 20
 		m.bookplayer.Stop()
 	}
 
@@ -571,7 +571,7 @@ func (m *Manager) setBookplayer(book ContentItem) error {
 	m.bookplayer = player.NewPlayer(bookDir, rsrc, config.Conf.General.OutputDevice)
 	m.currentBook = book
 	m.bookplayer.SetTimerDuration(config.Conf.General.PauseTimer)
-	m.bookplayer.SetVolume(float64(config.Conf.General.Volume+10) * 0.1)
+	m.bookplayer.SetVolume(float64(config.Conf.General.Volume+20) * 0.05)
 	if bookmark, err := book.Bookmark(config.ListeningPosition); err == nil {
 		m.bookplayer.SetFragment(bookmark.Fragment)
 		m.bookplayer.SetPosition(bookmark.Position)
