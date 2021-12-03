@@ -100,6 +100,12 @@ func (f *Fragment) setPitch(pitch float64) {
 	f.stream.SetPitch(pitch)
 }
 
+func (f *Fragment) setVolume(volume float64) {
+	f.Lock()
+	defer f.Unlock()
+	f.stream.SetVolume(volume)
+}
+
 func (f *Fragment) Position() time.Duration {
 	f.Lock()
 	defer f.Unlock()
@@ -123,29 +129,6 @@ func (f *Fragment) IsPause() bool {
 	f.Lock()
 	defer f.Unlock()
 	return f.paused
-}
-
-func (f *Fragment) changeVolume(offset int) {
-	l, r := f.wp.GetVolume()
-	newOffset := offset * 4096
-	newL := int(l) + newOffset
-	newR := int(r) + newOffset
-
-	if newL < 0 {
-		newL = 0
-	}
-	if newL > 0xffff {
-		newL = 0xffff
-	}
-
-	if newR < 0 {
-		newR = 0
-	}
-	if newR > 0xffff {
-		newR = 0xffff
-	}
-
-	f.wp.SetVolume(uint16(newL), uint16(newR))
 }
 
 func (f *Fragment) SetOutputDevice(devName string) error {

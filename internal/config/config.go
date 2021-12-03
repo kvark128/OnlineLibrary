@@ -60,6 +60,7 @@ type Credentials struct {
 
 type General struct {
 	OutputDevice            string        `json:"output_device,omitempty"`
+	Volume                  int           `json:"volume,omitempty"`
 	PauseTimer              time.Duration `json:"pause_timer,omitempty"`
 	LogLevel                string        `json:"log_level,omitempty"`
 	OpenLocalBooksAtStartup bool          `json:"open_local_books_at_startup,omitempty"`

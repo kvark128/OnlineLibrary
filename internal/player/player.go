@@ -25,6 +25,10 @@ const (
 	DEFAULT_PITCH = sonic.DEFAULT_PITCH
 	MIN_PITCH     = sonic.DEFAULT_PITCH / 2
 	MAX_PITCH     = sonic.DEFAULT_PITCH * 3
+
+	DEFAULT_VOLUME = sonic.DEFAULT_VOLUME
+	MIN_VOLUME     = 0.0
+	MAX_VOLUME     = sonic.DEFAULT_VOLUME * 2
 )
 
 // Extensions of supported formats
@@ -43,6 +47,7 @@ type Player struct {
 	outputDevice  string
 	speed         float64
 	pitch         float64
+	volume        float64
 	fragmentIndex int
 	offset        time.Duration
 	timerDuration time.Duration
@@ -56,6 +61,7 @@ func NewPlayer(bookDir string, resources []daisy.Resource, outputDevice string) 
 		bookDir:      bookDir,
 		speed:        DEFAULT_SPEED,
 		pitch:        DEFAULT_PITCH,
+		volume:       DEFAULT_VOLUME,
 		outputDevice: outputDevice,
 	}
 
@@ -213,15 +219,31 @@ func (p *Player) SetFragment(fragment int) {
 	}
 }
 
-func (p *Player) ChangeVolume(offset int) {
+func (p *Player) SetVolume(volume float64) {
 	if p == nil {
 		return
 	}
 	p.Lock()
 	defer p.Unlock()
-	if p.fragment != nil {
-		p.fragment.changeVolume(offset)
+	switch {
+	case volume < MIN_VOLUME:
+		volume = MIN_VOLUME
+	case volume > MAX_VOLUME:
+		volume = MAX_VOLUME
 	}
+	p.volume = volume
+	if p.fragment != nil {
+		p.fragment.setVolume(p.volume)
+	}
+}
+
+func (p *Player) Volume() float64 {
+	if p == nil {
+		return 0.0
+	}
+	p.Lock()
+	defer p.Unlock()
+	return p.volume
 }
 
 func (p *Player) SetPosition(position time.Duration) {
@@ -312,6 +334,7 @@ func (p *Player) start(startFragment int) {
 		p.Lock()
 		speed := p.speed
 		pitch := p.pitch
+		volume := p.volume
 		offset := p.offset
 		outputDevice := p.outputDevice
 		p.Unlock()
@@ -325,6 +348,7 @@ func (p *Player) start(startFragment int) {
 
 		fragment.setSpeed(speed)
 		fragment.setPitch(pitch)
+		fragment.setVolume(volume)
 
 		if err := fragment.SetPosition(offset); err != nil {
 			log.Error("Set fragment position: %v", err)
