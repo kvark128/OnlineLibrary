@@ -378,6 +378,7 @@ func (m *Manager) cleaning() {
 	m.setBookmark(config.ListeningPosition)
 	if m.bookplayer != nil {
 		config.Conf.General.Volume = int(m.bookplayer.Volume()/0.05) - 20
+		m.currentBook.SetSpeed(m.bookplayer.Speed())
 		m.bookplayer.Stop()
 		m.bookplayer = nil
 	}
@@ -550,6 +551,7 @@ func (m *Manager) setBookplayer(book ContentItem) error {
 	m.setBookmark(config.ListeningPosition)
 	if m.bookplayer != nil {
 		config.Conf.General.Volume = int(m.bookplayer.Volume()/0.05) - 20
+		m.currentBook.SetSpeed(m.bookplayer.Speed())
 		m.bookplayer.Stop()
 	}
 
@@ -562,6 +564,7 @@ func (m *Manager) setBookplayer(book ContentItem) error {
 	bookDir := filepath.Join(config.UserData(), util.ReplaceForbiddenCharacters(book.Label().Text))
 	m.bookplayer = player.NewPlayer(bookDir, rsrc, config.Conf.General.OutputDevice)
 	m.currentBook = book
+	m.bookplayer.SetSpeed(book.Speed())
 	m.bookplayer.SetTimerDuration(config.Conf.General.PauseTimer)
 	m.bookplayer.SetVolume(float64(config.Conf.General.Volume+20) * 0.05)
 	if bookmark, err := book.Bookmark(config.ListeningPosition); err == nil {

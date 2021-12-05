@@ -12,6 +12,8 @@ type ContentItem interface {
 	Bookmark(string) (config.Bookmark, error)
 	SetBookmark(string, config.Bookmark)
 	ContentMetadata() (*daisy.ContentMetadata, error)
+	Speed() float64
+	SetSpeed(float64)
 }
 
 type ContentList interface {

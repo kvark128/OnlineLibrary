@@ -27,9 +27,8 @@ type Book struct {
 	Name string `json:"name"`
 	// Unique ID of the book
 	ID string `json:"id"`
-	// Values for speed and pitch when playing the book
+	// Values for speed when playing the book
 	Speed int `json:"speed,omitempty"`
-	Pitch int `json:"pitch,omitempty"`
 	// Set of bookmarks in the book
 	Bookmarks map[string]Bookmark `json:"bookmarks,omitempty"`
 }
