@@ -14,21 +14,20 @@ import (
 	"github.com/kvark128/OnlineLibrary/internal/log"
 	"github.com/kvark128/OnlineLibrary/internal/util"
 	daisy "github.com/kvark128/daisyonline"
-	"github.com/kvark128/sonic"
 )
 
 const (
-	DEFAULT_SPEED = sonic.DEFAULT_SPEED
-	MIN_SPEED     = sonic.DEFAULT_SPEED / 2
-	MAX_SPEED     = sonic.DEFAULT_SPEED * 3
+	DEFAULT_SPEED = 1.0
+	MIN_SPEED     = 0.5
+	MAX_SPEED     = 3.0
 
-	DEFAULT_PITCH = sonic.DEFAULT_PITCH
-	MIN_PITCH     = sonic.DEFAULT_PITCH / 2
-	MAX_PITCH     = sonic.DEFAULT_PITCH * 3
+	DEFAULT_PITCH = 1.0
+	MIN_PITCH     = 0.5
+	MAX_PITCH     = 3.0
 
-	DEFAULT_VOLUME = sonic.DEFAULT_VOLUME
+	DEFAULT_VOLUME = 1.0
 	MIN_VOLUME     = 0.0
-	MAX_VOLUME     = sonic.DEFAULT_VOLUME * 1.5
+	MAX_VOLUME     = 1.5
 )
 
 // Extensions of supported formats
