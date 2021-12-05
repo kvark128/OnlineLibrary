@@ -21,12 +21,8 @@ const (
 	MIN_SPEED     = 0.5
 	MAX_SPEED     = 3.0
 
-	DEFAULT_PITCH = 1.0
-	MIN_PITCH     = 0.5
-	MAX_PITCH     = 3.0
-
 	DEFAULT_VOLUME = 1.0
-	MIN_VOLUME     = 0.0
+	MIN_VOLUME     = 0.05
 	MAX_VOLUME     = 1.5
 )
 
@@ -45,7 +41,6 @@ type Player struct {
 	fragment      *Fragment
 	outputDevice  string
 	speed         float64
-	pitch         float64
 	volume        float64
 	fragmentIndex int
 	offset        time.Duration
@@ -59,7 +54,6 @@ func NewPlayer(bookDir string, resources []daisy.Resource, outputDevice string) 
 		wg:           new(sync.WaitGroup),
 		bookDir:      bookDir,
 		speed:        DEFAULT_SPEED,
-		pitch:        DEFAULT_PITCH,
 		volume:       DEFAULT_VOLUME,
 		outputDevice: outputDevice,
 	}
@@ -164,34 +158,6 @@ func (p *Player) SetSpeed(speed float64) {
 	p.speed = speed
 	if p.fragment != nil {
 		p.fragment.setSpeed(p.speed)
-	}
-}
-
-func (p *Player) Pitch() float64 {
-	if p == nil {
-		return 0.0
-	}
-
-	p.Lock()
-	defer p.Unlock()
-	return p.pitch
-}
-
-func (p *Player) SetPitch(pitch float64) {
-	if p == nil {
-		return
-	}
-	p.Lock()
-	defer p.Unlock()
-	switch {
-	case pitch < MIN_PITCH:
-		pitch = MIN_PITCH
-	case pitch > MAX_PITCH:
-		pitch = MAX_PITCH
-	}
-	p.pitch = pitch
-	if p.fragment != nil {
-		p.fragment.setPitch(p.pitch)
 	}
 }
 
@@ -330,7 +296,6 @@ func (p *Player) start(startFragment int) {
 
 		p.Lock()
 		speed := p.speed
-		pitch := p.pitch
 		volume := p.volume
 		offset := p.offset
 		outputDevice := p.outputDevice
@@ -344,7 +309,6 @@ func (p *Player) start(startFragment int) {
 		}
 
 		fragment.setSpeed(speed)
-		fragment.setPitch(pitch)
 		fragment.setVolume(volume)
 
 		if err := fragment.SetPosition(offset); err != nil {

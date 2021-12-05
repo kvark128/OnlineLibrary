@@ -98,8 +98,17 @@ func (mlb *MainListBox) WndProc(hwnd win.HWND, winmsg uint32, wParam, lParam uin
 			case walk.KeyRight:
 				mlb.msgCH <- rewind_1min_forward
 				return 0
+			case walk.KeyUp:
+				mlb.msgCH <- msg.Message{msg.PLAYER_SPEED_UP, nil}
+				return 0
+			case walk.KeyDown:
+				mlb.msgCH <- msg.Message{msg.PLAYER_SPEED_DOWN, nil}
+				return 0
 			case walk.Key1, walk.Key2, walk.Key3, walk.Key4, walk.Key5, walk.Key6, walk.Key7, walk.Key8, walk.Key9, walk.Key0:
 				mlb.msgCH <- msg.Message{Code: msg.BOOKMARK_SET, Data: key.String()}
+				return 0
+			case walk.KeyR:
+				mlb.msgCH <- msg.Message{Code: msg.PLAYER_SPEED_RESET}
 				return 0
 			}
 		}
@@ -126,6 +135,9 @@ func (mlb *MainListBox) WndProc(hwnd win.HWND, winmsg uint32, wParam, lParam uin
 				return 0
 			case walk.Key1, walk.Key2, walk.Key3, walk.Key4, walk.Key5, walk.Key6, walk.Key7, walk.Key8, walk.Key9, walk.Key0:
 				mlb.msgCH <- msg.Message{Code: msg.BOOKMARK_FETCH, Data: key.String()}
+				return 0
+			case walk.KeyR:
+				mlb.msgCH <- msg.Message{Code: msg.PLAYER_VOLUME_RESET}
 				return 0
 			}
 		}

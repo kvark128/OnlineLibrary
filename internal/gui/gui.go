@@ -132,16 +132,7 @@ func Initialize(msgCH chan msg.Message) error {
 						Shortcut:    Shortcut{walk.ModControl, walk.KeySpace},
 						OnTriggered: func() { msgCH <- msg.Message{msg.PLAYER_STOP, nil} },
 					},
-					Action{
-						Text:        "У&величить громкость",
-						Shortcut:    Shortcut{walk.ModControl, walk.KeyUp},
-						OnTriggered: func() { msgCH <- msg.Message{msg.PLAYER_VOLUME_UP, nil} },
-					},
-					Action{
-						Text:        "У&меньшить громкость",
-						Shortcut:    Shortcut{walk.ModControl, walk.KeyDown},
-						OnTriggered: func() { msgCH <- msg.Message{msg.PLAYER_VOLUME_DOWN, nil} },
-					},
+
 					Menu{
 						Text: "Переход по книге",
 						Items: []MenuItem{
@@ -167,6 +158,7 @@ func Initialize(msgCH chan msg.Message) error {
 							},
 						},
 					},
+
 					Menu{
 						Text: "Переход по фрагменту",
 						Items: []MenuItem{
@@ -217,43 +209,45 @@ func Initialize(msgCH chan msg.Message) error {
 							},
 						},
 					},
+
+					Menu{
+						Text: "Громкость",
+						Items: []MenuItem{
+							Action{
+								Text:        "Увеличить громкость",
+								Shortcut:    Shortcut{walk.ModControl, walk.KeyUp},
+								OnTriggered: func() { msgCH <- msg.Message{msg.PLAYER_VOLUME_UP, nil} },
+							},
+							Action{
+								Text:        "Уменьшить громкость",
+								Shortcut:    Shortcut{walk.ModControl, walk.KeyDown},
+								OnTriggered: func() { msgCH <- msg.Message{msg.PLAYER_VOLUME_DOWN, nil} },
+							},
+							Action{
+								Text:        "Сбросить громкость",
+								Shortcut:    Shortcut{walk.ModControl, walk.KeyR},
+								OnTriggered: func() { msgCH <- msg.Message{msg.PLAYER_VOLUME_RESET, nil} },
+							},
+						},
+					},
+
 					Menu{
 						Text: "Скорость",
 						Items: []MenuItem{
 							Action{
 								Text:        "Увеличить скорость",
-								Shortcut:    Shortcut{walk.ModControl, walk.KeyC},
+								Shortcut:    Shortcut{walk.ModShift, walk.KeyUp},
 								OnTriggered: func() { msgCH <- msg.Message{msg.PLAYER_SPEED_UP, nil} },
 							},
 							Action{
 								Text:        "Уменьшить скорость",
-								Shortcut:    Shortcut{walk.ModControl, walk.KeyX},
+								Shortcut:    Shortcut{walk.ModShift, walk.KeyDown},
 								OnTriggered: func() { msgCH <- msg.Message{msg.PLAYER_SPEED_DOWN, nil} },
 							},
 							Action{
 								Text:        "Сбросить скорость",
-								Shortcut:    Shortcut{walk.ModControl, walk.KeyZ},
+								Shortcut:    Shortcut{walk.ModShift, walk.KeyR},
 								OnTriggered: func() { msgCH <- msg.Message{msg.PLAYER_SPEED_RESET, nil} },
-							},
-						},
-					},
-					Menu{
-						Text: "Высота",
-						Items: []MenuItem{
-							Action{
-								Text:        "Увеличить высоту",
-								Shortcut:    Shortcut{walk.ModShift, walk.KeyC},
-								OnTriggered: func() { msgCH <- msg.Message{msg.PLAYER_PITCH_UP, nil} },
-							},
-							Action{
-								Text:        "Уменьшить высоту",
-								Shortcut:    Shortcut{walk.ModShift, walk.KeyX},
-								OnTriggered: func() { msgCH <- msg.Message{msg.PLAYER_PITCH_DOWN, nil} },
-							},
-							Action{
-								Text:        "Сбросить высоту",
-								Shortcut:    Shortcut{walk.ModShift, walk.KeyZ},
-								OnTriggered: func() { msgCH <- msg.Message{msg.PLAYER_PITCH_RESET, nil} },
 							},
 						},
 					},

@@ -221,16 +221,8 @@ func (m *Manager) Start(msgCH chan msg.Message, done chan<- bool) {
 			value := m.bookplayer.Speed()
 			m.bookplayer.SetSpeed(value - 0.1)
 
-		case msg.PLAYER_PITCH_RESET:
-			m.bookplayer.SetPitch(player.DEFAULT_PITCH)
-
-		case msg.PLAYER_PITCH_UP:
-			value := m.bookplayer.Pitch()
-			m.bookplayer.SetPitch(value + 0.05)
-
-		case msg.PLAYER_PITCH_DOWN:
-			value := m.bookplayer.Pitch()
-			m.bookplayer.SetPitch(value - 0.05)
+		case msg.PLAYER_VOLUME_RESET:
+			m.bookplayer.SetVolume(player.DEFAULT_VOLUME)
 
 		case msg.PLAYER_VOLUME_UP:
 			volume := m.bookplayer.Volume()

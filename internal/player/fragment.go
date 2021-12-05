@@ -94,12 +94,6 @@ func (f *Fragment) setSpeed(speed float64) {
 	f.stream.SetSpeed(speed)
 }
 
-func (f *Fragment) setPitch(pitch float64) {
-	f.Lock()
-	defer f.Unlock()
-	f.stream.SetPitch(pitch)
-}
-
 func (f *Fragment) setVolume(volume float64) {
 	f.Lock()
 	defer f.Unlock()
@@ -153,9 +147,7 @@ func (f *Fragment) SetPosition(position time.Duration) error {
 
 	f.wp.Stop()
 	f.stream.Flush()
-	for f.stream.SamplesAvailable() > 0 {
-		f.stream.Read(make([]byte, buffer_size))
-	}
+	io.ReadAll(f.stream)
 
 	offsetInBytes := int64(position / (time.Second / time.Duration(f.pcmBytesPerSec)))
 	if f.nWrite == offsetInBytes {
