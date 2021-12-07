@@ -65,7 +65,9 @@ func (m *Manager) Start(msgCH chan msg.Message, done chan<- bool) {
 						break
 					}
 				}
-				m.bookplayer.PlayPause()
+				if m.bookplayer != nil {
+					m.bookplayer.PlayPause()
+				}
 			} else if m.questions != nil {
 				questionIndex := len(m.userResponses)
 				questionID := m.questions.MultipleChoiceQuestion[questionIndex].ID
@@ -195,11 +197,15 @@ func (m *Manager) Start(msgCH chan msg.Message, done chan<- bool) {
 			gui.MessageBox("Информация о книге", text, walk.MsgBoxOK|walk.MsgBoxIconWarning)
 
 		case msg.PLAYER_PLAY_PAUSE:
-			m.bookplayer.PlayPause()
+			if m.bookplayer != nil {
+				m.bookplayer.PlayPause()
+			}
 
 		case msg.PLAYER_STOP:
 			m.setBookmark(config.ListeningPosition)
-			m.bookplayer.Stop()
+			if m.bookplayer != nil {
+				m.bookplayer.Stop()
+			}
 
 		case msg.PLAYER_OFFSET_FRAGMENT:
 			offset, ok := message.Data.(int)
@@ -207,30 +213,44 @@ func (m *Manager) Start(msgCH chan msg.Message, done chan<- bool) {
 				log.Error("Invalid offset fragment")
 				break
 			}
-			fragment, _ := m.bookplayer.PositionInfo()
-			m.bookplayer.SetFragment(fragment + offset)
+			if m.bookplayer != nil {
+				fragment := m.bookplayer.Fragment()
+				m.bookplayer.SetFragment(fragment + offset)
+			}
 
 		case msg.PLAYER_SPEED_RESET:
-			m.bookplayer.SetSpeed(player.DEFAULT_SPEED)
+			if m.bookplayer != nil {
+				m.bookplayer.SetSpeed(player.DEFAULT_SPEED)
+			}
 
 		case msg.PLAYER_SPEED_UP:
-			value := m.bookplayer.Speed()
-			m.bookplayer.SetSpeed(value + 0.1)
+			if m.bookplayer != nil {
+				value := m.bookplayer.Speed()
+				m.bookplayer.SetSpeed(value + 0.1)
+			}
 
 		case msg.PLAYER_SPEED_DOWN:
-			value := m.bookplayer.Speed()
-			m.bookplayer.SetSpeed(value - 0.1)
+			if m.bookplayer != nil {
+				value := m.bookplayer.Speed()
+				m.bookplayer.SetSpeed(value - 0.1)
+			}
 
 		case msg.PLAYER_VOLUME_RESET:
-			m.bookplayer.SetVolume(player.DEFAULT_VOLUME)
+			if m.bookplayer != nil {
+				m.bookplayer.SetVolume(player.DEFAULT_VOLUME)
+			}
 
 		case msg.PLAYER_VOLUME_UP:
-			volume := m.bookplayer.Volume()
-			m.bookplayer.SetVolume(volume + 0.05)
+			if m.bookplayer != nil {
+				volume := m.bookplayer.Volume()
+				m.bookplayer.SetVolume(volume + 0.05)
+			}
 
 		case msg.PLAYER_VOLUME_DOWN:
-			volume := m.bookplayer.Volume()
-			m.bookplayer.SetVolume(volume - 0.05)
+			if m.bookplayer != nil {
+				volume := m.bookplayer.Volume()
+				m.bookplayer.SetVolume(volume - 0.05)
+			}
 
 		case msg.PLAYER_OFFSET_POSITION:
 			offset, ok := message.Data.(time.Duration)
@@ -238,14 +258,19 @@ func (m *Manager) Start(msgCH chan msg.Message, done chan<- bool) {
 				log.Error("Invalid offset position")
 				break
 			}
-			_, pos := m.bookplayer.PositionInfo()
-			m.bookplayer.SetPosition(pos + offset)
+			if m.bookplayer != nil {
+				pos := m.bookplayer.Position()
+				m.bookplayer.SetPosition(pos + offset)
+			}
 
 		case msg.PLAYER_GOTO_FRAGMENT:
 			fragment, ok := message.Data.(int)
 			if !ok {
 				var text string
-				curFragment, _ := m.bookplayer.PositionInfo()
+				var curFragment int
+				if m.bookplayer != nil {
+					curFragment = m.bookplayer.Fragment()
+				}
 				if gui.TextEntryDialog("Переход к фрагменту", "Введите номер фрагмента:", strconv.Itoa(curFragment+1), &text) != walk.DlgCmdOK {
 					break
 				}
@@ -255,11 +280,16 @@ func (m *Manager) Start(msgCH chan msg.Message, done chan<- bool) {
 				}
 				fragment = newFragment - 1 // Requires an index of fragment
 			}
-			m.bookplayer.SetFragment(fragment)
+			if m.bookplayer != nil {
+				m.bookplayer.SetFragment(fragment)
+			}
 
 		case msg.PLAYER_GOTO_POSITION:
 			var text string
-			_, pos := m.bookplayer.PositionInfo()
+			var pos time.Duration
+			if m.bookplayer != nil {
+				pos = m.bookplayer.Position()
+			}
 			if gui.TextEntryDialog("Переход к позиции", "Введите позицию фрагмента:", util.FmtDuration(pos), &text) != walk.DlgCmdOK {
 				break
 			}
@@ -268,7 +298,9 @@ func (m *Manager) Start(msgCH chan msg.Message, done chan<- bool) {
 				log.Error("goto position: %v", err)
 				break
 			}
-			m.bookplayer.SetPosition(position)
+			if m.bookplayer != nil {
+				m.bookplayer.SetPosition(position)
+			}
 
 		case msg.PLAYER_OUTPUT_DEVICE:
 			device, ok := message.Data.(string)
@@ -277,11 +309,16 @@ func (m *Manager) Start(msgCH chan msg.Message, done chan<- bool) {
 				break
 			}
 			config.Conf.General.OutputDevice = device
-			m.bookplayer.SetOutputDevice(device)
+			if m.bookplayer != nil {
+				m.bookplayer.SetOutputDevice(device)
+			}
 
 		case msg.PLAYER_SET_TIMER:
 			var text string
-			d := int(m.bookplayer.TimerDuration().Minutes())
+			var d int
+			if m.bookplayer != nil {
+				d = int(m.bookplayer.TimerDuration().Minutes())
+			}
 
 			if gui.TextEntryDialog("Установка таймера паузы", "Введите время таймера в минутах:", strconv.Itoa(d), &text) != walk.DlgCmdOK {
 				break
@@ -294,7 +331,9 @@ func (m *Manager) Start(msgCH chan msg.Message, done chan<- bool) {
 
 			config.Conf.General.PauseTimer = time.Minute * time.Duration(n)
 			gui.SetPauseTimerLabel(n)
-			m.bookplayer.SetTimerDuration(config.Conf.General.PauseTimer)
+			if m.bookplayer != nil {
+				m.bookplayer.SetTimerDuration(config.Conf.General.PauseTimer)
+			}
 
 		case msg.BOOKMARK_SET:
 			bookmarkID, ok := message.Data.(string)
@@ -313,14 +352,16 @@ func (m *Manager) Start(msgCH chan msg.Message, done chan<- bool) {
 				if err != nil {
 					break
 				}
-				if f, _ := m.bookplayer.PositionInfo(); f == bookmark.Fragment {
+				if m.bookplayer != nil {
+					if f := m.bookplayer.Fragment(); f == bookmark.Fragment {
+						m.bookplayer.SetPosition(bookmark.Position)
+						break
+					}
+					m.bookplayer.Stop()
+					m.bookplayer.SetFragment(bookmark.Fragment)
 					m.bookplayer.SetPosition(bookmark.Position)
-					break
+					m.bookplayer.PlayPause()
 				}
-				m.bookplayer.Stop()
-				m.bookplayer.SetFragment(bookmark.Fragment)
-				m.bookplayer.SetPosition(bookmark.Position)
-				m.bookplayer.PlayPause()
 			}
 
 		case msg.LOG_SET_LEVEL:
@@ -542,7 +583,10 @@ func (m *Manager) updateContentList(contentList ContentList) {
 func (m *Manager) setBookmark(bookmarkID string) {
 	if m.currentBook != nil {
 		var bookmark config.Bookmark
-		bookmark.Fragment, bookmark.Position = m.bookplayer.PositionInfo()
+		if m.bookplayer != nil {
+			bookmark.Fragment = m.bookplayer.Fragment()
+			bookmark.Position = m.bookplayer.Position()
+		}
 		m.currentBook.SetBookmark(bookmarkID, bookmark)
 	}
 }

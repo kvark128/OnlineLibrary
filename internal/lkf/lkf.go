@@ -8,14 +8,14 @@ import (
 )
 
 type Reader struct {
-	src       io.ReadCloser
+	src       io.Reader
 	buf       []byte
 	bufLength int
 	c         *lkf.Cryptor
 	lastError error
 }
 
-func NewReader(src io.ReadCloser) *Reader {
+func NewReader(src io.Reader) *Reader {
 	return &Reader{
 		src: src,
 		buf: make([]byte, lkf.BlockSize*32), // 16 Kb
@@ -74,9 +74,4 @@ func (r *Reader) Seek(offset int64, whence int) (int64, error) {
 
 	n, err := io.ReadFull(r, make([]byte, blockOffset))
 	return pos + int64(n), err
-}
-
-func (r *Reader) Close() error {
-	r.bufLength = 0
-	return r.src.Close()
 }

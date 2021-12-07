@@ -1,6 +1,7 @@
 package player
 
 import (
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -71,10 +72,6 @@ func NewPlayer(bookDir string, resources []daisy.Resource, outputDevice string) 
 }
 
 func (p *Player) SetTimerDuration(d time.Duration) {
-	if p == nil {
-		return
-	}
-
 	p.Lock()
 	defer p.Unlock()
 	p.timerDuration = d
@@ -84,10 +81,6 @@ func (p *Player) SetTimerDuration(d time.Duration) {
 }
 
 func (p *Player) TimerDuration() time.Duration {
-	if p == nil {
-		return 0
-	}
-
 	p.Lock()
 	defer p.Unlock()
 	return p.timerDuration
@@ -103,50 +96,80 @@ func (p *Player) updateTimer(d time.Duration) {
 	}
 }
 
-func (p *Player) PositionInfo() (int, time.Duration) {
-	if p == nil {
-		return 0, 0
-	}
+func (p *Player) Position() time.Duration {
 	p.Lock()
 	defer p.Unlock()
-	elapsedTime := p.offset
 	if p.fragment != nil {
-		elapsedTime = p.fragment.Position()
+		return p.fragment.Position()
 	}
-	return p.fragmentIndex, elapsedTime
+	return p.offset
 }
 
-func (p *Player) SetOutputDevice(outputDevice string) {
-	if p == nil {
-		return
-	}
-
-	if p.outputDevice == outputDevice {
-		return
-	}
-
+func (p *Player) SetPosition(position time.Duration) {
 	p.Lock()
+	defer p.Unlock()
+	if !p.playing.IsSet() {
+		p.offset = position
+		return
+	}
+	if p.fragment != nil {
+		if err := p.fragment.SetPosition(position); err != nil {
+			log.Error("Set fragment position: %v", err)
+		}
+	}
+}
+
+func (p *Player) Fragment() int {
+	p.Lock()
+	defer p.Unlock()
+	return p.fragmentIndex
+}
+
+func (p *Player) SetFragment(fragment int) {
+	p.Lock()
+	defer p.Unlock()
+	switch {
+	case fragment < 0:
+		p.fragmentIndex = 0
+	case fragment >= len(p.playList):
+		// Attempt was made to start a non-existent track. Do nothing
+		return
+	}
+	p.fragmentIndex = fragment
+	if p.playing.IsSet() {
+		p.stopPlayback()
+		p.startPlayback()
+	}
+}
+
+// Returns the name of the preferred audio device
+func (p *Player) OutputDevice() string {
+	p.Lock()
+	defer p.Unlock()
+	return p.outputDevice
+}
+
+// Sets the name of the preferred audio device
+func (p *Player) SetOutputDevice(outputDevice string) {
+	p.Lock()
+	defer p.Unlock()
+	if p.outputDevice == outputDevice {
+		// The required output device is already is set
+		return
+	}
 	p.outputDevice = outputDevice
 	if p.fragment != nil {
 		p.fragment.SetOutputDevice(p.outputDevice)
 	}
-	p.Unlock()
 }
 
 func (p *Player) Speed() float64 {
-	if p == nil {
-		return 0.0
-	}
-
 	p.Lock()
 	defer p.Unlock()
 	return p.speed
 }
 
 func (p *Player) SetSpeed(speed float64) {
-	if p == nil {
-		return
-	}
 	p.Lock()
 	defer p.Unlock()
 	switch {
@@ -161,31 +184,13 @@ func (p *Player) SetSpeed(speed float64) {
 	}
 }
 
-func (p *Player) SetFragment(fragment int) {
-	if p == nil {
-		return
-	}
+func (p *Player) Volume() float64 {
 	p.Lock()
-	switch {
-	case fragment < 0:
-		p.fragmentIndex = 0
-	case fragment >= len(p.playList):
-		p.Unlock()
-		return
-	default:
-		p.fragmentIndex = fragment
-	}
-	p.Unlock()
-	if p.playing.IsSet() {
-		p.Stop()
-		p.PlayPause()
-	}
+	defer p.Unlock()
+	return p.volume
 }
 
 func (p *Player) SetVolume(volume float64) {
-	if p == nil {
-		return
-	}
 	p.Lock()
 	defer p.Unlock()
 	switch {
@@ -200,44 +205,14 @@ func (p *Player) SetVolume(volume float64) {
 	}
 }
 
-func (p *Player) Volume() float64 {
-	if p == nil {
-		return 0.0
-	}
-	p.Lock()
-	defer p.Unlock()
-	return p.volume
-}
-
-func (p *Player) SetPosition(position time.Duration) {
-	if p == nil {
-		return
-	}
-
+func (p *Player) PlayPause() {
 	p.Lock()
 	defer p.Unlock()
 	if !p.playing.IsSet() {
-		p.offset = position
+		p.startPlayback()
 		return
 	}
 	if p.fragment != nil {
-		if err := p.fragment.SetPosition(position); err != nil {
-			log.Error("Set fragment position: %v", err)
-		}
-	}
-}
-
-func (p *Player) PlayPause() {
-	if p == nil {
-		return
-	}
-	p.Lock()
-	defer p.Unlock()
-	if !p.playing.IsSet() {
-		p.playing.Set()
-		p.wg.Add(1)
-		go p.start(p.fragmentIndex)
-	} else if p.fragment != nil {
 		p.updateTimer(0)
 		if !p.fragment.pause(true) {
 			p.fragment.pause(false)
@@ -247,12 +222,16 @@ func (p *Player) PlayPause() {
 }
 
 func (p *Player) Stop() {
-	if p == nil {
-		return
-	}
-	defer p.wg.Wait()
 	p.Lock()
 	defer p.Unlock()
+	p.stopPlayback()
+}
+
+func (p *Player) startPlayback() {
+	go p.playback(p.fragmentIndex)
+}
+
+func (p *Player) stopPlayback() {
 	p.playing.Clear()
 	p.offset = 0
 	if p.fragment != nil {
@@ -260,7 +239,11 @@ func (p *Player) Stop() {
 	}
 }
 
-func (p *Player) start(startFragment int) {
+func (p *Player) playback(startFragment int) {
+	p.wg.Wait()
+
+	p.wg.Add(1)
+	p.playing.Set()
 	defer p.wg.Done()
 	defer p.playing.Clear()
 
@@ -290,31 +273,29 @@ func (p *Player) start(startFragment int) {
 			}
 		}
 
-		if strings.ToLower(filepath.Ext(r.LocalURI)) == LKF_EXT {
-			src = lkf.NewReader(src)
-		}
+		fragment, err := func(src io.Reader) (*Fragment, error) {
+			if strings.ToLower(filepath.Ext(r.LocalURI)) == LKF_EXT {
+				src = lkf.NewReader(src)
+			}
 
-		p.Lock()
-		speed := p.speed
-		volume := p.volume
-		offset := p.offset
-		outputDevice := p.outputDevice
-		p.Unlock()
+			fragment, err := NewFragment(src, p.OutputDevice())
+			if err != nil {
+				return nil, fmt.Errorf("fragment creating: %w", err)
+			}
 
-		fragment, err := NewFragment(src, outputDevice)
+			if err := fragment.SetPosition(p.Position()); err != nil {
+				return nil, fmt.Errorf("set fragment position: %w", err)
+			}
+
+			fragment.setSpeed(p.Speed())
+			fragment.setVolume(p.Volume())
+			return fragment, nil
+		}(src)
+
 		if err != nil {
-			log.Error("New fragment for %v: %v", uri, err)
+			log.Error("new fragment: %v", err)
 			src.Close()
-			continue
-		}
-
-		fragment.setSpeed(speed)
-		fragment.setVolume(volume)
-
-		if err := fragment.SetPosition(offset); err != nil {
-			log.Error("Set fragment position: %v", err)
-			src.Close()
-			continue
+			break
 		}
 
 		if !p.playing.IsSet() {
