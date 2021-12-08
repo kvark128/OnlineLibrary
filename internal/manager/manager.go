@@ -348,7 +348,8 @@ func (m *Manager) Start(msgCH chan msg.Message, done chan<- bool) {
 				break
 			}
 			if m.currentBook != nil {
-				bookmark, err := m.currentBook.Bookmark(bookmarkID)
+				conf := m.currentBook.Config()
+				bookmark, err := conf.Bookmark(bookmarkID)
 				if err != nil {
 					break
 				}
@@ -419,7 +420,9 @@ func (m *Manager) cleaning() {
 	m.setBookmark(config.ListeningPosition)
 	if m.bookplayer != nil {
 		config.Conf.General.Volume = int(m.bookplayer.Volume()/0.05) - 20
-		m.currentBook.SetSpeed(m.bookplayer.Speed())
+		book := m.currentBook.Config()
+		book.Speed = int((m.bookplayer.Speed()-player.MIN_SPEED)/0.1) - 5
+		m.currentBook.SetConfig(book)
 		m.bookplayer.Stop()
 		m.bookplayer = nil
 	}
@@ -587,7 +590,9 @@ func (m *Manager) setBookmark(bookmarkID string) {
 			bookmark.Fragment = m.bookplayer.Fragment()
 			bookmark.Position = m.bookplayer.Position()
 		}
-		m.currentBook.SetBookmark(bookmarkID, bookmark)
+		conf := m.currentBook.Config()
+		conf.SetBookmark(bookmarkID, bookmark)
+		m.currentBook.SetConfig(conf)
 	}
 }
 
@@ -595,7 +600,9 @@ func (m *Manager) setBookplayer(book ContentItem) error {
 	m.setBookmark(config.ListeningPosition)
 	if m.bookplayer != nil {
 		config.Conf.General.Volume = int(m.bookplayer.Volume()/0.05) - 20
-		m.currentBook.SetSpeed(m.bookplayer.Speed())
+		book := m.currentBook.Config()
+		book.Speed = int((m.bookplayer.Speed()-player.MIN_SPEED)/0.1) - 5
+		m.currentBook.SetConfig(book)
 		m.bookplayer.Stop()
 	}
 
@@ -606,12 +613,13 @@ func (m *Manager) setBookplayer(book ContentItem) error {
 
 	gui.SetMainWindowTitle(book.Label().Text)
 	bookDir := filepath.Join(config.UserData(), util.ReplaceForbiddenCharacters(book.Label().Text))
+	conf := book.Config()
 	m.bookplayer = player.NewPlayer(bookDir, rsrc, config.Conf.General.OutputDevice)
 	m.currentBook = book
-	m.bookplayer.SetSpeed(book.Speed())
+	m.bookplayer.SetSpeed(float64(conf.Speed+5)*0.1 + player.MIN_SPEED)
 	m.bookplayer.SetTimerDuration(config.Conf.General.PauseTimer)
 	m.bookplayer.SetVolume(float64(config.Conf.General.Volume+20) * 0.05)
-	if bookmark, err := book.Bookmark(config.ListeningPosition); err == nil {
+	if bookmark, err := conf.Bookmark(config.ListeningPosition); err == nil {
 		m.bookplayer.SetFragment(bookmark.Fragment)
 		m.bookplayer.SetPosition(bookmark.Position)
 	}

@@ -7,7 +7,6 @@ import (
 	"path/filepath"
 
 	"github.com/kvark128/OnlineLibrary/internal/config"
-	"github.com/kvark128/OnlineLibrary/internal/player"
 	daisy "github.com/kvark128/daisyonline"
 )
 
@@ -50,15 +49,6 @@ func (ci *LibraryContentItem) Resources() ([]daisy.Resource, error) {
 	return r.Resources, nil
 }
 
-func (ci *LibraryContentItem) Bookmark(bookmarkID string) (config.Bookmark, error) {
-	return ci.book.Bookmark(bookmarkID)
-}
-
-func (ci *LibraryContentItem) SetBookmark(bookmarkID string, bookmark config.Bookmark) {
-	ci.book.SetBookmark(bookmarkID, bookmark)
-	ci.library.service.RecentBooks.SetBook(ci.book)
-}
-
 func (ci *LibraryContentItem) ContentMetadata() (*daisy.ContentMetadata, error) {
 	return ci.library.GetContentMetadata(ci.id)
 }
@@ -73,13 +63,13 @@ func (ci *LibraryContentItem) Return() error {
 	return err
 }
 
-func (ci *LibraryContentItem) Speed() float64 {
-	return float64(ci.book.Speed+5)*0.1 + player.MIN_SPEED
+func (ci *LibraryContentItem) Config() config.Book {
+	return ci.book
 }
 
-func (ci *LibraryContentItem) SetSpeed(speed float64) {
-	ci.book.Speed = int((speed-player.MIN_SPEED)/0.1) - 5
-	ci.library.service.RecentBooks.SetBook(ci.book)
+func (ci *LibraryContentItem) SetConfig(book config.Book) {
+	ci.book = book
+	ci.library.service.RecentBooks.SetBook(book)
 }
 
 type LibraryContentList struct {
@@ -173,15 +163,6 @@ func (ci *LocalContentItem) Resources() ([]daisy.Resource, error) {
 	return rsrc, nil
 }
 
-func (ci *LocalContentItem) Bookmark(bookmarkID string) (config.Bookmark, error) {
-	return ci.book.Bookmark(bookmarkID)
-}
-
-func (ci *LocalContentItem) SetBookmark(bookmarkID string, bookmark config.Bookmark) {
-	ci.book.SetBookmark(bookmarkID, bookmark)
-	config.Conf.LocalBooks.SetBook(ci.book)
-}
-
 func (ci *LocalContentItem) ContentMetadata() (*daisy.ContentMetadata, error) {
 	path := filepath.Join(ci.path, MetadataFileName)
 	f, err := os.Open(path)
@@ -197,13 +178,13 @@ func (ci *LocalContentItem) ContentMetadata() (*daisy.ContentMetadata, error) {
 	return md, nil
 }
 
-func (ci *LocalContentItem) Speed() float64 {
-	return float64(ci.book.Speed+5)*0.1 + player.MIN_SPEED
+func (ci *LocalContentItem) Config() config.Book {
+	return ci.book
 }
 
-func (ci *LocalContentItem) SetSpeed(speed float64) {
-	ci.book.Speed = int((speed-player.MIN_SPEED)/0.1) - 5
-	config.Conf.LocalBooks.SetBook(ci.book)
+func (ci *LocalContentItem) SetConfig(book config.Book) {
+	ci.book = book
+	config.Conf.LocalBooks.SetBook(book)
 }
 
 type LocalContentList struct {
