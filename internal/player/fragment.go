@@ -134,10 +134,6 @@ func (f *Fragment) stop() {
 }
 
 func (f *Fragment) SetPosition(position time.Duration) error {
-	if f.pause(true) {
-		defer f.pause(false)
-	}
-
 	f.Lock()
 	defer f.Unlock()
 
@@ -149,12 +145,12 @@ func (f *Fragment) SetPosition(position time.Duration) error {
 	f.stream.Flush()
 	io.ReadAll(f.stream)
 
-	offsetInBytes := int64(position / (time.Second / time.Duration(f.pcmBytesPerSec)))
-	if f.nWrite == offsetInBytes {
+	offset := int64(position / (time.Second / time.Duration(f.pcmBytesPerSec)))
+	if f.nWrite == offset {
 		return nil
 	}
 
-	newPos, err := f.dec.Seek(offsetInBytes, io.SeekStart)
+	newPos, err := f.dec.Seek(offset, io.SeekStart)
 	if err != nil {
 		return err
 	}
