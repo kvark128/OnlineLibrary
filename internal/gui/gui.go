@@ -74,7 +74,7 @@ func Initialize(msgCH chan msg.Message) error {
 					Action{
 						Text:        "Локальные книги",
 						Shortcut:    Shortcut{walk.ModControl, walk.KeyL},
-						OnTriggered: func() { msgCH <- msg.Message{msg.OPEN_LOCALBOOKS, nil} },
+						OnTriggered: func() { msgCH <- msg.Message{msg.SET_PROVIDER, config.LocalStorageID} },
 					},
 					Action{
 						Text:        "Информация о библиотеке",
@@ -366,7 +366,7 @@ func SetFragments(current, length int) {
 	})
 }
 
-func SetLibraryMenu(msgCH chan msg.Message, services []*config.Service, current string) {
+func SetProvidersMenu(msgCH chan msg.Message, services []*config.Service, currentID string) {
 	mainWindow.Synchronize(func() {
 		actions := libraryMenu.Actions()
 		// Delete all elements except the last one
@@ -377,7 +377,8 @@ func SetLibraryMenu(msgCH chan msg.Message, services []*config.Service, current 
 		// Filling the menu with services
 		for i, service := range services {
 			a := walk.NewAction()
-			if service.Name == current {
+			id := service.ID
+			if id == currentID {
 				a.SetChecked(true)
 			}
 			a.SetText(service.Name)
@@ -386,7 +387,7 @@ func SetLibraryMenu(msgCH chan msg.Message, services []*config.Service, current 
 					actions.At(index).SetChecked(false)
 				}
 				a.SetChecked(true)
-				msgCH <- msg.Message{msg.LIBRARY_LOGON, a.Text()}
+				msgCH <- msg.Message{msg.SET_PROVIDER, id}
 			})
 			actions.Insert(i, a)
 		}

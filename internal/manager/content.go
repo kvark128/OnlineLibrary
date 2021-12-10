@@ -10,11 +10,15 @@ import (
 	daisy "github.com/kvark128/daisyonline"
 )
 
+type ContentList struct {
+	Name  string
+	ID    string
+	Items []ContentItem
+}
+
 type LibraryContentItem struct {
 	library *Library
 	book    config.Book
-	id      string
-	label   daisy.Label
 }
 
 func NewLibraryContentItem(library *Library, id, name string) *LibraryContentItem {
@@ -24,25 +28,26 @@ func NewLibraryContentItem(library *Library, id, name string) *LibraryContentIte
 			Name: name,
 			ID:   id,
 		},
-		id:    id,
-		label: daisy.Label{Text: name},
 	}
-	if book, err := ci.library.service.RecentBooks.Book(ci.id); err == nil {
+
+	if book, err := ci.library.service.RecentBooks.Book(id); err == nil {
 		ci.book = book
 	}
+
+	ci.book.Name = name
 	return ci
 }
 
 func (ci *LibraryContentItem) ID() string {
-	return ci.id
+	return ci.book.ID
 }
 
-func (ci *LibraryContentItem) Label() daisy.Label {
-	return ci.label
+func (ci *LibraryContentItem) Name() string {
+	return ci.book.Name
 }
 
 func (ci *LibraryContentItem) Resources() ([]daisy.Resource, error) {
-	r, err := ci.library.GetContentResources(ci.id)
+	r, err := ci.library.GetContentResources(ci.book.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -50,16 +55,16 @@ func (ci *LibraryContentItem) Resources() ([]daisy.Resource, error) {
 }
 
 func (ci *LibraryContentItem) ContentMetadata() (*daisy.ContentMetadata, error) {
-	return ci.library.GetContentMetadata(ci.id)
+	return ci.library.GetContentMetadata(ci.book.ID)
 }
 
 func (ci *LibraryContentItem) Issue() error {
-	_, err := ci.library.IssueContent(ci.id)
+	_, err := ci.library.IssueContent(ci.book.ID)
 	return err
 }
 
 func (ci *LibraryContentItem) Return() error {
-	_, err := ci.library.ReturnContent(ci.id)
+	_, err := ci.library.ReturnContent(ci.book.ID)
 	return err
 }
 
@@ -72,47 +77,9 @@ func (ci *LibraryContentItem) SetConfig(book config.Book) {
 	ci.library.service.RecentBooks.SetBook(book)
 }
 
-type LibraryContentList struct {
-	library *Library
-	books   *daisy.ContentList
-}
-
-func NewLibraryContentList(library *Library, contentID string) (*LibraryContentList, error) {
-	contentList, err := library.GetContentList(contentID, 0, -1)
-	if err != nil {
-		return nil, err
-	}
-
-	cl := &LibraryContentList{
-		library: library,
-		books:   contentList,
-	}
-
-	return cl, nil
-}
-
-func (cl *LibraryContentList) Label() daisy.Label {
-	return cl.books.Label
-}
-
-func (cl *LibraryContentList) ID() string {
-	return cl.books.ID
-}
-
-func (cl *LibraryContentList) Len() int {
-	return len(cl.books.ContentItems)
-}
-
-func (cl *LibraryContentList) Item(index int) ContentItem {
-	book := cl.books.ContentItems[index]
-	return NewLibraryContentItem(cl.library, book.ID, book.Label.Text)
-}
-
 type LocalContentItem struct {
-	book  config.Book
-	id    string
-	label daisy.Label
-	path  string
+	path string
+	book config.Book
 }
 
 func NewLocalContentItem(path string) *LocalContentItem {
@@ -121,26 +88,25 @@ func NewLocalContentItem(path string) *LocalContentItem {
 			Name: filepath.Base(path),
 			ID:   filepath.Base(path),
 		},
+		path: path,
 	}
-	ci.path = path
-	ci.label.Text = filepath.Base(path)
+
 	if book, err := config.Conf.LocalBooks.Book(ci.book.ID); err == nil {
 		ci.book = book
 	}
 	return ci
 }
 
-func (ci *LocalContentItem) Label() daisy.Label {
-	return ci.label
+func (ci *LocalContentItem) Name() string {
+	return ci.book.Name
 }
 
 func (ci *LocalContentItem) ID() string {
-	return ci.label.Text
+	return ci.book.ID
 }
 
 func (ci *LocalContentItem) Resources() ([]daisy.Resource, error) {
 	rsrc := make([]daisy.Resource, 0)
-
 	walker := func(targpath string, info fs.FileInfo, err error) error {
 		if err != nil || info.IsDir() {
 			return err
@@ -185,45 +151,4 @@ func (ci *LocalContentItem) Config() config.Book {
 func (ci *LocalContentItem) SetConfig(book config.Book) {
 	ci.book = book
 	config.Conf.LocalBooks.SetBook(book)
-}
-
-type LocalContentList struct {
-	books []string
-	id    string
-	label daisy.Label
-}
-
-func NewLocalContentList() (*LocalContentList, error) {
-	cl := &LocalContentList{
-		label: daisy.Label{Text: "Локальные книги"},
-	}
-	userData := config.UserData()
-	entrys, err := os.ReadDir(userData)
-	if err != nil {
-		return nil, err
-	}
-	for _, e := range entrys {
-		if e.IsDir() {
-			path := filepath.Join(userData, e.Name())
-			cl.books = append(cl.books, path)
-		}
-	}
-	return cl, nil
-}
-
-func (cl *LocalContentList) Label() daisy.Label {
-	return cl.label
-}
-
-func (cl *LocalContentList) ID() string {
-	return cl.id
-}
-
-func (cl *LocalContentList) Len() int {
-	return len(cl.books)
-}
-
-func (cl *LocalContentList) Item(index int) ContentItem {
-	path := cl.books[index]
-	return NewLocalContentItem(path)
 }

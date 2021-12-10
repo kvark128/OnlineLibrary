@@ -35,8 +35,8 @@ func main() {
 	// Filling in the menu with the available audio output devices
 	gui.SetOutputDeviceMenu(msgCH, waveout.OutputDeviceNames(), config.Conf.General.OutputDevice)
 
-	// Filling in the menu with the available libraries
-	gui.SetLibraryMenu(msgCH, config.Conf.Services, "")
+	// Filling in the menu with the available providers
+	gui.SetProvidersMenu(msgCH, config.Conf.Services, "")
 
 	// Setting label for the pause timer in the menu
 	gui.SetPauseTimerLabel(int(config.Conf.General.PauseTimer.Minutes()))

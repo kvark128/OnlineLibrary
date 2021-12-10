@@ -34,10 +34,10 @@ var (
 )
 
 type Manager struct {
-	library       *Library
+	provider      Provider
 	bookplayer    *player.Player
 	currentBook   ContentItem
-	contentList   ContentList
+	contentList   *ContentList
 	questions     *daisy.Questions
 	userResponses []daisy.UserResponse
 	lastInputText string
@@ -47,10 +47,8 @@ func (m *Manager) Start(msgCH chan msg.Message, done chan<- bool) {
 	defer func() { done <- true }()
 	defer m.cleaning()
 
-	if config.Conf.General.OpenLocalBooksAtStartup {
-		msgCH <- msg.Message{Code: msg.OPEN_LOCALBOOKS}
-	} else if service, err := config.Conf.CurrentService(); err == nil {
-		msgCH <- msg.Message{Code: msg.LIBRARY_LOGON, Data: service.Name}
+	if config.Conf.General.Provider != "" {
+		msgCH <- msg.Message{Code: msg.SET_PROVIDER, Data: config.Conf.General.Provider}
 	}
 
 	for message := range msgCH {
@@ -58,7 +56,7 @@ func (m *Manager) Start(msgCH chan msg.Message, done chan<- bool) {
 		case msg.ACTIVATE_MENU:
 			index := gui.MainList.CurrentIndex()
 			if m.contentList != nil {
-				book := m.contentList.Item(index)
+				book := m.contentList.Items[index]
 				if m.currentBook == nil || m.currentBook.ID() != book.ID() {
 					if err := m.setBookplayer(book); err != nil {
 						m.messageBoxError(fmt.Errorf("Set book player: %w", err))
@@ -82,7 +80,7 @@ func (m *Manager) Start(msgCH chan msg.Message, done chan<- bool) {
 			}
 
 		case msg.OPEN_BOOKSHELF:
-			m.setContent(daisy.Issued)
+			m.setContentList(daisy.Issued)
 
 		case msg.MAIN_MENU:
 			m.setQuestions(daisy.UserResponse{QuestionID: daisy.Default})
@@ -93,25 +91,32 @@ func (m *Manager) Start(msgCH chan msg.Message, done chan<- bool) {
 		case msg.MENU_BACK:
 			m.setQuestions(daisy.UserResponse{QuestionID: daisy.Back})
 
-		case msg.LIBRARY_LOGON:
-			name, ok := message.Data.(string)
+		case msg.SET_PROVIDER:
+			id, ok := message.Data.(string)
 			if !ok {
 				break
 			}
 
-			service, err := config.Conf.ServiceByName(name)
+			var provider Provider
+			var err error
+			if id == config.LocalStorageID {
+				provider = NewLocalStorage()
+			} else {
+				service, err := config.Conf.ServiceByID(id)
+				if err != nil {
+					break
+				}
+				provider, err = NewLibrary(service)
+			}
+
 			if err != nil {
-				log.Error("logon: %v", err)
+				log.Error("provider creating: %v", err)
 				break
 			}
 
-			if err := m.setLibrary(service); err != nil {
-				m.messageBoxError(fmt.Errorf("Set library: %w", err))
-				break
-			}
-
-			config.Conf.SetCurrentService(service)
-			gui.SetLibraryMenu(msgCH, config.Conf.Services, service.Name)
+			m.setProvider(provider)
+			config.Conf.General.Provider = id
+			gui.SetProvidersMenu(msgCH, config.Conf.Services, id)
 
 		case msg.LIBRARY_ADD:
 			service := new(config.Service)
@@ -125,52 +130,65 @@ func (m *Manager) Start(msgCH chan msg.Message, done chan<- bool) {
 				break
 			}
 
-			if err := m.setLibrary(service); err != nil {
-				m.messageBoxError(fmt.Errorf("setLibrary: %w", err))
+			var serviceIndex = 0
+			for {
+				id := fmt.Sprintf("library%d", serviceIndex)
+				if _, err := config.Conf.ServiceByID(id); err != nil {
+					service.ID = id
+					break
+				}
+			}
+
+			provider, err := NewLibrary(service)
+			if err != nil {
+				m.messageBoxError(fmt.Errorf("library creating: %w", err))
 				break
 			}
 
+			m.setProvider(provider)
 			config.Conf.SetService(service)
-			gui.SetLibraryMenu(msgCH, config.Conf.Services, service.Name)
+			config.Conf.General.Provider = service.ID
+			gui.SetProvidersMenu(msgCH, config.Conf.Services, service.ID)
 
 		case msg.LIBRARY_REMOVE:
-			if m.library == nil {
+			lib, ok := m.provider.(*Library)
+			if !ok {
 				break
 			}
-			msg := fmt.Sprintf("Вы действительно хотите удалить учётную запись %v?%sТакже будут удалены сохранённые позиции всех книг этой библиотеки.%sЭто действие не может быть отменено.", m.library.service.Name, CRLF, CRLF)
+			msg := fmt.Sprintf("Вы действительно хотите удалить учётную запись %v?%sТакже будут удалены сохранённые позиции всех книг этой библиотеки.%sЭто действие не может быть отменено.", lib.service.Name, CRLF, CRLF)
 			if gui.MessageBox("Удаление учётной записи", msg, walk.MsgBoxYesNo|walk.MsgBoxIconQuestion) != walk.DlgCmdYes {
 				break
 			}
-			config.Conf.RemoveService(m.library.service)
+			config.Conf.RemoveService(lib.service)
 			m.cleaning()
-			gui.SetLibraryMenu(msgCH, config.Conf.Services, "")
+			gui.SetProvidersMenu(msgCH, config.Conf.Services, "")
 
 		case msg.ISSUE_BOOK:
 			if m.contentList == nil {
 				log.Warning("Attempt to add a book to a bookshelf when there is no content list")
 				break
 			}
-			book := m.contentList.Item(gui.MainList.CurrentIndex())
+			book := m.contentList.Items[gui.MainList.CurrentIndex()]
 			if err := m.issueBook(book); err != nil {
 				m.messageBoxError(fmt.Errorf("Issue book: %w", err))
 				break
 			}
-			gui.MessageBox("Уведомление", fmt.Sprintf("«%s» добавлена на книжную полку", book.Label().Text), walk.MsgBoxOK|walk.MsgBoxIconWarning)
+			gui.MessageBox("Уведомление", fmt.Sprintf("«%s» добавлена на книжную полку", book.Name()), walk.MsgBoxOK|walk.MsgBoxIconWarning)
 
 		case msg.REMOVE_BOOK:
 			if m.contentList == nil {
 				log.Warning("Attempt to remove a book from a bookshelf when there is no content list")
 				break
 			}
-			book := m.contentList.Item(gui.MainList.CurrentIndex())
+			book := m.contentList.Items[gui.MainList.CurrentIndex()]
 			if err := m.removeBook(book); err != nil {
 				m.messageBoxError(fmt.Errorf("Removing book: %w", err))
 				break
 			}
-			gui.MessageBox("Уведомление", fmt.Sprintf("«%s» удалена с книжной полки", book.Label().Text), walk.MsgBoxOK|walk.MsgBoxIconWarning)
+			gui.MessageBox("Уведомление", fmt.Sprintf("«%s» удалена с книжной полки", book.Name()), walk.MsgBoxOK|walk.MsgBoxIconWarning)
 			// If a bookshelf is open, it must be updated to reflect the changes made
-			if m.contentList.ID() == daisy.Issued {
-				m.setContent(daisy.Issued)
+			if m.contentList.ID == daisy.Issued {
+				m.setContentList(daisy.Issued)
 			}
 
 		case msg.DOWNLOAD_BOOK:
@@ -178,7 +196,7 @@ func (m *Manager) Start(msgCH chan msg.Message, done chan<- bool) {
 				break
 			}
 			index := gui.MainList.CurrentIndex()
-			book := m.contentList.Item(index)
+			book := m.contentList.Items[index]
 			if err := m.downloadBook(book); err != nil {
 				m.messageBoxError(fmt.Errorf("Book downloading: %w", err))
 			}
@@ -188,7 +206,7 @@ func (m *Manager) Start(msgCH chan msg.Message, done chan<- bool) {
 				break
 			}
 			index := gui.MainList.CurrentIndex()
-			book := m.contentList.Item(index)
+			book := m.contentList.Items[index]
 			text, err := m.bookDescription(book)
 			if err != nil {
 				m.messageBoxError(fmt.Errorf("book description: %w", err))
@@ -375,33 +393,16 @@ func (m *Manager) Start(msgCH chan msg.Message, done chan<- bool) {
 			log.SetLevel(level)
 			log.Info("Set log level to %s", level)
 
-		case msg.OPEN_LOCALBOOKS:
-			contentList, err := NewLocalContentList()
-			if err != nil {
-				m.messageBoxError(err)
-				break
-			}
-			m.cleaning()
-			m.updateContentList(contentList)
-			config.Conf.General.OpenLocalBooksAtStartup = true
-			book, err := config.Conf.LocalBooks.LastBook()
-			if err != nil {
-				break
-			}
-			for i := contentList.Len() - 1; i >= 0; i-- {
-				item := contentList.Item(i)
-				if item.ID() == book.ID {
-					m.setBookplayer(item)
-					break
-				}
-			}
-
 		case msg.LIBRARY_INFO:
-			if m.library == nil {
+			if m.provider == nil {
+				break
+			}
+			lib, ok := m.provider.(*Library)
+			if !ok {
 				break
 			}
 			var lines []string
-			attrs := m.library.serviceAttributes
+			attrs := lib.serviceAttributes
 			lines = append(lines, fmt.Sprintf("Имя: «%v» (%v)", attrs.Service.Label.Text, attrs.Service.ID))
 			lines = append(lines, fmt.Sprintf("Поддержка команды back: %v", attrs.SupportsServerSideBack))
 			lines = append(lines, fmt.Sprintf("Поддержка команды search: %v", attrs.SupportsSearch))
@@ -433,36 +434,35 @@ func (m *Manager) cleaning() {
 	m.questions = nil
 	m.userResponses = nil
 
-	if m.library != nil {
-		_, err := m.library.LogOff()
-		if err != nil {
-			log.Warning("library logoff: %v", err)
+	if m.provider != nil {
+		if lib, ok := m.provider.(*Library); ok {
+			_, err := lib.LogOff()
+			if err != nil {
+				log.Warning("library logoff: %v", err)
+			}
 		}
-		m.library = nil
+		m.provider = nil
 	}
 }
 
-func (m *Manager) setLibrary(service *config.Service) error {
-	library, err := NewLibrary(service)
-	if err != nil {
-		return fmt.Errorf("creating library: %w", err)
-	}
-
+func (m *Manager) setProvider(provider Provider) {
 	m.cleaning()
-	m.library = library
-	m.setQuestions(daisy.UserResponse{QuestionID: daisy.Default})
-	config.Conf.General.OpenLocalBooksAtStartup = false
-
-	if book, err := m.library.service.RecentBooks.LastBook(); err == nil {
-		if err := m.setBookplayer(NewLibraryContentItem(m.library, book.ID, book.Name)); err != nil {
+	m.provider = provider
+	if _, ok := provider.(Questioner); ok {
+		m.setQuestions(daisy.UserResponse{QuestionID: daisy.Default})
+	} else {
+		m.setContentList(daisy.Issued)
+	}
+	if contentItem, err := m.provider.LastItem(); err == nil {
+		if err := m.setBookplayer(contentItem); err != nil {
 			log.Error("Set book player: %v", err)
 		}
 	}
-	return nil
 }
 
 func (m *Manager) setQuestions(response ...daisy.UserResponse) {
-	if m.library == nil {
+	lib, ok := m.provider.(*Library)
+	if !ok {
 		m.messageBoxError(OperationNotSupported)
 		return
 	}
@@ -475,7 +475,7 @@ func (m *Manager) setQuestions(response ...daisy.UserResponse) {
 	}
 
 	ur := daisy.UserResponses{UserResponse: response}
-	questions, err := m.library.GetQuestions(&ur)
+	questions, err := lib.GetQuestions(&ur)
 	if err != nil {
 		m.messageBoxError(fmt.Errorf("GetQuestions: %w", err))
 		m.questions = nil
@@ -493,7 +493,7 @@ func (m *Manager) setQuestions(response ...daisy.UserResponse) {
 
 	if questions.ContentListRef != "" {
 		// We got a list of content. Show it to the user
-		m.setContent(questions.ContentListRef)
+		m.setContentList(questions.ContentListRef)
 		return
 	}
 
@@ -534,14 +534,9 @@ func (m *Manager) setInputQuestion() {
 	m.setQuestions(m.userResponses...)
 }
 
-func (m *Manager) setContent(contentID string) {
-	if m.library == nil {
-		m.messageBoxError(OperationNotSupported)
-		return
-	}
-
+func (m *Manager) setContentList(contentID string) {
 	log.Info("Content set: %s", contentID)
-	contentList, err := NewLibraryContentList(m.library, contentID)
+	contentList, err := m.provider.ContentList(contentID)
 	if err != nil {
 		m.messageBoxError(fmt.Errorf("GetContentList: %w", err))
 		m.questions = nil
@@ -549,7 +544,7 @@ func (m *Manager) setContent(contentID string) {
 		return
 	}
 
-	if contentList.Len() == 0 {
+	if len(contentList.Items) == 0 {
 		gui.MessageBox("Предупреждение", "Список книг пуст", walk.MsgBoxOK|walk.MsgBoxIconWarning)
 		// Return to the main menu of the library
 		m.setQuestions(daisy.UserResponse{QuestionID: daisy.Default})
@@ -557,30 +552,32 @@ func (m *Manager) setContent(contentID string) {
 	}
 
 	if contentID == daisy.Issued {
-		ids := make([]string, contentList.Len())
+		ids := make([]string, len(contentList.Items))
 		for i := range ids {
-			book := contentList.Item(i)
+			book := contentList.Items[i]
 			ids[i] = book.ID()
 		}
 		if m.currentBook != nil && !util.StringInSlice(m.currentBook.ID(), ids) {
 			ids = append(ids, m.currentBook.ID())
 		}
-		m.library.service.RecentBooks.Tidy(ids)
+		if lib, ok := m.provider.(*Library); ok {
+			lib.service.RecentBooks.Tidy(ids)
+		}
 	}
 
 	m.updateContentList(contentList)
 }
 
-func (m *Manager) updateContentList(contentList ContentList) {
-	labels := make([]string, contentList.Len())
+func (m *Manager) updateContentList(contentList *ContentList) {
+	labels := make([]string, len(contentList.Items))
 	for i := range labels {
-		book := contentList.Item(i)
-		labels[i] = book.Label().Text
+		book := contentList.Items[i]
+		labels[i] = book.Name()
 	}
 
 	m.contentList = contentList
 	m.questions = nil
-	gui.MainList.SetItems(labels, contentList.Label().Text, gui.BookMenu)
+	gui.MainList.SetItems(labels, contentList.Name, gui.BookMenu)
 }
 
 func (m *Manager) setBookmark(bookmarkID string) {
@@ -611,8 +608,9 @@ func (m *Manager) setBookplayer(book ContentItem) error {
 		return fmt.Errorf("GetContentResources: %v", err)
 	}
 
-	gui.SetMainWindowTitle(book.Label().Text)
-	bookDir := filepath.Join(config.UserData(), util.ReplaceForbiddenCharacters(book.Label().Text))
+	gui.SetMainWindowTitle(book.Name())
+	bookDir := filepath.Join(config.UserData(), util.ReplaceForbiddenCharacters(book.Name()))
+	m.provider.SetLastItem(book)
 	conf := book.Config()
 	m.bookplayer = player.NewPlayer(bookDir, rsrc, config.Conf.General.OutputDevice)
 	m.currentBook = book
@@ -627,7 +625,7 @@ func (m *Manager) setBookplayer(book ContentItem) error {
 }
 
 func (m *Manager) downloadBook(book ContentItem) error {
-	if m.library == nil {
+	if _, ok := m.provider.(*Library); !ok {
 		return OperationNotSupported
 	}
 
@@ -637,7 +635,7 @@ func (m *Manager) downloadBook(book ContentItem) error {
 	}
 
 	// Path to the directory where we will download a resources. Make sure that it does not contain prohibited characters
-	bookDir := filepath.Join(config.UserData(), util.ReplaceForbiddenCharacters(book.Label().Text))
+	bookDir := filepath.Join(config.UserData(), util.ReplaceForbiddenCharacters(book.Name()))
 
 	if md, err := book.ContentMetadata(); err == nil {
 		path := filepath.Join(bookDir, MetadataFileName)
@@ -661,7 +659,7 @@ func (m *Manager) downloadBook(book ContentItem) error {
 		var totalSize, downloadedSize int64
 		ctx, cancelFunc := context.WithCancel(context.TODO())
 		label := "Загрузка «%s»\nСкорость: %d Кб/с"
-		dlg := gui.NewProgressDialog("Загрузка книги", fmt.Sprintf(label, book.Label().Text, 0), 100, cancelFunc)
+		dlg := gui.NewProgressDialog("Загрузка книги", fmt.Sprintf(label, book.Name(), 0), 100, cancelFunc)
 		dlg.Show()
 
 		for _, r := range rsrc {
@@ -697,7 +695,7 @@ func (m *Manager) downloadBook(book ContentItem) error {
 					n, err = io.CopyN(dst, src, 512*1024)
 					sec := time.Since(t).Seconds()
 					speed := int(float64(n) / 1024 / sec)
-					dlg.SetLabel(fmt.Sprintf(label, book.Label().Text, speed))
+					dlg.SetLabel(fmt.Sprintf(label, book.Name(), speed))
 					downloadedSize += n
 					fragmentSize += n
 					dlg.SetValue(int(downloadedSize / (totalSize / 100)))

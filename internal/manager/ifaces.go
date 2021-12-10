@@ -6,7 +6,7 @@ import (
 )
 
 type ContentItem interface {
-	Label() daisy.Label
+	Name() string
 	ID() string
 	Resources() ([]daisy.Resource, error)
 	ContentMetadata() (*daisy.ContentMetadata, error)
@@ -14,11 +14,8 @@ type ContentItem interface {
 	SetConfig(config.Book)
 }
 
-type ContentList interface {
-	Label() daisy.Label
-	ID() string
-	Len() int
-	Item(int) ContentItem
+type Questioner interface {
+	GetQuestions(*daisy.UserResponses) (*daisy.Questions, error)
 }
 
 type Returner interface {
@@ -27,4 +24,11 @@ type Returner interface {
 
 type Issuer interface {
 	Issue() error
+}
+
+type Provider interface {
+	ContentList(string) (*ContentList, error)
+	ContentItem(string) (ContentItem, error)
+	LastItem() (ContentItem, error)
+	SetLastItem(ContentItem)
 }

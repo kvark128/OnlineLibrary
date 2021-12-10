@@ -12,10 +12,15 @@ import (
 	daisy "github.com/kvark128/daisyonline"
 )
 
+var (
+	ServiceNotFound = errors.New("service not found")
+	LocalStorageID  = "localstorage"
+)
+
 const (
 	ProgramAuthor  = "Kvark <kvark128@yandex.ru>"
 	ProgramName    = "OnlineLibrary"
-	ProgramVersion = "2020.12.01"
+	ProgramVersion = "2021.12.10"
 	ConfigFile     = "config.json"
 	LogFile        = "session.log"
 	HTTPTimeout    = time.Second * 12
@@ -48,6 +53,7 @@ var Conf Config
 
 type Service struct {
 	Name        string      `json:"name"`
+	ID          string      `json:"id"`
 	URL         string      `json:"url"`
 	Credentials Credentials `json:"credentials"`
 	RecentBooks BookSet     `json:"recent_books,omitempty"`
@@ -59,17 +65,18 @@ type Credentials struct {
 }
 
 type General struct {
-	OutputDevice            string        `json:"output_device,omitempty"`
-	Volume                  int           `json:"volume,omitempty"`
-	PauseTimer              time.Duration `json:"pause_timer,omitempty"`
-	LogLevel                string        `json:"log_level,omitempty"`
-	OpenLocalBooksAtStartup bool          `json:"open_local_books_at_startup,omitempty"`
+	OutputDevice string        `json:"output_device,omitempty"`
+	Volume       int           `json:"volume,omitempty"`
+	PauseTimer   time.Duration `json:"pause_timer,omitempty"`
+	LogLevel     string        `json:"log_level,omitempty"`
+	Provider     string        `json:"provider,omitempty"`
 }
 
 type Config struct {
-	General    General    `json:"general,omitempty"`
-	Services   []*Service `json:"services,omitempty"`
-	LocalBooks BookSet    `json:"local_books,omitempty"`
+	General       General    `json:"general,omitempty"`
+	Services      []*Service `json:"services,omitempty"`
+	LocalBooks    BookSet    `json:"local_books,omitempty"`
+	LastLocalBook string     `json:"last_local_book,omitempty"`
 }
 
 func (cfg *Config) SetService(service *Service) {
@@ -84,13 +91,22 @@ func (cfg *Config) SetService(service *Service) {
 	cfg.SetCurrentService(service)
 }
 
+func (cfg *Config) ServiceByID(id string) (*Service, error) {
+	for _, srv := range cfg.Services {
+		if srv.ID == id {
+			return srv, nil
+		}
+	}
+	return nil, ServiceNotFound
+}
+
 func (cfg *Config) ServiceByName(name string) (*Service, error) {
 	for _, srv := range cfg.Services {
 		if name == srv.Name {
 			return srv, nil
 		}
 	}
-	return nil, errors.New("service with this name does not exist")
+	return nil, ServiceNotFound
 }
 
 func (cfg *Config) RemoveService(service *Service) bool {
