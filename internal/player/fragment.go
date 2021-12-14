@@ -41,7 +41,7 @@ func NewFragment(mp3 io.Reader, devName string) (*Fragment, error) {
 	pcmBytesPerSec := sampleRate * channels * 2
 
 	if pcmBytesPerSec == 0 || bitrate == 0 {
-		return nil, fmt.Errorf("invalid mp3 format")
+		return nil, fmt.Errorf("invalid mp3")
 	}
 
 	wp, err := waveout.NewWavePlayer(channels, sampleRate, 16, buffer_size, devName)
@@ -63,17 +63,23 @@ func NewFragment(mp3 io.Reader, devName string) (*Fragment, error) {
 func (f *Fragment) play(playing *util.Flag) {
 	var p int64
 	wp := bufio.NewWriterSize(f.wp, buffer_size)
+	stream := util.NewReadWriter(f.stream, f)
+	dec := util.NewReadSeeker(f.dec, f)
 
 	for playing.IsSet() {
 		gui.SetElapsedTime(f.Position())
-		n, err := io.CopyN(f.stream, f.dec, buffer_size)
+		n, err := io.CopyN(stream, dec, buffer_size)
 		if err != nil {
+			f.Lock()
 			f.stream.Flush()
+			f.Unlock()
 		}
-		if _, err := wp.ReadFrom(f.stream); err != nil {
+		if _, err := wp.ReadFrom(stream); err != nil {
 			log.Error("WavePlayer: %v", err)
 		}
+		f.Lock()
 		f.nWrite += p
+		f.Unlock()
 		p = n
 
 		if err != nil {
@@ -83,7 +89,9 @@ func (f *Fragment) play(playing *util.Flag) {
 	}
 
 	f.wp.Sync()
+	f.Lock()
 	f.nWrite += p
+	f.Unlock()
 	f.wp.Close()
 	gui.SetElapsedTime(0)
 }
