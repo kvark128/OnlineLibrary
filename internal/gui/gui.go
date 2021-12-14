@@ -493,8 +493,8 @@ func Credentials(service *config.Service) int {
 						OnClicked: func() {
 							service.Name = nameLE.Text()
 							service.URL = urlLE.Text()
-							service.Credentials.Username = usernameLE.Text()
-							service.Credentials.Password = passwordLE.Text()
+							service.Username = usernameLE.Text()
+							service.Password = passwordLE.Text()
 							dlg.Accept()
 						},
 					},

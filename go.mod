@@ -11,4 +11,5 @@ require (
 	github.com/lxn/win v0.0.0-20201111105847-2a20daff6a55
 	golang.org/x/sys v0.0.0-20210216224549-f992740a1bac
 	gopkg.in/Knetic/govaluate.v3 v3.0.0 // indirect
+	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
 )

@@ -19,7 +19,7 @@ type Library struct {
 
 func NewLibrary(service *config.Service) (*Library, error) {
 	client := daisy.NewClient(service.URL, config.HTTPTimeout)
-	success, err := client.LogOn(service.Credentials.Username, service.Credentials.Password)
+	success, err := client.LogOn(service.Username, service.Password)
 	if err != nil {
 		return nil, fmt.Errorf("logOn operation: %w", err)
 	}

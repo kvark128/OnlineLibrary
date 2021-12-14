@@ -420,9 +420,9 @@ func (m *Manager) Start(msgCH chan msg.Message, done chan<- bool) {
 func (m *Manager) cleaning() {
 	m.setBookmark(config.ListeningPosition)
 	if m.bookplayer != nil {
-		config.Conf.General.Volume = int(m.bookplayer.Volume()/0.05) - 20
+		config.Conf.General.Volume = m.bookplayer.Volume()
 		book := m.currentBook.Config()
-		book.Speed = int((m.bookplayer.Speed()-player.MIN_SPEED)/0.1) - 5
+		book.Speed = m.bookplayer.Speed()
 		m.currentBook.SetConfig(book)
 		m.bookplayer.Stop()
 		m.bookplayer = nil
@@ -596,9 +596,9 @@ func (m *Manager) setBookmark(bookmarkID string) {
 func (m *Manager) setBookplayer(book ContentItem) error {
 	m.setBookmark(config.ListeningPosition)
 	if m.bookplayer != nil {
-		config.Conf.General.Volume = int(m.bookplayer.Volume()/0.05) - 20
+		config.Conf.General.Volume = m.bookplayer.Volume()
 		book := m.currentBook.Config()
-		book.Speed = int((m.bookplayer.Speed()-player.MIN_SPEED)/0.1) - 5
+		book.Speed = m.bookplayer.Speed()
 		m.currentBook.SetConfig(book)
 		m.bookplayer.Stop()
 	}
@@ -614,9 +614,9 @@ func (m *Manager) setBookplayer(book ContentItem) error {
 	conf := book.Config()
 	m.bookplayer = player.NewPlayer(bookDir, rsrc, config.Conf.General.OutputDevice)
 	m.currentBook = book
-	m.bookplayer.SetSpeed(float64(conf.Speed+5)*0.1 + player.MIN_SPEED)
+	m.bookplayer.SetSpeed(conf.Speed)
 	m.bookplayer.SetTimerDuration(config.Conf.General.PauseTimer)
-	m.bookplayer.SetVolume(float64(config.Conf.General.Volume+20) * 0.05)
+	m.bookplayer.SetVolume(config.Conf.General.Volume)
 	if bookmark, err := conf.Bookmark(config.ListeningPosition); err == nil {
 		m.bookplayer.SetFragment(bookmark.Fragment)
 		m.bookplayer.SetPosition(bookmark.Position)

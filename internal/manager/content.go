@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 
 	"github.com/kvark128/OnlineLibrary/internal/config"
+	"github.com/kvark128/OnlineLibrary/internal/player"
 	daisy "github.com/kvark128/daisyonline"
 )
 
@@ -25,8 +26,9 @@ func NewLibraryContentItem(library *Library, id, name string) *LibraryContentIte
 	ci := &LibraryContentItem{
 		library: library,
 		book: config.Book{
-			Name: name,
-			ID:   id,
+			Name:  name,
+			ID:    id,
+			Speed: player.DEFAULT_SPEED,
 		},
 	}
 
@@ -85,8 +87,9 @@ type LocalContentItem struct {
 func NewLocalContentItem(path string) *LocalContentItem {
 	ci := &LocalContentItem{
 		book: config.Book{
-			Name: filepath.Base(path),
-			ID:   filepath.Base(path),
+			Name:  filepath.Base(path),
+			ID:    filepath.Base(path),
+			Speed: player.DEFAULT_SPEED,
 		},
 		path: path,
 	}

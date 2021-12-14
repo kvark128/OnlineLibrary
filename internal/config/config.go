@@ -1,7 +1,6 @@
 package config
 
 import (
-	"encoding/json"
 	"errors"
 	"os"
 	"path/filepath"
@@ -10,6 +9,7 @@ import (
 	"github.com/kvark128/OnlineLibrary/internal/log"
 	"github.com/kvark128/OnlineLibrary/internal/util"
 	daisy "github.com/kvark128/daisyonline"
+	"gopkg.in/yaml.v3"
 )
 
 var (
@@ -21,7 +21,7 @@ const (
 	ProgramAuthor  = "Kvark <kvark128@yandex.ru>"
 	ProgramName    = "OnlineLibrary"
 	ProgramVersion = "2021.12.10"
-	ConfigFile     = "config.json"
+	ConfigFile     = "config.yaml"
 	LogFile        = "session.log"
 	HTTPTimeout    = time.Second * 12
 )
@@ -51,32 +51,31 @@ var ReadingSystemAttributes = daisy.ReadingSystemAttributes{
 
 var Conf Config
 
-type Service struct {
-	Name        string      `json:"name"`
-	ID          string      `json:"id"`
-	URL         string      `json:"url"`
-	Credentials Credentials `json:"credentials"`
-	RecentBooks BookSet     `json:"recent_books,omitempty"`
+func init() {
+	Conf.General.Volume = 1.0
 }
 
-type Credentials struct {
-	Username string `json:"username"`
-	Password string `json:"password"`
+type Service struct {
+	ID          string  `yaml:"id"`
+	Name        string  `yaml:"name"`
+	URL         string  `yaml:"url"`
+	Username    string  `yaml:"username"`
+	Password    string  `yaml:"password"`
+	RecentBooks BookSet `yaml:"books,omitempty"`
 }
 
 type General struct {
-	OutputDevice string        `json:"output_device,omitempty"`
-	Volume       int           `json:"volume,omitempty"`
-	PauseTimer   time.Duration `json:"pause_timer,omitempty"`
-	LogLevel     string        `json:"log_level,omitempty"`
-	Provider     string        `json:"provider,omitempty"`
+	OutputDevice string        `yaml:"output_device,omitempty"`
+	Volume       float64       `yaml:"volume,omitempty"`
+	PauseTimer   time.Duration `yaml:"pause_timer,omitempty"`
+	LogLevel     string        `yaml:"log_level,omitempty"`
+	Provider     string        `yaml:"provider,omitempty"`
 }
 
 type Config struct {
-	General       General    `json:"general,omitempty"`
-	Services      []*Service `json:"services,omitempty"`
-	LocalBooks    BookSet    `json:"local_books,omitempty"`
-	LastLocalBook string     `json:"last_local_book,omitempty"`
+	General    General    `yaml:"general,omitempty"`
+	Services   []*Service `yaml:"services,omitempty"`
+	LocalBooks BookSet    `yaml:"local_books,omitempty"`
 }
 
 func (cfg *Config) SetService(service *Service) {
@@ -160,7 +159,7 @@ func (c *Config) Load() {
 	}
 	defer f.Close()
 
-	d := json.NewDecoder(f)
+	d := yaml.NewDecoder(f)
 	if err := d.Decode(c); err != nil {
 		log.Error("Loading config: %v", err)
 		return
@@ -178,8 +177,8 @@ func (c *Config) Save() {
 	}
 	defer f.Close()
 
-	e := json.NewEncoder(f)
-	e.SetIndent("", "\t") // for readability
+	e := yaml.NewEncoder(f)
+	//e.SetIndent("", "\t") // for readability
 	if err := e.Encode(c); err != nil {
 		f.Corrupted()
 		log.Error("Writing to config file: %v", err)

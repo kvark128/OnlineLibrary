@@ -15,22 +15,22 @@ var (
 
 type Bookmark struct {
 	// Name of the bookmark. Reserved for future use
-	Name string `json:"name,omitempty"`
+	Name string `yaml:"name,omitempty"`
 	// Fragment of a book with the bookmark
-	Fragment int `json:"fragment"`
+	Fragment int `yaml:"fragment"`
 	// Offset from the beginning of the fragment
-	Position time.Duration `json:"position"`
+	Position time.Duration `yaml:"position"`
 }
 
 type Book struct {
-	// Human-readable title of the book
-	Name string `json:"name"`
 	// Unique ID of the book
-	ID string `json:"id"`
+	ID string `yaml:"id"`
+	// Human-readable title of the book
+	Name string `yaml:"name"`
 	// Values for speed when playing the book
-	Speed int `json:"speed,omitempty"`
+	Speed float64 `yaml:"speed,omitempty"`
 	// Set of bookmarks in the book
-	Bookmarks map[string]Bookmark `json:"bookmarks,omitempty"`
+	Bookmarks map[string]Bookmark `yaml:"bookmarks,omitempty"`
 }
 
 func (b *Book) SetBookmark(id string, bookmark Bookmark) {
