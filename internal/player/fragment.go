@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/kvark128/OnlineLibrary/internal/gui"
-	"github.com/kvark128/OnlineLibrary/internal/log"
 	"github.com/kvark128/OnlineLibrary/internal/util"
 	"github.com/kvark128/OnlineLibrary/internal/waveout"
 	"github.com/kvark128/minimp3"
@@ -60,22 +59,27 @@ func NewFragment(mp3 io.Reader, devName string) (*Fragment, error) {
 	return f, nil
 }
 
-func (f *Fragment) play(playing *util.Flag) {
+func (f *Fragment) play(playing *util.Flag) error {
 	var p int64
 	wp := bufio.NewWriterSize(f.wp, buffer_size)
 	stream := util.NewReadWriter(f.stream, f)
 	dec := util.NewReadSeeker(f.dec, f)
+	defer f.wp.Close()
 
 	for playing.IsSet() {
 		gui.SetElapsedTime(f.Position())
 		n, err := io.CopyN(stream, dec, buffer_size)
 		if err != nil {
+			if err != io.EOF {
+				f.wp.Stop()
+				return fmt.Errorf("copying from mp3 decoder to sonic stream: %w", err)
+			}
 			f.Lock()
 			f.stream.Flush()
 			f.Unlock()
 		}
 		if _, err := wp.ReadFrom(stream); err != nil {
-			log.Error("WavePlayer: %v", err)
+			return fmt.Errorf("copying from sonic stream to wave player: %w", err)
 		}
 		f.Lock()
 		f.nWrite += p
@@ -83,6 +87,7 @@ func (f *Fragment) play(playing *util.Flag) {
 		p = n
 
 		if err != nil {
+			// Here err is always io.EOF
 			wp.Flush()
 			break
 		}
@@ -92,8 +97,8 @@ func (f *Fragment) play(playing *util.Flag) {
 	f.Lock()
 	f.nWrite += p
 	f.Unlock()
-	f.wp.Close()
 	gui.SetElapsedTime(0)
+	return nil
 }
 
 func (f *Fragment) setSpeed(speed float64) {

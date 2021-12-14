@@ -33,6 +33,9 @@ const (
 	MP3_EXT = ".mp3"
 )
 
+// Error returned when stopping playback at user request
+var PlayingIsStopped = fmt.Errorf("playing is stopped")
+
 type Player struct {
 	sync.Mutex
 	playList      []daisy.Resource
@@ -75,6 +78,7 @@ func (p *Player) SetTimerDuration(d time.Duration) {
 	p.Lock()
 	defer p.Unlock()
 	p.timerDuration = d
+	log.Debug("timer of player is set to %v", d)
 	if p.playing.IsSet() && p.fragment != nil && !p.fragment.IsPause() {
 		p.updateTimer(p.timerDuration)
 	}
@@ -90,9 +94,11 @@ func (p *Player) updateTimer(d time.Duration) {
 	if p.pauseTimer != nil {
 		p.pauseTimer.Stop()
 		p.pauseTimer = nil
+		log.Debug("timer of player is stopped")
 	}
 	if d > 0 {
 		p.pauseTimer = time.AfterFunc(d, p.PlayPause)
+		log.Debug("timer of player is started on %v", d)
 	}
 }
 
@@ -240,7 +246,9 @@ func (p *Player) stopPlayback() {
 }
 
 func (p *Player) playback(startFragment int) {
+	log.Debug("starting playback with fragment %v. Waiting other fragments", startFragment)
 	p.wg.Wait()
+	log.Debug("fragment %v is started", startFragment)
 
 	p.wg.Add(1)
 	p.playing.Set()
@@ -251,74 +259,85 @@ func (p *Player) playback(startFragment int) {
 	defer p.updateTimer(0)
 
 	for index, r := range p.playList[startFragment:] {
-		var src io.ReadCloser
-		var uri string
-		var err error
-		log.Debug("Fetching resource: %s; URI: %s; MimeType: %s; Size: %d", r.LocalURI, r.URI, r.MimeType, r.Size)
+		log.Debug("fetching resource %v: MimeType %v; Size %v", r.LocalURI, r.MimeType, r.Size)
 
-		uri = filepath.Join(p.bookDir, r.LocalURI)
-		if util.FileIsExist(uri, r.Size) {
-			// fragment already exists on disk
-			// we use it to reduce the load on the server
-			src, _ = os.Open(uri)
-		}
+		err := func(r daisy.Resource) error {
+			var src io.ReadCloser
+			localPath := filepath.Join(p.bookDir, r.LocalURI)
 
-		if src == nil {
-			// There is no fragment on the disc. Trying to get it from the network
-			uri = r.URI
-			src, err = connection.NewConnection(uri)
+			if util.FileIsExist(localPath, r.Size) {
+				// The fragment already exists on the local disk
+				// We must use it to avoid making network requests
+				var err error
+				src, err = os.Open(localPath)
+				if err != nil {
+					return fmt.Errorf("opening local fragment: %w", err)
+				}
+				log.Debug("opening the local fragment from %v", localPath)
+			} else {
+				// There is no fragment on the local disc. Trying to get it from the network
+				var err error
+				src, err = connection.NewConnection(r.URI)
+				if err != nil {
+					return fmt.Errorf("connection creating: %w", err)
+				}
+				log.Debug("fetching the fragment by network from %v", r.URI)
+			}
+			defer src.Close()
+
+			fragment, err := func(src io.Reader) (*Fragment, error) {
+				if strings.ToLower(filepath.Ext(r.LocalURI)) == LKF_EXT {
+					src = lkf.NewReader(src)
+				}
+
+				fragment, err := NewFragment(src, p.OutputDevice())
+				if err != nil {
+					return nil, fmt.Errorf("fragment creating: %w", err)
+				}
+
+				if err := fragment.SetPosition(p.Position()); err != nil {
+					return nil, fmt.Errorf("set fragment position: %w", err)
+				}
+
+				fragment.setSpeed(p.Speed())
+				fragment.setVolume(p.Volume())
+				return fragment, nil
+			}(src)
+
 			if err != nil {
-				log.Error("Connection creating: %v", err)
-				break
-			}
-		}
-
-		fragment, err := func(src io.Reader) (*Fragment, error) {
-			if strings.ToLower(filepath.Ext(r.LocalURI)) == LKF_EXT {
-				src = lkf.NewReader(src)
+				return err
 			}
 
-			fragment, err := NewFragment(src, p.OutputDevice())
+			// Fragment creation is an I/O operation and can be time consuming. We have to check that the fragment was not stopped by the user
+			if !p.playing.IsSet() {
+				return PlayingIsStopped
+			}
+
+			p.Lock()
+			p.fragment = fragment
+			p.fragmentIndex = startFragment + index
+			gui.SetFragments(p.fragmentIndex, len(p.playList))
+			gui.SetTotalTime(time.Second * time.Duration(r.Size/int64(p.fragment.Bitrate*1000/8)))
+			p.offset = 0
+			p.Unlock()
+
+			err = fragment.play(p.playing)
+			p.Lock()
+			p.fragment = nil
+			p.Unlock()
+
 			if err != nil {
-				return nil, fmt.Errorf("fragment creating: %w", err)
+				return fmt.Errorf("fragment playing: %w", err)
 			}
 
-			if err := fragment.SetPosition(p.Position()); err != nil {
-				return nil, fmt.Errorf("set fragment position: %w", err)
+			if !p.playing.IsSet() {
+				return PlayingIsStopped
 			}
-
-			fragment.setSpeed(p.Speed())
-			fragment.setVolume(p.Volume())
-			return fragment, nil
-		}(src)
+			return nil
+		}(r)
 
 		if err != nil {
-			log.Error("new fragment: %v", err)
-			src.Close()
-			break
-		}
-
-		if !p.playing.IsSet() {
-			src.Close()
-			break
-		}
-
-		p.Lock()
-		p.fragment = fragment
-		p.fragmentIndex = startFragment + index
-		gui.SetFragments(p.fragmentIndex, len(p.playList))
-		gui.SetTotalTime(time.Second * time.Duration(r.Size/int64(p.fragment.Bitrate*1000/8)))
-		p.offset = 0
-		p.Unlock()
-
-		fragment.play(p.playing)
-		src.Close()
-
-		p.Lock()
-		p.fragment = nil
-		p.Unlock()
-
-		if !p.playing.IsSet() {
+			log.Warning("playing of %v: %v", r.LocalURI, err)
 			break
 		}
 	}
