@@ -65,7 +65,6 @@ func (f *Fragment) play(playing *util.Flag) error {
 	wp := bufio.NewWriterSize(f.wp, buffer_size)
 	stream := syncio.NewReadWriter(f.stream, f)
 	dec := syncio.NewReader(f.dec, f)
-	defer f.wp.Close()
 
 	for playing.IsSet() {
 		gui.SetElapsedTime(f.Position())
@@ -172,4 +171,16 @@ func (f *Fragment) SetPosition(position time.Duration) error {
 
 	gui.SetElapsedTime(position)
 	return nil
+}
+
+func (f *Fragment) Close() error {
+	f.Lock()
+	defer f.Unlock()
+	f.wp.Stop()
+	err := f.wp.Close()
+	f.stream.Flush()
+	io.ReadAll(f.stream)
+	f.stream = nil
+	f.dec = nil
+	return err
 }

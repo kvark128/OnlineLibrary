@@ -307,6 +307,7 @@ func (p *Player) playback(startFragment int) {
 			if err != nil {
 				return err
 			}
+			defer fragment.Close()
 
 			// Fragment creation is an I/O operation and can be time consuming. We have to check that the fragment was not stopped by the user
 			if !p.playing.IsSet() {
