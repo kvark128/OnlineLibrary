@@ -130,11 +130,12 @@ func (m *Manager) Start(msgCH chan msg.Message, done chan<- bool) {
 				break
 			}
 
-			var serviceIndex = 0
-			for {
-				id := fmt.Sprintf("library%d", serviceIndex)
+			// Service id creation. Maximum index value of 256 is intended to protect against an infinite loop
+			for i := 0; i < 256; i++ {
+				id := fmt.Sprintf("library%d", i)
 				if _, err := config.Conf.ServiceByID(id); err != nil {
 					service.ID = id
+					log.Debug("Created new service id: %v", id)
 					break
 				}
 			}
