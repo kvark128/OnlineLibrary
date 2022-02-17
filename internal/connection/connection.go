@@ -1,7 +1,9 @@
 package connection
 
 import (
+	"bufio"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -12,7 +14,11 @@ import (
 )
 
 const (
-	buf_size = 1024 * 256
+	buf_size = 1024 * 16
+)
+
+var (
+	ConnectionWasClosed = errors.New("connection was closed")
 )
 
 type Connection struct {
@@ -20,8 +26,7 @@ type Connection struct {
 	client        http.Client
 	ctx           context.Context
 	resp          *http.Response
-	buf           []byte
-	rBuf, wBuf    int
+	buf           *bufio.Reader
 	lastErr       error
 	timer         *time.Timer
 	reads         int64
@@ -35,11 +40,11 @@ func NewConnection(url string) (*Connection, error) {
 func NewConnectionWithContext(ctx context.Context, url string) (*Connection, error) {
 	c := &Connection{
 		url: url,
-		buf: make([]byte, buf_size),
 		ctx: ctx,
+		buf: bufio.NewReaderSize(nil, buf_size),
 	}
 
-	if err := c.createResponse(1); err != nil {
+	if err := c.createResponse(); err != nil {
 		return nil, err
 	}
 
@@ -51,16 +56,17 @@ func NewConnectionWithContext(ctx context.Context, url string) (*Connection, err
 	return c, nil
 }
 
-func (c *Connection) createResponse(nAttempts int) error {
+func (c *Connection) createResponse() error {
 	ctx, cancelFunc := context.WithCancel(c.ctx)
 	c.timer = time.AfterFunc(config.HTTPTimeout, cancelFunc)
-	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, c.url, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.url, nil)
+	if err != nil {
+		return err
+	}
 	req.Header.Set("Range", fmt.Sprintf("bytes=%d-", c.reads))
 
 	var resp *http.Response
-	var err error
-	for nAttempts > 0 {
-		nAttempts--
+	for attempt := 0; attempt < 3; attempt++ {
 		resp, err = c.client.Do(req)
 		if err == nil {
 			break
@@ -81,111 +87,69 @@ func (c *Connection) createResponse(nAttempts int) error {
 		c.resp.Body.Close()
 	}
 
+	c.buf.Reset(resp.Body)
 	c.resp = resp
 	return nil
 }
 
 func (c *Connection) Read(p []byte) (int, error) {
-	if c.rBuf == c.wBuf {
-		if c.lastErr != nil {
-			return 0, c.lastErr
+	if c.resp == nil {
+		return 0, ConnectionWasClosed
+	}
+
+	c.timer.Reset(config.HTTPTimeout)
+	n, err := c.buf.Read(p)
+	c.timer.Stop()
+	c.reads += int64(n)
+
+	if err != nil && err != context.Canceled && c.reads < c.contentLength {
+		log.Warning("connection recovery: %v", err)
+		if c.createResponse() == nil {
+			err = nil
 		}
-		c.fillBuf()
 	}
-
-	n := copy(p, c.buf[c.rBuf:c.wBuf])
-	c.rBuf += n
-	if c.rBuf == c.wBuf {
-		return n, c.lastErr
-	}
-	return n, nil
-}
-
-func (c *Connection) fillBuf() {
-	if c.rBuf != c.wBuf {
-		panic("c.buf contains unread data")
-	}
-
-	chunkSize := 1024 * 8
-	if len(c.buf)-c.rBuf < chunkSize {
-		c.resetBuf()
-	}
-
-	chunk := c.buf[c.wBuf : c.wBuf+chunkSize]
-	for {
-		c.timer.Reset(config.HTTPTimeout)
-		n, err := c.resp.Body.Read(chunk)
-		c.timer.Stop()
-		c.wBuf += n
-		c.reads += int64(n)
-
-		if err != nil && err != context.Canceled && c.reads < c.contentLength {
-			log.Warning("connection recovery: %v", err)
-			if c.createResponse(3) == nil {
-				if n == 0 {
-					// We have no read data. Repeat reading
-					continue
-				}
-				// We have read the data. Just ignore the error without re-reading
-				err = nil
-			}
-		}
-
-		c.lastErr = err
-		break
-	}
-}
-
-func (c *Connection) resetBuf() {
-	c.rBuf = 0
-	c.wBuf = 0
+	return n, err
 }
 
 func (c *Connection) Seek(offset int64, whence int) (int64, error) {
-	var position int64
+	if c.resp == nil {
+		return 0, ConnectionWasClosed
+	}
+
+	var pos int64
 	switch whence {
 	case io.SeekStart:
-		position = offset
+		pos = offset
 	case io.SeekCurrent:
-		position = c.reads + offset
+		pos = c.reads + offset
 	case io.SeekEnd:
-		position = c.contentLength + offset
+		pos = c.contentLength + offset
 	default:
 		panic(fmt.Sprintf("Invalid whence: %v", whence))
 	}
 
-	if position > c.contentLength {
+	if pos > c.contentLength {
 		return 0, fmt.Errorf("offset greater than the end of the body")
 	}
 
-	if position < 0 {
-		position = 0
+	if pos < 0 {
+		pos = 0
 	}
 
-	// Edges of the buffer relative to the beginning of the body
-	leftEdge := c.reads - int64(c.wBuf)
-	rightEdge := c.reads
-
-	if position >= leftEdge && position <= rightEdge {
-		// New position inside the buffer
-		c.rBuf = int(position - leftEdge)
-		return position, nil
-	}
-
-	c.resetBuf()
-	if c.lastErr != nil {
-		return 0, c.lastErr
-	}
-
-	c.reads = position
-	if err := c.createResponse(1); err != nil {
+	c.reads = pos
+	if err := c.createResponse(); err != nil {
 		return 0, err
 	}
-	return position, nil
+	return pos, nil
 }
 
 func (c *Connection) Close() error {
-	c.resetBuf()
-	c.lastErr = fmt.Errorf("connection was closed")
-	return c.resp.Body.Close()
+	if c.resp == nil {
+		return ConnectionWasClosed
+	}
+	c.buf.Reset(nil)
+	c.buf = nil
+	err := c.resp.Body.Close()
+	c.resp = nil
+	return err
 }
