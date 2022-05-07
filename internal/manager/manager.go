@@ -44,8 +44,12 @@ type Manager struct {
 }
 
 func (m *Manager) Start(msgCH chan msg.Message, done chan<- bool) {
-	defer func() { done <- true }()
-	defer m.cleaning()
+	log.Debug("Entering the Manager Loop")
+	defer func() {
+		m.cleaning()
+		log.Debug("Exiting the Manager Loop")
+		done <- true
+	}()
 
 	if config.Conf.General.Provider != "" {
 		msgCH <- msg.Message{Code: msg.SET_PROVIDER, Data: config.Conf.General.Provider}
