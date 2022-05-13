@@ -600,7 +600,8 @@ func (m *Manager) setBookmark(bookmarkID string) {
 		var bookmark config.Bookmark
 		if m.bookplayer != nil {
 			bookmark.Fragment = m.bookplayer.Fragment()
-			bookmark.Position = m.bookplayer.Position().Truncate(time.Second)
+			// For convenience, we truncate the time to the nearest tenth of a second
+			bookmark.Position = m.bookplayer.Position().Truncate(time.Millisecond * 100)
 		}
 		conf := m.currentBook.Config()
 		conf.SetBookmark(bookmarkID, bookmark)
