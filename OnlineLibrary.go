@@ -3,6 +3,7 @@ package main
 import (
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/kvark128/OnlineLibrary/internal/config"
 	"github.com/kvark128/OnlineLibrary/internal/gui"
@@ -25,7 +26,7 @@ func main() {
 		log.SetLevel(level)
 	}
 
-	msgCH := make(chan msg.Message, 16)
+	msgCH := make(chan msg.Message, config.MessageBufferSize)
 
 	if err := gui.Initialize(msgCH); err != nil {
 		log.Error("GUI initializing: %v", err)
@@ -46,7 +47,15 @@ func main() {
 	go mng.Start(msgCH, done)
 	gui.RunMainWindow()
 	close(msgCH)
-	<-done
+
+	log.Debug("Waiting for the manager to finish")
+	select {
+	case <-done:
+		break
+	case <-time.After(time.Second * 16):
+		log.Error("Manager termination timeout has expired. Forced program exit")
+		os.Exit(1)
+	}
 
 	config.Conf.Save()
 	log.Info("Exiting")

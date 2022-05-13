@@ -18,12 +18,13 @@ var (
 )
 
 const (
-	ProgramAuthor  = "Kvark <kvark128@yandex.ru>"
-	ProgramName    = "OnlineLibrary"
-	ProgramVersion = "2021.12.10"
-	ConfigFile     = "config.yaml"
-	LogFile        = "session.log"
-	HTTPTimeout    = time.Second * 12
+	ProgramAuthor     = "Kvark <kvark128@yandex.ru>"
+	ProgramName       = "OnlineLibrary"
+	ProgramVersion    = "2022.05.14"
+	ConfigFile        = "config.yaml"
+	LogFile           = "session.log"
+	MessageBufferSize = 16
+	HTTPTimeout       = time.Second * 12
 )
 
 // Supported mime types of content

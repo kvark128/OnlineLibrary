@@ -7,7 +7,9 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"os"
 	"path/filepath"
+	"runtime"
 	"strconv"
 	"strings"
 	"time"
@@ -46,6 +48,12 @@ type Manager struct {
 func (m *Manager) Start(msgCH chan msg.Message, done chan<- bool) {
 	log.Debug("Entering the Manager Loop")
 	defer func() {
+		if p := recover(); p != nil {
+			buf := make([]byte, 4096)
+			n := runtime.Stack(buf, false)
+			log.Error("Panic of manager: %v:\n\n%v", p, string(buf[:n]))
+			os.Exit(1)
+		}
 		m.cleaning()
 		log.Debug("Exiting the Manager Loop")
 		done <- true
