@@ -97,6 +97,14 @@ func (l *Library) LastContentItemID() (string, error) {
 	return book.ID, nil
 }
 
+func (l *Library) GetQuestions(ur *daisy.UserResponses) (*daisy.Questions, error) {
+	questions, err := l.Client.GetQuestions(ur)
+	if err == nil {
+		l.service.OpenBookshelfOnLogin = false
+	}
+	return questions, err
+}
+
 type LocalStorage struct{}
 
 func NewLocalStorage() *LocalStorage {
