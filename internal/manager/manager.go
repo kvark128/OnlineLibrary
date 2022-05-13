@@ -453,14 +453,16 @@ func (m *Manager) cleaning() {
 func (m *Manager) setProvider(provider Provider) {
 	m.cleaning()
 	m.provider = provider
-	if _, ok := provider.(Questioner); ok {
+	if id, err := m.provider.LastContentListID(); err == nil {
+		m.setContentList(id)
+	} else if _, ok := m.provider.(Questioner); ok {
 		m.setQuestions(daisy.UserResponse{QuestionID: daisy.Default})
-	} else {
-		m.setContentList(daisy.Issued)
 	}
-	if contentItem, err := m.provider.LastItem(); err == nil {
-		if err := m.setBookplayer(contentItem); err != nil {
-			log.Error("Set book player: %v", err)
+	if id, err := m.provider.LastContentItemID(); err == nil {
+		if contentItem, err := m.provider.ContentItem(id); err == nil {
+			if err := m.setBookplayer(contentItem); err != nil {
+				log.Error("Set book player: %v", err)
+			}
 		}
 	}
 }
@@ -615,7 +617,6 @@ func (m *Manager) setBookplayer(book ContentItem) error {
 
 	gui.SetMainWindowTitle(book.Name())
 	bookDir := filepath.Join(config.UserData(), util.ReplaceForbiddenCharacters(book.Name()))
-	m.provider.SetLastItem(book)
 	conf := book.Config()
 	m.bookplayer = player.NewPlayer(bookDir, rsrc, config.Conf.General.OutputDevice)
 	m.currentBook = book

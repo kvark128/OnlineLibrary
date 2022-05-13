@@ -56,12 +56,13 @@ func init() {
 }
 
 type Service struct {
-	ID          string  `yaml:"id"`
-	Name        string  `yaml:"name"`
-	URL         string  `yaml:"url"`
-	Username    string  `yaml:"username"`
-	Password    string  `yaml:"password"`
-	RecentBooks BookSet `yaml:"books,omitempty"`
+	ID                   string  `yaml:"id"`
+	Name                 string  `yaml:"name"`
+	URL                  string  `yaml:"url"`
+	Username             string  `yaml:"username"`
+	Password             string  `yaml:"password"`
+	OpenBookshelfOnLogin bool    `yaml:"open_bookshelf_on_login"`
+	RecentBooks          BookSet `yaml:"books,omitempty"`
 }
 
 type General struct {

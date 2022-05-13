@@ -67,7 +67,15 @@ func (l *Library) ContentList(id string) (*ContentList, error) {
 		lst.Items = append(lst.Items, item)
 	}
 
+	l.service.OpenBookshelfOnLogin = id == daisy.Issued
 	return lst, nil
+}
+
+func (l *Library) LastContentListID() (string, error) {
+	if !l.service.OpenBookshelfOnLogin {
+		return "", errors.New("last content list not available")
+	}
+	return daisy.Issued, nil
 }
 
 func (l *Library) ContentItem(id string) (ContentItem, error) {
@@ -77,19 +85,16 @@ func (l *Library) ContentItem(id string) (ContentItem, error) {
 	}
 
 	item := NewLibraryContentItem(l, id, book.Name)
+	l.service.RecentBooks.SetBook(item.Config())
 	return item, nil
 }
 
-func (l *Library) LastItem() (ContentItem, error) {
+func (l *Library) LastContentItemID() (string, error) {
 	book, err := l.service.RecentBooks.LastBook()
 	if err != nil {
-		return nil, err
+		return "", err
 	}
-	return l.ContentItem(book.ID)
-}
-
-func (l *Library) SetLastItem(contentItem ContentItem) {
-	l.service.RecentBooks.SetBook(contentItem.Config())
+	return book.ID, nil
 }
 
 type LocalStorage struct{}
@@ -121,6 +126,10 @@ func (s *LocalStorage) ContentList(id string) (*ContentList, error) {
 	return lst, nil
 }
 
+func (s *LocalStorage) LastContentListID() (string, error) {
+	return daisy.Issued, nil
+}
+
 func (s *LocalStorage) ContentItem(id string) (ContentItem, error) {
 	lst, err := s.ContentList("")
 	if err != nil {
@@ -129,20 +138,17 @@ func (s *LocalStorage) ContentItem(id string) (ContentItem, error) {
 
 	for _, item := range lst.Items {
 		if item.ID() == id {
+			config.Conf.LocalBooks.SetBook(item.Config())
 			return item, nil
 		}
 	}
 	return nil, errors.New("content item not found")
 }
 
-func (s *LocalStorage) LastItem() (ContentItem, error) {
+func (s *LocalStorage) LastContentItemID() (string, error) {
 	book, err := config.Conf.LocalBooks.LastBook()
 	if err != nil {
-		return nil, err
+		return "", err
 	}
-	return s.ContentItem(book.ID)
-}
-
-func (s *LocalStorage) SetLastItem(contentItem ContentItem) {
-	config.Conf.LocalBooks.SetBook(contentItem.Config())
+	return book.ID, nil
 }

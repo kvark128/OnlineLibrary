@@ -28,7 +28,7 @@ type Issuer interface {
 
 type Provider interface {
 	ContentList(string) (*ContentList, error)
+	LastContentListID() (string, error)
 	ContentItem(string) (ContentItem, error)
-	LastItem() (ContentItem, error)
-	SetLastItem(ContentItem)
+	LastContentItemID() (string, error)
 }
