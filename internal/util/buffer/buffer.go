@@ -24,7 +24,7 @@ func NewReaderSize(src io.ReadSeeker, bufSize int) *Reader {
 	r := new(Reader)
 	r.source = src
 	r.buffer = make([]byte, bufSize)
-	r.br = bytes.NewReader(r.buffer[:0])
+	r.br = bytes.NewReader(nil)
 	return r
 }
 
@@ -60,7 +60,7 @@ func (r *Reader) Seek(offset int64, whence int) (int64, error) {
 		r.nReadsFromSource = offset
 		return r.br.Seek(bufOffset, io.SeekStart)
 	}
-	r.br.Reset(r.buffer[:0])
+	r.br.Reset(nil)
 	sourceOffset, err := r.source.Seek(offset, io.SeekStart)
 	if err != nil {
 		r.lastErr = err
