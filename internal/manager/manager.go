@@ -32,8 +32,8 @@ const (
 )
 
 var (
-	NoBookDescription     = errors.New("no book description")
-	OperationNotSupported = errors.New("operation not supported")
+	BookDescriptionNotAvailable = errors.New("book description not available")
+	OperationNotSupported       = errors.New("operation not supported")
 )
 
 type Manager struct {
@@ -223,7 +223,7 @@ func (m *Manager) Start(msgCH chan msg.Message, done chan<- bool) {
 			book := m.contentList.Items[index]
 			text, err := m.bookDescription(book)
 			if err != nil {
-				m.messageBoxError(fmt.Errorf("book description: %w", err))
+				m.messageBoxError(err)
 				break
 			}
 			gui.MessageBox("Информация о книге", text, walk.MsgBoxOK|walk.MsgBoxIconWarning)
@@ -770,12 +770,12 @@ func (m *Manager) issueBook(book ContentItem) error {
 func (m *Manager) bookDescription(book ContentItem) (string, error) {
 	md, err := book.ContentMetadata()
 	if err != nil {
-		return "", err
+		return "", BookDescriptionNotAvailable
 	}
 
 	text := fmt.Sprintf("%v", strings.Join(md.Metadata.Description, CRLF))
 	if text == "" {
-		return "", NoBookDescription
+		return "", BookDescriptionNotAvailable
 	}
 	return text, nil
 }
@@ -788,6 +788,8 @@ func (m *Manager) messageBoxError(err error) {
 		msg = "Ошибка сети. Пожалуйста, проверьте ваше подключение к интернету."
 	case errors.Is(err, OperationNotSupported):
 		msg = "Операция не поддерживается"
+	case errors.Is(err, BookDescriptionNotAvailable):
+		msg = "Описание книги недоступно"
 	}
 	gui.MessageBox("Ошибка", msg, walk.MsgBoxOK|walk.MsgBoxIconError)
 }
