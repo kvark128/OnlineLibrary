@@ -14,6 +14,7 @@ import (
 	"github.com/kvark128/OnlineLibrary/internal/lkf"
 	"github.com/kvark128/OnlineLibrary/internal/log"
 	"github.com/kvark128/OnlineLibrary/internal/util"
+	"github.com/kvark128/OnlineLibrary/internal/util/buffer"
 	daisy "github.com/kvark128/daisyonline"
 )
 
@@ -286,6 +287,7 @@ func (p *Player) playback(startFragment int) {
 			defer src.Close()
 
 			fragment, err := func(src io.ReadSeeker) (*Fragment, error) {
+				src = buffer.NewReader(src)
 				if strings.ToLower(filepath.Ext(r.LocalURI)) == LKF_EXT {
 					src = lkf.NewReader(src)
 				}
