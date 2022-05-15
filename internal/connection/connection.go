@@ -1,7 +1,6 @@
 package connection
 
 import (
-	"bufio"
 	"context"
 	"errors"
 	"fmt"
@@ -13,10 +12,6 @@ import (
 	"github.com/kvark128/OnlineLibrary/internal/log"
 )
 
-const (
-	buf_size = 1024 * 16
-)
-
 var (
 	ConnectionWasClosed = errors.New("connection was closed")
 )
@@ -26,7 +21,6 @@ type Connection struct {
 	client        http.Client
 	ctx           context.Context
 	resp          *http.Response
-	buf           *bufio.Reader
 	lastErr       error
 	timer         *time.Timer
 	reads         int64
@@ -41,7 +35,6 @@ func NewConnectionWithContext(ctx context.Context, url string) (*Connection, err
 	c := &Connection{
 		url: url,
 		ctx: ctx,
-		buf: bufio.NewReaderSize(nil, buf_size),
 	}
 
 	if err := c.createResponse(); err != nil {
@@ -87,7 +80,6 @@ func (c *Connection) createResponse() error {
 		c.resp.Body.Close()
 	}
 
-	c.buf.Reset(resp.Body)
 	c.resp = resp
 	return nil
 }
@@ -98,7 +90,7 @@ func (c *Connection) Read(p []byte) (int, error) {
 	}
 
 	c.timer.Reset(config.HTTPTimeout)
-	n, err := c.buf.Read(p)
+	n, err := c.resp.Body.Read(p)
 	c.timer.Stop()
 	c.reads += int64(n)
 
@@ -147,8 +139,6 @@ func (c *Connection) Close() error {
 	if c.resp == nil {
 		return ConnectionWasClosed
 	}
-	c.buf.Reset(nil)
-	c.buf = nil
 	err := c.resp.Body.Close()
 	c.resp = nil
 	return err

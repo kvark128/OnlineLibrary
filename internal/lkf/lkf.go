@@ -8,14 +8,14 @@ import (
 )
 
 type Reader struct {
-	src       io.Reader
+	src       io.ReadSeeker
 	buf       []byte
 	bufLength int
 	c         *lkf.Cryptor
 	lastError error
 }
 
-func NewReader(src io.Reader) *Reader {
+func NewReader(src io.ReadSeeker) *Reader {
 	return &Reader{
 		src: src,
 		buf: make([]byte, lkf.BlockSize*32), // 16 Kb
@@ -50,11 +50,6 @@ func (r *Reader) Read(p []byte) (int, error) {
 }
 
 func (r *Reader) Seek(offset int64, whence int) (int64, error) {
-	seeker, ok := r.src.(io.Seeker)
-	if !ok {
-		panic("LKFReader: r.src is not seeker")
-	}
-
 	if whence != io.SeekStart {
 		return 0, fmt.Errorf("LKFReader: Seek: only io.SeekStart is supported")
 	}
@@ -63,7 +58,7 @@ func (r *Reader) Seek(offset int64, whence int) (int64, error) {
 	r.lastError = nil
 
 	blockOffset := offset % lkf.BlockSize
-	pos, err := seeker.Seek(offset-blockOffset, whence)
+	pos, err := r.src.Seek(offset-blockOffset, whence)
 	if err != nil {
 		return 0, err
 	}

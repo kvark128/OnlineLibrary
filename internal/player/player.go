@@ -262,7 +262,7 @@ func (p *Player) playback(startFragment int) {
 		log.Debug("fetching resource %v: MimeType %v; Size %v", r.LocalURI, r.MimeType, r.Size)
 
 		err := func(r daisy.Resource) error {
-			var src io.ReadCloser
+			var src io.ReadSeekCloser
 			localPath := filepath.Join(p.bookDir, r.LocalURI)
 
 			if util.FileIsExist(localPath, r.Size) {
@@ -285,7 +285,7 @@ func (p *Player) playback(startFragment int) {
 			}
 			defer src.Close()
 
-			fragment, err := func(src io.Reader) (*Fragment, error) {
+			fragment, err := func(src io.ReadSeeker) (*Fragment, error) {
 				if strings.ToLower(filepath.Ext(r.LocalURI)) == LKF_EXT {
 					src = lkf.NewReader(src)
 				}

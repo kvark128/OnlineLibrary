@@ -21,6 +21,7 @@ import (
 	"github.com/kvark128/OnlineLibrary/internal/msg"
 	"github.com/kvark128/OnlineLibrary/internal/player"
 	"github.com/kvark128/OnlineLibrary/internal/util"
+	"github.com/kvark128/OnlineLibrary/internal/util/buffer"
 	daisy "github.com/kvark128/daisyonline"
 	"github.com/lxn/walk"
 )
@@ -691,11 +692,11 @@ func (m *Manager) downloadBook(book ContentItem) error {
 					return nil
 				}
 
-				src, err := connection.NewConnectionWithContext(ctx, r.URI)
+				conn, err := connection.NewConnectionWithContext(ctx, r.URI)
 				if err != nil {
 					return err
 				}
-				defer src.Close()
+				defer conn.Close()
 
 				dst, err := util.CreateSecureFile(path)
 				if err != nil {
@@ -704,6 +705,7 @@ func (m *Manager) downloadBook(book ContentItem) error {
 				defer dst.Close()
 
 				var fragmentSize int64
+				src := buffer.NewReader(conn)
 				for err == nil {
 					var n int64
 					t := time.Now()

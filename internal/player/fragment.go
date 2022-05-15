@@ -9,6 +9,7 @@ import (
 
 	"github.com/kvark128/OnlineLibrary/internal/gui"
 	"github.com/kvark128/OnlineLibrary/internal/util"
+	"github.com/kvark128/OnlineLibrary/internal/util/buffer"
 	"github.com/kvark128/OnlineLibrary/internal/util/syncio"
 	"github.com/kvark128/OnlineLibrary/internal/waveout"
 	"github.com/kvark128/minimp3"
@@ -28,8 +29,8 @@ type Fragment struct {
 
 const buffer_size = 1024 * 16
 
-func NewFragment(mp3 io.Reader, devName string) (*Fragment, error) {
-	dec := minimp3.NewDecoder(mp3)
+func NewFragment(mp3 io.ReadSeeker, devName string) (*Fragment, error) {
+	dec := minimp3.NewDecoder(buffer.NewReader(mp3))
 	// Reading into an empty buffer will fill the internal buffer of the decoder, so you can get the audio data parameters
 	if _, err := dec.Read([]byte{}); err != nil {
 		return nil, err
