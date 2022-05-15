@@ -705,7 +705,7 @@ func (m *Manager) downloadBook(book ContentItem) error {
 				defer dst.Close()
 
 				var fragmentSize int64
-				src := buffer.NewReader(conn)
+				var src io.Reader = buffer.NewReader(conn)
 				for err == nil {
 					var n int64
 					t := time.Now()

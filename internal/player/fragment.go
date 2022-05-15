@@ -28,10 +28,10 @@ type Fragment struct {
 
 const buffer_size = 1024 * 16
 
-func NewFragment(mp3 io.Reader, devName string) (*Fragment, error) {
-	dec := minimp3.NewDecoder(mp3)
+func NewFragment(mp3Source io.Reader, devName string) (*Fragment, error) {
+	dec := minimp3.NewDecoder(mp3Source)
 	// Reading into an empty buffer will fill the internal buffer of the decoder, so you can get the audio data parameters
-	if _, err := dec.Read([]byte{}); err != nil {
+	if _, err := dec.Read(nil); err != nil {
 		return nil, err
 	}
 
@@ -113,6 +113,34 @@ func (f *Fragment) setVolume(volume float64) {
 	f.stream.SetVolume(volume)
 }
 
+func (f *Fragment) SetPosition(pos time.Duration) error {
+	f.Lock()
+	defer f.Unlock()
+
+	if pos < 0 {
+		pos = 0
+	}
+
+	f.wp.Stop()
+	f.stream.Flush()
+	io.ReadAll(f.stream)
+
+	offset := int64(pos / (time.Second / time.Duration(f.pcmBytesPerSec)))
+	if f.nWrite == offset {
+		// Required position already set
+		return nil
+	}
+
+	newPos, err := f.dec.Seek(offset, io.SeekStart)
+	if err != nil {
+		return err
+	}
+
+	f.nWrite = newPos
+	gui.SetElapsedTime(pos)
+	return nil
+}
+
 func (f *Fragment) Position() time.Duration {
 	f.Lock()
 	defer f.Unlock()
@@ -144,33 +172,6 @@ func (f *Fragment) SetOutputDevice(devName string) error {
 
 func (f *Fragment) stop() {
 	f.wp.Stop()
-}
-
-func (f *Fragment) SetPosition(position time.Duration) error {
-	f.Lock()
-	defer f.Unlock()
-
-	if position < 0 {
-		position = 0
-	}
-
-	f.wp.Stop()
-	f.stream.Flush()
-	io.ReadAll(f.stream)
-
-	offset := int64(position / (time.Second / time.Duration(f.pcmBytesPerSec)))
-	if f.nWrite == offset {
-		return nil
-	}
-
-	newPos, err := f.dec.Seek(offset, io.SeekStart)
-	if err != nil {
-		return err
-	}
-	f.nWrite = newPos
-
-	gui.SetElapsedTime(position)
-	return nil
 }
 
 func (f *Fragment) Close() error {
