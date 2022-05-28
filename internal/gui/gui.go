@@ -62,6 +62,11 @@ func Initialize(msgCH chan msg.Message) error {
 						OnTriggered: func() { msgCH <- msg.Message{msg.OPEN_BOOKSHELF, nil} },
 					},
 					Action{
+						Text:        "Новые поступления",
+						Shortcut:    Shortcut{walk.ModControl, walk.KeyK},
+						OnTriggered: func() { msgCH <- msg.Message{msg.OPEN_NEWBOOKS, nil} },
+					},
+					Action{
 						Text:        "Поиск...",
 						Shortcut:    Shortcut{walk.ModControl, walk.KeyF},
 						OnTriggered: func() { msgCH <- msg.Message{msg.SEARCH_BOOK, nil} },

@@ -95,6 +95,9 @@ func (m *Manager) Start(msgCH chan msg.Message, done chan<- bool) {
 		case msg.OPEN_BOOKSHELF:
 			m.setContentList(daisy.Issued)
 
+		case msg.OPEN_NEWBOOKS:
+			m.setContentList(daisy.New)
+
 		case msg.MAIN_MENU:
 			m.setQuestions(daisy.UserResponse{QuestionID: daisy.Default})
 
