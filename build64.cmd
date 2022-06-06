@@ -1,5 +1,6 @@
 @echo off
 go run cmd/rsrc/rsrc.go -arch amd64 -manifest OnlineLibrary.exe.manifest -o rsrc.syso
+if errorlevel 1 exit /b %errorlevel%
 set GOOS=windows
 set GOARCH=amd64
 set CGO_ENABLED=1
