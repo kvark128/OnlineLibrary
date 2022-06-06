@@ -1,5 +1,5 @@
 @echo off
-rsrc -arch amd64 -manifest OnlineLibrary.exe.manifest -o rsrc.syso
+go run cmd/rsrc/rsrc.go -arch amd64 -manifest OnlineLibrary.exe.manifest -o rsrc.syso
 set GOOS=windows
 set GOARCH=amd64
 set CGO_ENABLED=1
