@@ -7,7 +7,6 @@ import (
 	"path/filepath"
 
 	"github.com/kvark128/OnlineLibrary/internal/config"
-	"github.com/kvark128/OnlineLibrary/internal/log"
 	daisy "github.com/kvark128/daisyonline"
 )
 
@@ -79,11 +78,7 @@ func (l *Library) LastContentListID() (string, error) {
 }
 
 func (l *Library) ContentItem(id string) (ContentItem, error) {
-	book, err := l.service.RecentBooks.Book(id)
-	if err != nil {
-		log.Warning("%v", err)
-	}
-
+	book, _ := l.service.RecentBooks.Book(id)
 	item := NewLibraryContentItem(l, id, book.Name)
 	l.service.RecentBooks.SetBook(item.Config())
 	return item, nil

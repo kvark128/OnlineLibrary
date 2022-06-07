@@ -35,7 +35,7 @@ const (
 )
 
 // Error returned when stopping playback at user request
-var PlayingIsStopped = fmt.Errorf("playing is stopped")
+var PlaybackStopped = fmt.Errorf("playback stopped")
 
 type Player struct {
 	sync.Mutex
@@ -79,7 +79,7 @@ func (p *Player) SetTimerDuration(d time.Duration) {
 	p.Lock()
 	defer p.Unlock()
 	p.timerDuration = d
-	log.Debug("timer of player is set to %v", d)
+	log.Debug("Playback timer set to %v", d)
 	if p.playing.IsSet() && p.fragment != nil && !p.fragment.IsPause() {
 		p.updateTimer(p.timerDuration)
 	}
@@ -95,11 +95,11 @@ func (p *Player) updateTimer(d time.Duration) {
 	if p.pauseTimer != nil {
 		p.pauseTimer.Stop()
 		p.pauseTimer = nil
-		log.Debug("timer of player is stopped")
+		log.Debug("Playback timer stopped")
 	}
 	if d > 0 {
 		p.pauseTimer = time.AfterFunc(d, p.PlayPause)
-		log.Debug("timer of player is started on %v", d)
+		log.Debug("Playback timer started on %v", d)
 	}
 }
 
@@ -247,9 +247,9 @@ func (p *Player) stopPlayback() {
 }
 
 func (p *Player) playback(startFragment int) {
-	log.Debug("starting playback with fragment %v. Waiting other fragments", startFragment)
+	log.Debug("Starting playback with fragment %v. Waiting other fragments...", startFragment)
 	p.wg.Wait()
-	log.Debug("fragment %v is started", startFragment)
+	log.Debug("Fragment %v started", startFragment)
 
 	p.wg.Add(1)
 	p.playing.Set()
@@ -260,7 +260,7 @@ func (p *Player) playback(startFragment int) {
 	defer p.updateTimer(0)
 
 	for index, r := range p.playList[startFragment:] {
-		log.Debug("fetching resource %v: MimeType %v; Size %v", r.LocalURI, r.MimeType, r.Size)
+		log.Debug("Fetching resource %v: MimeType %v; Size %v", r.LocalURI, r.MimeType, r.Size)
 
 		err := func(r daisy.Resource) error {
 			var src io.ReadSeekCloser
@@ -274,7 +274,7 @@ func (p *Player) playback(startFragment int) {
 				if err != nil {
 					return fmt.Errorf("opening local fragment: %w", err)
 				}
-				log.Debug("opening the local fragment from %v", localPath)
+				log.Debug("Opening local fragment from %v", localPath)
 			} else {
 				// There is no fragment on the local disc. Trying to get it from the network
 				var err error
@@ -282,7 +282,7 @@ func (p *Player) playback(startFragment int) {
 				if err != nil {
 					return fmt.Errorf("connection creating: %w", err)
 				}
-				log.Debug("fetching the fragment by network from %v", r.URI)
+				log.Debug("Fetching fragment by network from %v", r.URI)
 			}
 			defer src.Close()
 
@@ -313,7 +313,7 @@ func (p *Player) playback(startFragment int) {
 
 			// Fragment creation is an I/O operation and can be time consuming. We have to check that the fragment was not stopped by the user
 			if !p.playing.IsSet() {
-				return PlayingIsStopped
+				return PlaybackStopped
 			}
 
 			p.Lock()
@@ -334,13 +334,13 @@ func (p *Player) playback(startFragment int) {
 			}
 
 			if !p.playing.IsSet() {
-				return PlayingIsStopped
+				return PlaybackStopped
 			}
 			return nil
 		}(r)
 
 		if err != nil {
-			log.Warning("playing of %v: %v", r.LocalURI, err)
+			log.Warning("Resource %v: %v", r.LocalURI, err)
 			break
 		}
 	}

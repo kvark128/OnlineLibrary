@@ -47,16 +47,16 @@ type Manager struct {
 }
 
 func (m *Manager) Start(msgCH chan msg.Message, done chan<- bool) {
-	log.Debug("Entering the Manager Loop")
+	log.Debug("Entering to Manager Loop")
 	defer func() {
 		if p := recover(); p != nil {
 			buf := make([]byte, 4096)
 			n := runtime.Stack(buf, false)
-			log.Error("Panic of manager: %v:\n\n%v", p, string(buf[:n]))
+			log.Error("Manager panic: %v:\n\n%v", p, string(buf[:n]))
 			os.Exit(1)
 		}
 		m.cleaning()
-		log.Debug("Exiting the Manager Loop")
+		log.Debug("Exiting from Manager Loop")
 		done <- true
 	}()
 
@@ -126,7 +126,7 @@ func (m *Manager) Start(msgCH chan msg.Message, done chan<- bool) {
 			}
 
 			if err != nil {
-				log.Error("provider creating: %v", err)
+				log.Error("Provider creating: %v", err)
 				break
 			}
 
@@ -137,7 +137,7 @@ func (m *Manager) Start(msgCH chan msg.Message, done chan<- bool) {
 		case msg.LIBRARY_ADD:
 			service := new(config.Service)
 			if gui.Credentials(service) != walk.DlgCmdOK || service.Name == "" {
-				log.Warning("Adding library: pressed Cancel button or len(service.Name) == 0")
+				log.Warning("Library adding: pressed Cancel button or len(service.Name) == 0")
 				break
 			}
 
@@ -182,7 +182,7 @@ func (m *Manager) Start(msgCH chan msg.Message, done chan<- bool) {
 
 		case msg.ISSUE_BOOK:
 			if m.contentList == nil {
-				log.Warning("Attempt to add a book to a bookshelf when there is no content list")
+				log.Warning("Attempt to add book to bookshelf when there is no content list")
 				break
 			}
 			book := m.contentList.Items[gui.MainList.CurrentIndex()]
@@ -194,7 +194,7 @@ func (m *Manager) Start(msgCH chan msg.Message, done chan<- bool) {
 
 		case msg.REMOVE_BOOK:
 			if m.contentList == nil {
-				log.Warning("Attempt to remove a book from a bookshelf when there is no content list")
+				log.Warning("Attempt to remove book from bookshelf when there is no content list")
 				break
 			}
 			book := m.contentList.Items[gui.MainList.CurrentIndex()]
@@ -245,7 +245,7 @@ func (m *Manager) Start(msgCH chan msg.Message, done chan<- bool) {
 		case msg.PLAYER_OFFSET_FRAGMENT:
 			offset, ok := message.Data.(int)
 			if !ok {
-				log.Error("Invalid offset fragment")
+				log.Error("Invalid fragment offset")
 				break
 			}
 			if m.bookplayer != nil {
@@ -290,7 +290,7 @@ func (m *Manager) Start(msgCH chan msg.Message, done chan<- bool) {
 		case msg.PLAYER_OFFSET_POSITION:
 			offset, ok := message.Data.(time.Duration)
 			if !ok {
-				log.Error("Invalid offset position")
+				log.Error("Invalid position offset")
 				break
 			}
 			if m.bookplayer != nil {
@@ -330,7 +330,7 @@ func (m *Manager) Start(msgCH chan msg.Message, done chan<- bool) {
 			}
 			position, err := util.ParseDuration(text)
 			if err != nil {
-				log.Error("goto position: %v", err)
+				log.Error("Goto position: %v", err)
 				break
 			}
 			if m.bookplayer != nil {
@@ -340,7 +340,7 @@ func (m *Manager) Start(msgCH chan msg.Message, done chan<- bool) {
 		case msg.PLAYER_OUTPUT_DEVICE:
 			device, ok := message.Data.(string)
 			if !ok {
-				log.Error("set output device: invalid device")
+				log.Error("Invalid output device")
 				break
 			}
 			config.Conf.General.OutputDevice = device
@@ -403,7 +403,7 @@ func (m *Manager) Start(msgCH chan msg.Message, done chan<- bool) {
 		case msg.LOG_SET_LEVEL:
 			level, ok := message.Data.(log.Level)
 			if !ok {
-				log.Error("Set log level: invalid level")
+				log.Error("Invalid log level")
 				break
 			}
 			config.Conf.General.LogLevel = level.String()
@@ -455,7 +455,7 @@ func (m *Manager) cleaning() {
 		if lib, ok := m.provider.(*Library); ok {
 			_, err := lib.LogOff()
 			if err != nil {
-				log.Warning("library logoff: %v", err)
+				log.Warning("Library logoff: %v", err)
 			}
 		}
 		m.provider = nil
@@ -554,7 +554,7 @@ func (m *Manager) setInputQuestion() {
 }
 
 func (m *Manager) setContentList(contentID string) {
-	log.Info("Content set: %s", contentID)
+	log.Debug("Set content list: %s", contentID)
 	contentList, err := m.provider.ContentList(contentID)
 	if err != nil {
 		m.messageBoxError(fmt.Errorf("GetContentList: %w", err))
@@ -660,7 +660,7 @@ func (m *Manager) downloadBook(book ContentItem) error {
 		path := filepath.Join(bookDir, MetadataFileName)
 		f, err := util.CreateSecureFile(path)
 		if err != nil {
-			log.Warning("creating %v: %v", MetadataFileName, err)
+			log.Warning("Creating %v: %v", MetadataFileName, err)
 		} else {
 			defer f.Close()
 			e := xml.NewEncoder(f)

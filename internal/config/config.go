@@ -163,7 +163,7 @@ func (c *Config) Load() {
 
 	d := yaml.NewDecoder(f)
 	if err := d.Decode(c); err != nil {
-		log.Error("Loading config: %v", err)
+		log.Error("Reading from config file: %v", err)
 		return
 	}
 

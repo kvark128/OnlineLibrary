@@ -95,7 +95,7 @@ func (c *Connection) Read(p []byte) (int, error) {
 	c.reads += int64(n)
 
 	if err != nil && err != context.Canceled && c.reads < c.contentLength {
-		log.Warning("connection recovery: %v", err)
+		log.Warning("Connection recovery: %v", err)
 		if c.createResponse() == nil {
 			err = nil
 		}
