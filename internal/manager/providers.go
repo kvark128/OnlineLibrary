@@ -106,7 +106,7 @@ func NewLocalStorage() *LocalStorage {
 	return &LocalStorage{}
 }
 
-func (s *LocalStorage) ContentList(id string) (*ContentList, error) {
+func (s *LocalStorage) ContentList(string) (*ContentList, error) {
 	userData := config.UserData()
 	entrys, err := os.ReadDir(userData)
 	if err != nil {
@@ -115,7 +115,6 @@ func (s *LocalStorage) ContentList(id string) (*ContentList, error) {
 
 	lst := &ContentList{
 		Name: "Локальные книги",
-		ID:   id,
 	}
 
 	for _, e := range entrys {
@@ -130,7 +129,7 @@ func (s *LocalStorage) ContentList(id string) (*ContentList, error) {
 }
 
 func (s *LocalStorage) LastContentListID() (string, error) {
-	return daisy.Issued, nil
+	return "", nil
 }
 
 func (s *LocalStorage) ContentItem(id string) (ContentItem, error) {

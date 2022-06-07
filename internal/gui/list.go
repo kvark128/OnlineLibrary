@@ -46,18 +46,23 @@ func NewMainListBox(lb *walk.ListBox, label *walk.TextLabel, msgCH chan msg.Mess
 	return mlb, nil
 }
 
-func (mlb *MainListBox) SetItems(items []string, label string, menu *walk.Menu) {
+func (mlb *MainListBox) SetItems(items []string, label string, bookMenuEnable bool) {
 	mlb.Synchronize(func() {
 		mlb.label.SetText(label)
 		mlb.Accessibility().SetName(label)
 		mlb.SetModel(items)
-		mlb.ListBox.SetContextMenu(menu)
+		bookMenuEnabled.SetSatisfied(bookMenuEnable)
+		if bookMenuEnable {
+			mlb.ListBox.SetContextMenu(bookMenu)
+		} else {
+			mlb.ListBox.SetContextMenu(nil)
+		}
 		mlb.SetCurrentIndex(0)
 	})
 }
 
 func (mlb *MainListBox) Clear() {
-	mlb.SetItems([]string{}, "", nil)
+	mlb.SetItems([]string{}, "", false)
 }
 
 func (mlb *MainListBox) CurrentIndex() int {

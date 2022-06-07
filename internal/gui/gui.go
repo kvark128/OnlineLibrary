@@ -16,8 +16,10 @@ var (
 	mainWindow                       *walk.MainWindow
 	MainList                         *MainListBox
 	libraryMenu                      *walk.Menu
+	libraryLogon                     *walk.MutableCondition
 	outputDeviceMenu                 *walk.Menu
-	BookMenu                         *walk.Menu
+	bookMenu                         *walk.Menu
+	bookMenuEnabled                  *walk.MutableCondition
 	logLevelMenu                     *walk.Menu
 	elapseTime, totalTime, fragments *walk.StatusBarItem
 	pauseTimerItem                   *walk.Action
@@ -27,6 +29,11 @@ func Initialize(msgCH chan msg.Message) error {
 	if mainWindow != nil {
 		panic("GUI already initialized")
 	}
+
+	libraryLogon = walk.NewMutableCondition()
+	MustRegisterCondition("libraryLogon", libraryLogon)
+	bookMenuEnabled = walk.NewMutableCondition()
+	MustRegisterCondition("bookMenuEnabled", bookMenuEnabled)
 
 	var lb *walk.ListBox
 	var label *walk.TextLabel
@@ -54,26 +61,31 @@ func Initialize(msgCH chan msg.Message) error {
 					Action{
 						Text:        "Главное меню",
 						Shortcut:    Shortcut{walk.ModControl, walk.KeyM},
+						Enabled:     Bind("libraryLogon"),
 						OnTriggered: func() { msgCH <- msg.Message{msg.MAIN_MENU, nil} },
 					},
 					Action{
 						Text:        "Книжная полка",
 						Shortcut:    Shortcut{walk.ModControl, walk.KeyE},
+						Enabled:     Bind("libraryLogon"),
 						OnTriggered: func() { msgCH <- msg.Message{msg.OPEN_BOOKSHELF, nil} },
 					},
 					Action{
 						Text:        "Новые поступления",
 						Shortcut:    Shortcut{walk.ModControl, walk.KeyK},
+						Enabled:     Bind("libraryLogon"),
 						OnTriggered: func() { msgCH <- msg.Message{msg.OPEN_NEWBOOKS, nil} },
 					},
 					Action{
 						Text:        "Поиск...",
 						Shortcut:    Shortcut{walk.ModControl, walk.KeyF},
+						Enabled:     Bind("libraryLogon"),
 						OnTriggered: func() { msgCH <- msg.Message{msg.SEARCH_BOOK, nil} },
 					},
 					Action{
 						Text:        "Предыдущее меню",
 						Shortcut:    Shortcut{0, walk.KeyBack},
+						Enabled:     Bind("libraryLogon"),
 						OnTriggered: func() { msgCH <- msg.Message{msg.MENU_BACK, nil} },
 					},
 					Action{
@@ -83,10 +95,12 @@ func Initialize(msgCH chan msg.Message) error {
 					},
 					Action{
 						Text:        "Информация о библиотеке",
+						Enabled:     Bind("libraryLogon"),
 						OnTriggered: func() { msgCH <- msg.Message{Code: msg.LIBRARY_INFO} },
 					},
 					Action{
 						Text:        "Удалить учётную запись",
+						Enabled:     Bind("libraryLogon"),
 						OnTriggered: func() { msgCH <- msg.Message{msg.LIBRARY_REMOVE, nil} },
 					},
 					Action{
@@ -99,21 +113,25 @@ func Initialize(msgCH chan msg.Message) error {
 
 			Menu{
 				Text:     "&Книга",
-				AssignTo: &BookMenu,
+				AssignTo: &bookMenu,
+				Enabled:  Bind("bookMenuEnabled"),
 				Items: []MenuItem{
 					Action{
 						Text:        "Загрузить книгу",
 						Shortcut:    Shortcut{walk.ModControl, walk.KeyD},
+						Enabled:     Bind("libraryLogon"),
 						OnTriggered: func() { msgCH <- msg.Message{msg.DOWNLOAD_BOOK, nil} },
 					},
 					Action{
 						Text:        "Убрать книгу с полки",
 						Shortcut:    Shortcut{walk.ModShift, walk.KeyDelete},
+						Enabled:     Bind("libraryLogon"),
 						OnTriggered: func() { msgCH <- msg.Message{msg.REMOVE_BOOK, nil} },
 					},
 					Action{
 						Text:        "Поставить книгу на полку",
 						Shortcut:    Shortcut{walk.ModControl, walk.KeyA},
+						Enabled:     Bind("libraryLogon"),
 						OnTriggered: func() { msgCH <- msg.Message{msg.ISSUE_BOOK, nil} },
 					},
 					Action{
@@ -373,6 +391,7 @@ func SetFragments(current, length int) {
 
 func SetProvidersMenu(msgCH chan msg.Message, services []*config.Service, currentID string) {
 	mainWindow.Synchronize(func() {
+		libraryLogon.SetSatisfied(false)
 		actions := libraryMenu.Actions()
 		// Delete all elements except the last one
 		for i := actions.Len(); i > 1; i-- {
@@ -385,6 +404,7 @@ func SetProvidersMenu(msgCH chan msg.Message, services []*config.Service, curren
 			id := service.ID
 			if id == currentID {
 				a.SetChecked(true)
+				libraryLogon.SetSatisfied(true)
 			}
 			a.SetText(service.Name)
 			a.Triggered().Attach(func() {
@@ -397,6 +417,15 @@ func SetProvidersMenu(msgCH chan msg.Message, services []*config.Service, curren
 			actions.Insert(i, a)
 		}
 	})
+}
+
+func SetBookMenuEnabled(enabled bool) {
+	done := make(chan bool)
+	mainWindow.Synchronize(func() {
+		bookMenuEnabled.SetSatisfied(enabled)
+		done <- true
+	})
+	<-done
 }
 
 func SetOutputDeviceMenu(msgCH chan msg.Message, deviceNames []string, current string) {

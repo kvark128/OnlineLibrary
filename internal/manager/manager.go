@@ -532,7 +532,7 @@ func (m *Manager) setMultipleChoiceQuestion(index int) {
 	}
 
 	m.contentList = nil
-	gui.MainList.SetItems(labels, choiceQuestion.Label.Text, nil)
+	gui.MainList.SetItems(labels, choiceQuestion.Label.Text, false)
 }
 
 func (m *Manager) setInputQuestion() {
@@ -593,7 +593,7 @@ func (m *Manager) updateContentList(contentList *ContentList) {
 
 	m.contentList = contentList
 	m.questions = nil
-	gui.MainList.SetItems(labels, contentList.Name, gui.BookMenu)
+	gui.MainList.SetItems(labels, contentList.Name, true)
 }
 
 func (m *Manager) setBookmark(bookmarkID string) {
