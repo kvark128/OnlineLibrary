@@ -551,7 +551,7 @@ func (m *Manager) setInputQuestion() {
 }
 
 func (m *Manager) setContentList(contentID string) {
-	log.Debug("Set content list: %s", contentID)
+	log.Debug("Set content list: %v", contentID)
 	contentList, err := m.provider.ContentList(contentID)
 	if err != nil {
 		m.messageBoxError(fmt.Errorf("GetContentList: %w", err))
@@ -637,6 +637,7 @@ func (m *Manager) setBookplayer(book ContentItem) error {
 		m.bookplayer.SetFragment(bookmark.Fragment)
 		m.bookplayer.SetPosition(bookmark.Position)
 	}
+	log.Debug("Set bookplayer: %v", book.ID())
 	return nil
 }
 
@@ -669,8 +670,7 @@ func (m *Manager) downloadBook(book ContentItem) error {
 		}
 	}
 
-	// Book downloading should not block handling of other messages
-	go func() {
+	dlFunc := func(rsrc []daisy.Resource, bookDir, bookID string) {
 		var err error
 		var totalSize, downloadedSize int64
 		ctx, cancelFunc := context.WithCancel(context.TODO())
@@ -682,6 +682,7 @@ func (m *Manager) downloadBook(book ContentItem) error {
 			totalSize += r.Size
 		}
 
+		log.Debug("Downloading book %v started", bookID)
 		for _, r := range rsrc {
 			err = func() error {
 				path := filepath.Join(bookDir, r.LocalURI)
@@ -746,8 +747,12 @@ func (m *Manager) downloadBook(book ContentItem) error {
 			gui.MessageBox("Ошибка", err.Error(), walk.MsgBoxOK|walk.MsgBoxIconError)
 		default:
 			gui.MessageBox("Уведомление", "Книга успешно загружена", walk.MsgBoxOK|walk.MsgBoxIconWarning)
+			log.Debug("Book %v has been successfully downloaded. Total size: %v", bookID, totalSize)
 		}
-	}()
+	}
+
+	// Book downloading should not block handling of other messages
+	go dlFunc(rsrc, bookDir, book.ID())
 	return nil
 }
 
