@@ -42,6 +42,7 @@ var PlaybackStopped = fmt.Errorf("playback stopped")
 type Player struct {
 	sync.Mutex
 	playList      []daisy.Resource
+	playListSize  int64
 	bookDir       string
 	playing       *util.Flag
 	wg            *sync.WaitGroup
@@ -71,6 +72,7 @@ func NewPlayer(bookDir string, resources []daisy.Resource, outputDevice string) 
 		ext := strings.ToLower(filepath.Ext(r.LocalURI))
 		if ext == LKF_EXT || ext == MP3_EXT {
 			p.playList = append(p.playList, r)
+			p.playListSize += r.Size
 		}
 	}
 
@@ -248,6 +250,14 @@ func (p *Player) stopPlayback() {
 	}
 }
 
+func (p *Player) sizeof(rsrc []daisy.Resource) int64 {
+	var size int64
+	for _, r := range rsrc {
+		size += r.Size
+	}
+	return size
+}
+
 func (p *Player) playback(startFragment int) {
 	log.Debug("Starting playback with fragment %v. Waiting other fragments...", startFragment)
 	p.wg.Wait()
@@ -321,12 +331,21 @@ func (p *Player) playback(startFragment int) {
 			p.Lock()
 			p.fragment = fragment
 			p.fragmentIndex = startFragment + index
-			gui.SetFragments(p.fragmentIndex, len(p.playList))
-			gui.SetTotalTime(time.Second * time.Duration(r.Size/int64(p.fragment.Bitrate*1000/8)))
+			prevFragmentsSize := p.sizeof(p.playList[:p.fragmentIndex])
+			byterate := int64(p.fragment.Bitrate * 1000 / 8)
+			gui.SetFragments(p.fragmentIndex+1, len(p.playList))
+			gui.SetTotalTime(time.Second * time.Duration(r.Size/byterate))
 			p.offset = 0
 			p.Unlock()
 
-			err = fragment.play(p.playing)
+			callback := func(d time.Duration) {
+				prevSize := byterate * int64(d.Seconds())
+				p := (prevFragmentsSize + prevSize) * 100 / p.playListSize
+				gui.SetElapsedTime(d)
+				gui.SetBookPercent(int(p))
+			}
+
+			err = fragment.play(p.playing, callback)
 			p.Lock()
 			p.fragment = nil
 			p.Unlock()

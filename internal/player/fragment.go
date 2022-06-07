@@ -7,7 +7,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/kvark128/OnlineLibrary/internal/gui"
 	"github.com/kvark128/OnlineLibrary/internal/util"
 	"github.com/kvark128/OnlineLibrary/internal/util/syncio"
 	"github.com/kvark128/OnlineLibrary/internal/waveout"
@@ -17,13 +16,14 @@ import (
 
 type Fragment struct {
 	sync.Mutex
-	paused         bool
-	stream         *sonic.Stream
-	dec            *minimp3.Decoder
-	pcmBytesPerSec int
-	Bitrate        int
-	wp             *waveout.WavePlayer
-	nWrite         int64
+	elapsedTimeCallback func(time.Duration)
+	paused              bool
+	stream              *sonic.Stream
+	dec                 *minimp3.Decoder
+	pcmBytesPerSec      int
+	Bitrate             int
+	wp                  *waveout.WavePlayer
+	nWrite              int64
 }
 
 const buffer_size = 1024 * 16
@@ -60,14 +60,15 @@ func NewFragment(mp3Source io.Reader, devName string) (*Fragment, error) {
 	return f, nil
 }
 
-func (f *Fragment) play(playing *util.Flag) error {
+func (f *Fragment) play(playing *util.Flag, callback func(time.Duration)) error {
+	f.elapsedTimeCallback = callback
 	var p int64
 	wp := bufio.NewWriterSize(f.wp, buffer_size)
 	stream := syncio.NewReadWriter(f.stream, f)
 	dec := syncio.NewReader(f.dec, f)
 
 	for playing.IsSet() {
-		gui.SetElapsedTime(f.Position())
+		f.elapsedTimeCallback(f.Position())
 		n, err := io.CopyN(stream, dec, buffer_size)
 		if err != nil {
 			if err != io.EOF {
@@ -97,7 +98,7 @@ func (f *Fragment) play(playing *util.Flag) error {
 	f.Lock()
 	f.nWrite += p
 	f.Unlock()
-	gui.SetElapsedTime(0)
+	f.elapsedTimeCallback(0)
 	return nil
 }
 
@@ -137,7 +138,9 @@ func (f *Fragment) SetPosition(pos time.Duration) error {
 	}
 
 	f.nWrite = newPos
-	gui.SetElapsedTime(pos)
+	if f.elapsedTimeCallback != nil {
+		f.elapsedTimeCallback(pos)
+	}
 	return nil
 }
 

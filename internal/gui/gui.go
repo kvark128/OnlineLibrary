@@ -13,16 +13,16 @@ import (
 )
 
 var (
-	mainWindow                       *walk.MainWindow
-	MainList                         *MainListBox
-	libraryMenu                      *walk.Menu
-	libraryLogon                     *walk.MutableCondition
-	outputDeviceMenu                 *walk.Menu
-	bookMenu                         *walk.Menu
-	bookMenuEnabled                  *walk.MutableCondition
-	logLevelMenu                     *walk.Menu
-	elapseTime, totalTime, fragments *walk.StatusBarItem
-	pauseTimerItem                   *walk.Action
+	mainWindow                                    *walk.MainWindow
+	MainList                                      *MainListBox
+	libraryMenu                                   *walk.Menu
+	libraryLogon                                  *walk.MutableCondition
+	outputDeviceMenu                              *walk.Menu
+	bookMenu                                      *walk.Menu
+	bookMenuEnabled                               *walk.MutableCondition
+	logLevelMenu                                  *walk.Menu
+	elapseTime, totalTime, fragments, bookPercent *walk.StatusBarItem
+	pauseTimerItem                                *walk.Action
 )
 
 func Initialize(msgCH chan msg.Message) error {
@@ -333,6 +333,9 @@ func Initialize(msgCH chan msg.Message) error {
 			StatusBarItem{
 				AssignTo: &fragments,
 			},
+			StatusBarItem{
+				AssignTo: &bookPercent,
+			},
 		},
 	}.Create()); err != nil {
 		return err
@@ -384,8 +387,15 @@ func SetTotalTime(total time.Duration) {
 
 func SetFragments(current, length int) {
 	mainWindow.Synchronize(func() {
-		text := fmt.Sprintf("Фрагмент %d из %d", current+1, length)
+		text := fmt.Sprintf("Фрагмент %d из %d", current, length)
 		fragments.SetText(text)
+	})
+}
+
+func SetBookPercent(p int) {
+	mainWindow.Synchronize(func() {
+		text := fmt.Sprintf("(%v%%)", p)
+		bookPercent.SetText(text)
 	})
 }
 
