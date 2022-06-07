@@ -129,10 +129,7 @@ func (m *Manager) Start(msgCH chan msg.Message, done chan<- bool) {
 				log.Error("Provider creating: %v", err)
 				break
 			}
-
-			m.setProvider(provider)
-			config.Conf.General.Provider = id
-			gui.SetProvidersMenu(msgCH, config.Conf.Services, id)
+			m.setProvider(provider, msgCH, id)
 
 		case msg.LIBRARY_ADD:
 			service := new(config.Service)
@@ -161,11 +158,8 @@ func (m *Manager) Start(msgCH chan msg.Message, done chan<- bool) {
 				m.messageBoxError(fmt.Errorf("library creating: %w", err))
 				break
 			}
-
-			m.setProvider(provider)
 			config.Conf.SetService(service)
-			config.Conf.General.Provider = service.ID
-			gui.SetProvidersMenu(msgCH, config.Conf.Services, service.ID)
+			m.setProvider(provider, msgCH, service.ID)
 
 		case msg.LIBRARY_REMOVE:
 			lib, ok := m.provider.(*Library)
@@ -462,9 +456,11 @@ func (m *Manager) cleaning() {
 	}
 }
 
-func (m *Manager) setProvider(provider Provider) {
+func (m *Manager) setProvider(provider Provider, msgCH chan msg.Message, id string) {
+	log.Info("Set provider: %v", id)
 	m.cleaning()
 	m.provider = provider
+	config.Conf.General.Provider = id
 	if id, err := m.provider.LastContentListID(); err == nil {
 		m.setContentList(id)
 	} else if _, ok := m.provider.(Questioner); ok {
@@ -477,6 +473,7 @@ func (m *Manager) setProvider(provider Provider) {
 			}
 		}
 	}
+	gui.SetProvidersMenu(msgCH, config.Conf.Services, id)
 }
 
 func (m *Manager) setQuestions(response ...daisy.UserResponse) {
