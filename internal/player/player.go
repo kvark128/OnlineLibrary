@@ -260,7 +260,7 @@ func (p *Player) playback(startFragment int) {
 	defer p.updateTimer(0)
 
 	for index, r := range p.playList[startFragment:] {
-		log.Debug("Fetching resource %v: MimeType %v; Size %v", r.LocalURI, r.MimeType, r.Size)
+		log.Debug("Fetching resource: %v\r\nMimeType: %v\r\nSize: %v", r.LocalURI, r.MimeType, r.Size)
 
 		err := func(r daisy.Resource) error {
 			var src io.ReadSeekCloser

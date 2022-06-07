@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"sync"
 	"time"
 )
@@ -68,8 +69,8 @@ func log(calldepth int, level Level, format string, args ...interface{}) {
 		file = "???"
 		line = 0
 	}
-	msg := fmt.Sprintf(format, args...)
-	fmt.Fprintf(out, "%s - %s:%d (%s):\r\n%s\r\n", level, filepath.Base(file), line, clock, msg)
+	msg := fmt.Sprintf(strings.ReplaceAll(format, "\n", "\n\t"), args...)
+	fmt.Fprintf(out, "%s - %s:%d (%s):\r\n\t%s\r\n", level, filepath.Base(file), line, clock, msg)
 }
 
 func Error(format string, args ...interface{}) {
