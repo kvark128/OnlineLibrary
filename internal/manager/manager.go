@@ -255,13 +255,13 @@ func (m *Manager) Start(msgCH chan msg.Message, done chan<- bool) {
 		case msg.PLAYER_SPEED_UP:
 			if m.bookplayer != nil {
 				value := m.bookplayer.Speed()
-				m.bookplayer.SetSpeed(value + 0.1)
+				m.bookplayer.SetSpeed(value + player.STEP_SPEED)
 			}
 
 		case msg.PLAYER_SPEED_DOWN:
 			if m.bookplayer != nil {
 				value := m.bookplayer.Speed()
-				m.bookplayer.SetSpeed(value - 0.1)
+				m.bookplayer.SetSpeed(value - player.STEP_SPEED)
 			}
 
 		case msg.PLAYER_VOLUME_RESET:
@@ -272,13 +272,13 @@ func (m *Manager) Start(msgCH chan msg.Message, done chan<- bool) {
 		case msg.PLAYER_VOLUME_UP:
 			if m.bookplayer != nil {
 				volume := m.bookplayer.Volume()
-				m.bookplayer.SetVolume(volume + 0.05)
+				m.bookplayer.SetVolume(volume + player.STEP_VOLUME)
 			}
 
 		case msg.PLAYER_VOLUME_DOWN:
 			if m.bookplayer != nil {
 				volume := m.bookplayer.Volume()
-				m.bookplayer.SetVolume(volume - 0.05)
+				m.bookplayer.SetVolume(volume - player.STEP_VOLUME)
 			}
 
 		case msg.PLAYER_OFFSET_POSITION:

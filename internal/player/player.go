@@ -22,10 +22,12 @@ const (
 	DEFAULT_SPEED = 1.0
 	MIN_SPEED     = 0.5
 	MAX_SPEED     = 3.0
+	STEP_SPEED    = 0.1
 
-	DEFAULT_VOLUME = 1.0
-	MIN_VOLUME     = 0.05
-	MAX_VOLUME     = 1.5
+	DEFAULT_VOLUME = 0.8
+	MIN_VOLUME     = 0.08
+	MAX_VOLUME     = 1.6
+	STEP_VOLUME    = 0.08
 )
 
 // Extensions of supported formats
