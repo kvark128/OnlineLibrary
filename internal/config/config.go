@@ -14,17 +14,19 @@ import (
 
 var (
 	ServiceNotFound = errors.New("service not found")
-	LocalStorageID  = "localstorage"
 )
 
 const (
-	ProgramAuthor     = "Kvark <kvark128@yandex.ru>"
-	ProgramName       = "OnlineLibrary"
-	ProgramVersion    = "2022.05.14"
-	ConfigFile        = "config.yaml"
-	LogFile           = "session.log"
-	MessageBufferSize = 16
-	HTTPTimeout       = time.Second * 12
+	ProgramAuthor      = "Kvark <kvark128@yandex.ru>"
+	ProgramName        = "OnlineLibrary"
+	ProgramVersion     = "2022.06.07"
+	ProgramDescription = "DAISY Online Client"
+	CopyrightInfo      = "Copyright (C) 2020 - 2022 Alexander Linkov"
+	ConfigFile         = "config.yaml"
+	LogFile            = "session.log"
+	MessageBufferSize  = 16
+	HTTPTimeout        = time.Second * 12
+	LocalStorageID     = "localstorage"
 )
 
 // Supported mime types of content

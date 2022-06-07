@@ -20,13 +20,15 @@ func main() {
 	}
 	flag.Parse()
 
-	vi := new(goversioninfo.VersionInfo)
-
-	vi.ManifestPath = *flagManifest
-	vi.StringFileInfo.FileDescription = "DAISY Online Client"
-	vi.StringFileInfo.ProductName = config.ProgramName
-	vi.StringFileInfo.ProductVersion = config.ProgramVersion
-	vi.StringFileInfo.LegalCopyright = "Copyright (c) 2020 - 2022 Alexander Linkov"
+	vi := &goversioninfo.VersionInfo{
+		ManifestPath: *flagManifest,
+		StringFileInfo: goversioninfo.StringFileInfo{
+			FileDescription: config.ProgramDescription,
+			ProductName:     config.ProgramName,
+			ProductVersion:  config.ProgramVersion,
+			LegalCopyright:  config.CopyrightInfo,
+		},
+	}
 
 	vi.Build()
 	vi.Walk()
