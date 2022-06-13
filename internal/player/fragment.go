@@ -16,14 +16,13 @@ import (
 
 type Fragment struct {
 	sync.Mutex
-	elapsedTimeCallback func(time.Duration)
-	paused              bool
-	stream              *sonic.Stream
-	dec                 *minimp3.Decoder
-	pcmBytesPerSec      int
-	Bitrate             int
-	wp                  *waveout.WavePlayer
-	nWrite              int64
+	paused         bool
+	stream         *sonic.Stream
+	dec            *minimp3.Decoder
+	pcmBytesPerSec int
+	Bitrate        int
+	wp             *waveout.WavePlayer
+	nWrite         int64
 }
 
 const buffer_size = 1024 * 16
@@ -60,15 +59,14 @@ func NewFragment(mp3Source io.Reader, devName string) (*Fragment, error) {
 	return f, nil
 }
 
-func (f *Fragment) play(playing *util.Flag, callback func(time.Duration)) error {
-	f.elapsedTimeCallback = callback
+func (f *Fragment) play(playing *util.Flag, elapsedTimeCallback func(time.Duration)) error {
 	var p int64
 	wp := bufio.NewWriterSize(f.wp, buffer_size)
 	stream := syncio.NewReadWriter(f.stream, f)
 	dec := syncio.NewReader(f.dec, f)
 
 	for playing.IsSet() {
-		f.elapsedTimeCallback(f.Position())
+		elapsedTimeCallback(f.Position())
 		n, err := io.CopyN(stream, dec, buffer_size)
 		if err != nil {
 			if err != io.EOF {
@@ -98,7 +96,7 @@ func (f *Fragment) play(playing *util.Flag, callback func(time.Duration)) error 
 	f.Lock()
 	f.nWrite += p
 	f.Unlock()
-	f.elapsedTimeCallback(0)
+	elapsedTimeCallback(0)
 	return nil
 }
 
@@ -138,9 +136,6 @@ func (f *Fragment) SetPosition(pos time.Duration) error {
 	}
 
 	f.nWrite = newPos
-	if f.elapsedTimeCallback != nil {
-		f.elapsedTimeCallback(pos)
-	}
 	return nil
 }
 

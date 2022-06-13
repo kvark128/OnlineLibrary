@@ -116,17 +116,19 @@ func (p *Player) Position() time.Duration {
 	return p.offset
 }
 
-func (p *Player) SetPosition(position time.Duration) {
+func (p *Player) SetPosition(pos time.Duration) {
 	p.Lock()
 	defer p.Unlock()
 	if !p.playing.IsSet() {
-		p.offset = position
+		p.offset = pos
 		return
 	}
 	if p.fragment != nil {
-		if err := p.fragment.SetPosition(position); err != nil {
+		if err := p.fragment.SetPosition(pos); err != nil {
 			log.Error("Set fragment position: %v", err)
+			return
 		}
+		gui.SetElapsedTime(p.fragment.Position())
 	}
 }
 
@@ -333,19 +335,20 @@ func (p *Player) playback(startFragment int) {
 			p.fragmentIndex = startFragment + index
 			prevFragmentsSize := p.sizeof(p.playList[:p.fragmentIndex])
 			byterate := int64(p.fragment.Bitrate * 1000 / 8)
-			gui.SetFragments(p.fragmentIndex+1, len(p.playList))
+			gui.SetElapsedTime(p.fragment.Position())
 			gui.SetTotalTime(time.Second * time.Duration(r.Size/byterate))
+			gui.SetFragments(p.fragmentIndex+1, len(p.playList))
 			p.offset = 0
 			p.Unlock()
 
-			callback := func(d time.Duration) {
+			elapsedTimeCallback := func(d time.Duration) {
 				prevSize := byterate * int64(d.Seconds())
 				p := (prevFragmentsSize + prevSize) * 100 / p.playListSize
 				gui.SetElapsedTime(d)
 				gui.SetBookPercent(int(p))
 			}
 
-			err = fragment.play(p.playing, callback)
+			err = fragment.play(p.playing, elapsedTimeCallback)
 			p.Lock()
 			p.fragment = nil
 			p.Unlock()
