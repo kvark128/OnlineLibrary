@@ -18,6 +18,7 @@ var (
 	libraryMenu                                   *walk.Menu
 	libraryLogon                                  *walk.MutableCondition
 	outputDeviceMenu                              *walk.Menu
+	bookmarkMenu                                  *walk.Menu
 	bookMenu                                      *walk.Menu
 	bookMenuEnabled                               *walk.MutableCondition
 	logLevelMenu                                  *walk.Menu
@@ -116,6 +117,17 @@ func Initialize(msgCH chan msg.Message) error {
 				AssignTo: &bookMenu,
 				Enabled:  Bind("bookMenuEnabled"),
 				Items: []MenuItem{
+					Menu{
+						Text:     "Закладки",
+						AssignTo: &bookmarkMenu,
+						Items: []MenuItem{
+							Action{
+								Text:        "Создать закладку",
+								Shortcut:    Shortcut{walk.ModControl, walk.KeyB},
+								OnTriggered: func() { msgCH <- msg.Message{msg.BOOKMARK_SET, nil} },
+							},
+						},
+					},
 					Action{
 						Text:        "Загрузить книгу",
 						Shortcut:    Shortcut{walk.ModControl, walk.KeyD},
@@ -425,6 +437,46 @@ func SetProvidersMenu(msgCH chan msg.Message, services []*config.Service, curren
 				msgCH <- msg.Message{msg.SET_PROVIDER, id}
 			})
 			actions.Insert(i, a)
+		}
+	})
+}
+
+func SetBookmarksMenu(msgCH chan msg.Message, bookmarks map[string]string) {
+	mainWindow.Synchronize(func() {
+		actions := bookmarkMenu.Actions()
+		// Delete all elements except the last one
+		for i := actions.Len(); i > 1; i-- {
+			actions.RemoveAt(0)
+		}
+
+		// Filling the menu with bookmarks
+		for id, name := range bookmarks {
+			if name == "" {
+				continue
+			}
+			id := id
+			subMenu, err := walk.NewMenu()
+			if err != nil {
+				panic(err)
+			}
+			a, err := actions.InsertMenu(0, subMenu)
+			if err != nil {
+				panic(err)
+			}
+			a.SetText(name)
+			bookmarkActions := subMenu.Actions()
+			moveAction := walk.NewAction()
+			moveAction.SetText("Перейти...")
+			moveAction.Triggered().Attach(func() {
+				msgCH <- msg.Message{msg.BOOKMARK_FETCH, id}
+			})
+			bookmarkActions.Add(moveAction)
+			removeAction := walk.NewAction()
+			removeAction.SetText("Удалить...")
+			removeAction.Triggered().Attach(func() {
+				msgCH <- msg.Message{msg.BOOKMARK_REMOVE, id}
+			})
+			bookmarkActions.Add(removeAction)
 		}
 	})
 }

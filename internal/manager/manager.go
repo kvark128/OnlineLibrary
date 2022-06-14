@@ -70,7 +70,7 @@ func (m *Manager) Start(msgCH chan msg.Message, done chan<- bool) {
 			if m.contentList != nil {
 				book := m.contentList.Items[index]
 				if m.book == nil || m.book.ID() != book.ID() {
-					if err := m.setBook(book); err != nil {
+					if err := m.setBook(msgCH, book); err != nil {
 						m.messageBoxError(fmt.Errorf("Set book: %w", err))
 						break
 					}
@@ -229,7 +229,7 @@ func (m *Manager) Start(msgCH chan msg.Message, done chan<- bool) {
 
 		case msg.PLAYER_STOP:
 			if m.book != nil {
-				m.book.SetBookmark(config.ListeningPosition)
+				m.book.SetBookmarkWithID(config.ListeningPosition)
 				m.book.Stop()
 			}
 
@@ -362,32 +362,49 @@ func (m *Manager) Start(msgCH chan msg.Message, done chan<- bool) {
 			}
 
 		case msg.BOOKMARK_SET:
-			bookmarkID, ok := message.Data.(string)
-			if !ok {
+			if m.book == nil {
+				// To set a bookmark, need a book
 				break
 			}
-			if m.book != nil {
-				m.book.SetBookmark(bookmarkID)
+			if bookmarkID, ok := message.Data.(string); ok {
+				m.book.SetBookmarkWithID(bookmarkID)
+				break
 			}
+			var bookmarkName string
+			if gui.TextEntryDialog("Создание новой закладки", "Имя закладки:", "", &bookmarkName) != walk.DlgCmdOK {
+				break
+			}
+			if err := m.book.SetBookmarkWithName(bookmarkName); err != nil {
+				log.Warning("Set bookmark with name: %v", err)
+			}
+			gui.SetBookmarksMenu(msgCH, m.book.Bookmarks())
 
 		case msg.BOOKMARK_FETCH:
-			bookmarkID, ok := message.Data.(string)
-			if !ok {
+			if m.book == nil {
 				break
 			}
-			if m.book != nil {
-				bookmark, err := m.book.conf.Bookmark(bookmarkID)
+			if bookmarkID, ok := message.Data.(string); ok {
+				if err := m.book.ToBookmark(bookmarkID); err != nil {
+					log.Warning("Bookmark fetching: %v", err)
+				}
+			}
+
+		case msg.BOOKMARK_REMOVE:
+			if m.book == nil {
+				break
+			}
+			if bookmarkID, ok := message.Data.(string); ok {
+				bookmark, err := m.book.Bookmark(bookmarkID)
 				if err != nil {
+					log.Warning("Bookmark removing: %v", err)
 					break
 				}
-				if f := m.book.Fragment(); f == bookmark.Fragment {
-					m.book.SetPosition(bookmark.Position)
+				msg := fmt.Sprintf("Вы действительно хотите удалить закладку «%v»?", bookmark.Name)
+				if gui.MessageBox("Удаление закладки", msg, walk.MsgBoxYesNo|walk.MsgBoxIconQuestion) != walk.DlgCmdYes {
 					break
 				}
-				m.book.Stop()
-				m.book.SetFragment(bookmark.Fragment)
-				m.book.SetPosition(bookmark.Position)
-				m.book.PlayPause()
+				m.book.RemoveBookmark(bookmarkID)
+				gui.SetBookmarksMenu(msgCH, m.book.Bookmarks())
 			}
 
 		case msg.LOG_SET_LEVEL:
@@ -458,7 +475,7 @@ func (m *Manager) setProvider(provider Provider, msgCH chan msg.Message, id stri
 	}
 	if id, err := m.provider.LastContentItemID(); err == nil {
 		if contentItem, err := m.provider.ContentItem(id); err == nil {
-			if err := m.setBook(contentItem); err != nil {
+			if err := m.setBook(msgCH, contentItem); err != nil {
 				log.Error("Set book: %v", err)
 			}
 		}
@@ -586,7 +603,7 @@ func (m *Manager) updateContentList(contentList *ContentList) {
 	gui.MainList.SetItems(labels, contentList.Name, true)
 }
 
-func (m *Manager) setBook(contentItem ContentItem) error {
+func (m *Manager) setBook(msgCH chan msg.Message, contentItem ContentItem) error {
 	book, err := NewBook(contentItem)
 	if err != nil {
 		return err
@@ -597,6 +614,7 @@ func (m *Manager) setBook(contentItem ContentItem) error {
 	}
 
 	gui.SetMainWindowTitle(book.Name())
+	gui.SetBookmarksMenu(msgCH, book.Bookmarks())
 	m.book = book
 	log.Debug("Set book: %v", book.ID())
 	return nil

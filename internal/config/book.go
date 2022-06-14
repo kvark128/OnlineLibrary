@@ -9,7 +9,6 @@ import (
 
 var (
 	BookNotFound      = errors.New("book not found")
-	BookmarkNotFound  = errors.New("bookmark not found")
 	ListeningPosition = "listening_position"
 )
 
@@ -31,20 +30,6 @@ type Book struct {
 	Speed float64 `yaml:"speed,omitempty"`
 	// Set of bookmarks in the book
 	Bookmarks map[string]Bookmark `yaml:"bookmarks,omitempty"`
-}
-
-func (b *Book) SetBookmark(id string, bookmark Bookmark) {
-	if b.Bookmarks == nil {
-		b.Bookmarks = make(map[string]Bookmark)
-	}
-	b.Bookmarks[id] = bookmark
-}
-
-func (b *Book) Bookmark(id string) (Bookmark, error) {
-	if bookmark, ok := b.Bookmarks[id]; ok {
-		return bookmark, nil
-	}
-	return Bookmark{}, BookmarkNotFound
 }
 
 type BookSet []Book
