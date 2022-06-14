@@ -19,37 +19,36 @@ type ContentList struct {
 
 type LibraryContentItem struct {
 	library *Library
-	book    config.Book
+	conf    config.Book
 }
 
 func NewLibraryContentItem(library *Library, id, name string) *LibraryContentItem {
 	ci := &LibraryContentItem{
 		library: library,
-		book: config.Book{
+		conf: config.Book{
 			Name:  name,
 			ID:    id,
 			Speed: player.DEFAULT_SPEED,
 		},
 	}
 
-	if book, err := ci.library.service.RecentBooks.Book(id); err == nil {
-		ci.book = book
+	if conf, err := ci.library.service.RecentBooks.Book(id); err == nil {
+		ci.conf = conf
 	}
-
-	ci.book.Name = name
+	ci.conf.Name = name
 	return ci
 }
 
 func (ci *LibraryContentItem) ID() string {
-	return ci.book.ID
+	return ci.conf.ID
 }
 
 func (ci *LibraryContentItem) Name() string {
-	return ci.book.Name
+	return ci.conf.Name
 }
 
 func (ci *LibraryContentItem) Resources() ([]daisy.Resource, error) {
-	r, err := ci.library.GetContentResources(ci.book.ID)
+	r, err := ci.library.GetContentResources(ci.conf.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -57,55 +56,55 @@ func (ci *LibraryContentItem) Resources() ([]daisy.Resource, error) {
 }
 
 func (ci *LibraryContentItem) ContentMetadata() (*daisy.ContentMetadata, error) {
-	return ci.library.GetContentMetadata(ci.book.ID)
+	return ci.library.GetContentMetadata(ci.conf.ID)
 }
 
 func (ci *LibraryContentItem) Issue() error {
-	_, err := ci.library.IssueContent(ci.book.ID)
+	_, err := ci.library.IssueContent(ci.conf.ID)
 	return err
 }
 
 func (ci *LibraryContentItem) Return() error {
-	_, err := ci.library.ReturnContent(ci.book.ID)
+	_, err := ci.library.ReturnContent(ci.conf.ID)
 	return err
 }
 
 func (ci *LibraryContentItem) Config() config.Book {
-	return ci.book
+	return ci.conf
 }
 
-func (ci *LibraryContentItem) SetConfig(book config.Book) {
-	ci.book = book
-	ci.library.service.RecentBooks.SetBook(book)
+func (ci *LibraryContentItem) SetConfig(conf config.Book) {
+	ci.conf = conf
+	ci.library.service.RecentBooks.SetBook(conf)
 }
 
 type LocalContentItem struct {
 	path string
-	book config.Book
+	conf config.Book
 }
 
 func NewLocalContentItem(path string) *LocalContentItem {
 	ci := &LocalContentItem{
-		book: config.Book{
+		path: path,
+		conf: config.Book{
 			Name:  filepath.Base(path),
 			ID:    filepath.Base(path),
 			Speed: player.DEFAULT_SPEED,
 		},
-		path: path,
 	}
 
-	if book, err := config.Conf.LocalBooks.Book(ci.book.ID); err == nil {
-		ci.book = book
+	if conf, err := config.Conf.LocalBooks.Book(ci.conf.ID); err == nil {
+		ci.conf = conf
 	}
 	return ci
 }
 
 func (ci *LocalContentItem) Name() string {
-	return ci.book.Name
+	return ci.conf.Name
 }
 
 func (ci *LocalContentItem) ID() string {
-	return ci.book.ID
+	return ci.conf.ID
 }
 
 func (ci *LocalContentItem) Resources() ([]daisy.Resource, error) {
@@ -148,10 +147,10 @@ func (ci *LocalContentItem) ContentMetadata() (*daisy.ContentMetadata, error) {
 }
 
 func (ci *LocalContentItem) Config() config.Book {
-	return ci.book
+	return ci.conf
 }
 
-func (ci *LocalContentItem) SetConfig(book config.Book) {
-	ci.book = book
-	config.Conf.LocalBooks.SetBook(book)
+func (ci *LocalContentItem) SetConfig(conf config.Book) {
+	ci.conf = conf
+	config.Conf.LocalBooks.SetBook(conf)
 }

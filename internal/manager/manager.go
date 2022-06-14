@@ -487,7 +487,7 @@ func (m *Manager) setProvider(provider Provider, msgCH chan msg.Message, id stri
 }
 
 func (m *Manager) setQuestions(response ...daisy.UserResponse) {
-	lib, ok := m.provider.(*Library)
+	qst, ok := m.provider.(Questioner)
 	if !ok {
 		m.messageBoxError(OperationNotSupported)
 		return
@@ -501,7 +501,7 @@ func (m *Manager) setQuestions(response ...daisy.UserResponse) {
 	}
 
 	ur := daisy.UserResponses{UserResponse: response}
-	questions, err := lib.GetQuestions(&ur)
+	questions, err := qst.GetQuestions(&ur)
 	if err != nil {
 		m.messageBoxError(fmt.Errorf("GetQuestions: %w", err))
 		m.questions = nil
