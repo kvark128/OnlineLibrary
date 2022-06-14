@@ -17,9 +17,9 @@ var (
 )
 
 const (
-	ProgramAuthor      = "Kvark <kvark128@yandex.ru>"
+	ProgramAuthor      = "Alexander Linkov <kvark128@yandex.ru>"
 	ProgramName        = "OnlineLibrary"
-	ProgramVersion     = "2022.06.07"
+	ProgramVersion     = "2022.06.14"
 	ProgramDescription = "DAISY Online Client"
 	CopyrightInfo      = "Copyright (C) 2020 - 2022 Alexander Linkov"
 	ConfigFile         = "config.yaml"

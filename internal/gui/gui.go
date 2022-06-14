@@ -318,8 +318,8 @@ func Initialize(msgCH chan msg.Message) error {
 					Action{
 						Text: "О программе",
 						OnTriggered: func() {
-							text := fmt.Sprintf("%v версия %v\nКаталог приложения: %s", config.ProgramName, config.ProgramVersion, config.UserData())
-							walk.MsgBox(mainWindow, "О программе", text, walk.MsgBoxOK|walk.MsgBoxIconInformation)
+							msg := fmt.Sprintf("%v версия %v\nРабочий каталог: %v\nАвтор: %v", config.ProgramName, config.ProgramVersion, config.UserData(), config.CopyrightInfo)
+							walk.MsgBox(mainWindow, "О программе", msg, walk.MsgBoxOK|walk.MsgBoxIconInformation)
 						},
 					},
 				},
