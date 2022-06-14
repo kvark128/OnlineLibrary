@@ -290,43 +290,46 @@ func (m *Manager) Start(msgCH chan msg.Message, done chan<- bool) {
 			}
 
 		case msg.PLAYER_GOTO_FRAGMENT:
+			if m.book == nil {
+				break
+			}
 			fragment, ok := message.Data.(int)
 			if !ok {
 				var text string
-				var curFragment int
-				if m.book != nil {
-					curFragment = m.book.Fragment()
-				}
-				if gui.TextEntryDialog("Переход к фрагменту", "Введите номер фрагмента:", strconv.Itoa(curFragment+1), &text) != walk.DlgCmdOK {
+				var err error
+				fragment = m.book.Fragment()
+				fragment++ // User needs a fragment number instead of an index
+				if gui.TextEntryDialog("Переход к фрагменту", "Введите номер фрагмента:", strconv.Itoa(fragment), &text) != walk.DlgCmdOK {
 					break
 				}
-				newFragment, err := strconv.Atoi(text)
+				fragment, err = strconv.Atoi(text)
 				if err != nil {
+					log.Error("Goto fragment: %v", err)
 					break
 				}
-				fragment = newFragment - 1 // Requires an index of fragment
+				fragment-- // Player needs the fragment index instead of its number
 			}
-			if m.book != nil {
-				m.book.SetFragment(fragment)
-			}
+			m.book.SetFragment(fragment)
 
 		case msg.PLAYER_GOTO_POSITION:
-			var text string
-			var pos time.Duration
-			if m.book != nil {
+			if m.book == nil {
+				break
+			}
+			pos, ok := message.Data.(time.Duration)
+			if !ok {
+				var text string
+				var err error
 				pos = m.book.Position()
+				if gui.TextEntryDialog("Переход к позиции", "Введите позицию фрагмента:", util.FmtDuration(pos), &text) != walk.DlgCmdOK {
+					break
+				}
+				pos, err = util.ParseDuration(text)
+				if err != nil {
+					log.Error("Goto position: %v", err)
+					break
+				}
 			}
-			if gui.TextEntryDialog("Переход к позиции", "Введите позицию фрагмента:", util.FmtDuration(pos), &text) != walk.DlgCmdOK {
-				break
-			}
-			position, err := util.ParseDuration(text)
-			if err != nil {
-				log.Error("Goto position: %v", err)
-				break
-			}
-			if m.book != nil {
-				m.book.SetPosition(position)
-			}
+			m.book.SetPosition(pos)
 
 		case msg.PLAYER_OUTPUT_DEVICE:
 			device, ok := message.Data.(string)

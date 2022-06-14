@@ -198,6 +198,11 @@ func Initialize(msgCH chan msg.Message) error {
 						Text: "Переход по фрагменту",
 						Items: []MenuItem{
 							Action{
+								Text:        "В начало фрагмента",
+								Shortcut:    Shortcut{walk.ModShift, walk.KeyBack},
+								OnTriggered: func() { msgCH <- msg.Message{msg.PLAYER_GOTO_POSITION, time.Duration(0)} },
+							},
+							Action{
 								Text:        "На указанную позицию",
 								Shortcut:    Shortcut{walk.ModShift, walk.KeyG},
 								OnTriggered: func() { msgCH <- msg.Message{msg.PLAYER_GOTO_POSITION, nil} },
