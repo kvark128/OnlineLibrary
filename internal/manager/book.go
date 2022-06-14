@@ -27,6 +27,10 @@ func NewBook(contentItem ContentItem) (*Book, error) {
 		return nil, fmt.Errorf("GetContentResources: %v", err)
 	}
 
+	if book.conf.Bookmarks == nil {
+		book.conf.Bookmarks = make(map[string]config.Bookmark)
+	}
+
 	bookDir := filepath.Join(config.UserData(), util.ReplaceForbiddenCharacters(book.Name()))
 	book.Player = player.NewPlayer(bookDir, rsrc, config.Conf.General.OutputDevice)
 	book.SetSpeed(book.conf.Speed)
@@ -63,9 +67,6 @@ func (book *Book) setBookmark(id, name string) {
 	bookmark.Fragment = book.Fragment()
 	// For convenience, we truncate the time to the nearest tenth of a second
 	bookmark.Position = book.Position().Truncate(time.Millisecond * 100)
-	if book.conf.Bookmarks == nil {
-		book.conf.Bookmarks = make(map[string]config.Bookmark)
-	}
 	book.conf.Bookmarks[id] = bookmark
 }
 
