@@ -371,7 +371,7 @@ func (m *Manager) Start(msgCH chan msg.Message, done chan<- bool) {
 				break
 			}
 			var bookmarkName string
-			if gui.TextEntryDialog("Создание новой закладки", "Имя закладки:", "", &bookmarkName) != walk.DlgCmdOK {
+			if gui.TextEntryDialog("Добавление новой закладки", "Имя закладки:", "", &bookmarkName) != walk.DlgCmdOK {
 				break
 			}
 			if err := m.book.SetBookmarkWithName(bookmarkName); err != nil {

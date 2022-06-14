@@ -117,17 +117,6 @@ func Initialize(msgCH chan msg.Message) error {
 				AssignTo: &bookMenu,
 				Enabled:  Bind("bookMenuEnabled"),
 				Items: []MenuItem{
-					Menu{
-						Text:     "Закладки",
-						AssignTo: &bookmarkMenu,
-						Items: []MenuItem{
-							Action{
-								Text:        "Создать закладку",
-								Shortcut:    Shortcut{walk.ModControl, walk.KeyB},
-								OnTriggered: func() { msgCH <- msg.Message{msg.BOOKMARK_SET, nil} },
-							},
-						},
-					},
 					Action{
 						Text:        "Загрузить книгу",
 						Shortcut:    Shortcut{walk.ModControl, walk.KeyD},
@@ -157,6 +146,17 @@ func Initialize(msgCH chan msg.Message) error {
 			Menu{
 				Text: "&Воспроизведение",
 				Items: []MenuItem{
+					Menu{
+						Text:     "Закладки",
+						AssignTo: &bookmarkMenu,
+						Items: []MenuItem{
+							Action{
+								Text:        "Добавить закладку",
+								Shortcut:    Shortcut{walk.ModControl, walk.KeyB},
+								OnTriggered: func() { msgCH <- msg.Message{msg.BOOKMARK_SET, nil} },
+							},
+						},
+					},
 					Action{
 						Text:        "Воспроизвести / Приостановить",
 						Shortcut:    Shortcut{Key: walk.KeySpace},
