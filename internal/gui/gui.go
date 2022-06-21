@@ -564,7 +564,6 @@ func Credentials(service *config.Service) int {
 			LineEdit{
 				Accessibility: Accessibility{Name: "Адрес сервера:"},
 				AssignTo:      &urlLE,
-				Text:          "https://",
 			},
 
 			TextLabel{Text: "Имя пользователя:"},
