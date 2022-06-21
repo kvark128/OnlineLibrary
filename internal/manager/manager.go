@@ -115,15 +115,17 @@ func (m *Manager) Start(msgCH chan msg.Message, done chan<- bool) {
 			if id == config.LocalStorageID {
 				provider = NewLocalStorage()
 			} else {
-				service, err := config.Conf.ServiceByID(id)
+				var service *config.Service
+				service, err = config.Conf.ServiceByID(id)
 				if err != nil {
+					log.Debug("Get service %v: %v", id, err)
 					break
 				}
 				provider, err = NewLibrary(service)
 			}
 
 			if err != nil {
-				log.Error("Provider creating: %v", err)
+				log.Error("Provider creating %v: %v", id, err)
 				break
 			}
 			m.setProvider(provider, msgCH, id)

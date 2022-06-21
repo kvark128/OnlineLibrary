@@ -435,10 +435,6 @@ func SetProvidersMenu(msgCH chan msg.Message, services []*config.Service, curren
 			}
 			a.SetText(service.Name)
 			a.Triggered().Attach(func() {
-				for index := 0; index < actions.Len(); index++ {
-					actions.At(index).SetChecked(false)
-				}
-				a.SetChecked(true)
 				msgCH <- msg.Message{msg.SET_PROVIDER, id}
 			})
 			actions.Insert(i, a)
