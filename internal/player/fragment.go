@@ -20,12 +20,14 @@ type Fragment struct {
 	stream         *sonic.Stream
 	dec            *minimp3.Decoder
 	pcmBytesPerSec int
+	wpBufSize      int
 	Bitrate        int
 	wp             *waveout.WavePlayer
-	nWrite         int64
+	willBeStopped  bool
+	pos            time.Duration
 }
 
-const buffer_size = 1024 * 16
+const BufferDuration = time.Millisecond * 400
 
 func NewFragment(mp3Source io.Reader, devName string) (*Fragment, error) {
 	dec := minimp3.NewDecoder(mp3Source)
@@ -43,13 +45,15 @@ func NewFragment(mp3Source io.Reader, devName string) (*Fragment, error) {
 		return nil, fmt.Errorf("invalid mp3")
 	}
 
-	wp, err := waveout.NewWavePlayer(channels, sampleRate, 16, buffer_size, devName)
+	wpBufSize := int(time.Duration(pcmBytesPerSec) * BufferDuration / time.Second)
+	wp, err := waveout.NewWavePlayer(channels, sampleRate, 16, wpBufSize, devName)
 	if err != nil {
 		return nil, err
 	}
 
 	f := &Fragment{
 		pcmBytesPerSec: pcmBytesPerSec,
+		wpBufSize:      wpBufSize,
 		Bitrate:        bitrate,
 		stream:         sonic.NewStream(sampleRate, channels),
 		dec:            dec,
@@ -60,14 +64,14 @@ func NewFragment(mp3Source io.Reader, devName string) (*Fragment, error) {
 }
 
 func (f *Fragment) play(playing *util.Flag, elapsedTimeCallback func(time.Duration)) error {
-	var p int64
-	wp := bufio.NewWriterSize(f.wp, buffer_size)
+	var p time.Duration
+	wp := bufio.NewWriterSize(f.wp, f.wpBufSize)
 	stream := syncio.NewReadWriter(f.stream, f)
 	dec := syncio.NewReader(f.dec, f)
 
 	for playing.IsSet() {
 		elapsedTimeCallback(f.Position())
-		n, err := io.CopyN(stream, dec, buffer_size)
+		_, err := io.CopyN(stream, dec, int64(f.wpBufSize))
 		if err != nil {
 			if err != io.EOF {
 				f.wp.Stop()
@@ -81,9 +85,14 @@ func (f *Fragment) play(playing *util.Flag, elapsedTimeCallback func(time.Durati
 			return fmt.Errorf("copying from sonic stream to wave player: %w", err)
 		}
 		f.Lock()
-		f.nWrite += p
+		if f.willBeStopped {
+			p = 0
+			f.willBeStopped = false
+		} else {
+			f.pos += p
+			p = BufferDuration
+		}
 		f.Unlock()
-		p = n
 
 		if err != nil {
 			// Here err is always io.EOF
@@ -94,7 +103,7 @@ func (f *Fragment) play(playing *util.Flag, elapsedTimeCallback func(time.Durati
 
 	f.wp.Sync()
 	f.Lock()
-	f.nWrite += p
+	f.pos += p
 	f.Unlock()
 	elapsedTimeCallback(0)
 	return nil
@@ -117,32 +126,34 @@ func (f *Fragment) SetPosition(pos time.Duration) error {
 	defer f.Unlock()
 
 	if pos < 0 {
+		// Negative position means the beginning of the fragment
 		pos = 0
 	}
 
+	if pos == f.pos {
+		// Requested position has already been set
+		return nil
+	}
+
 	f.wp.Stop()
+	f.willBeStopped = true
 	f.stream.Flush()
 	io.ReadAll(f.stream)
 
 	offset := int64(pos / (time.Second / time.Duration(f.pcmBytesPerSec)))
-	if f.nWrite == offset {
-		// Required position already set
-		return nil
-	}
-
-	newPos, err := f.dec.Seek(offset, io.SeekStart)
+	_, err := f.dec.Seek(offset, io.SeekStart)
 	if err != nil {
 		return err
 	}
 
-	f.nWrite = newPos
+	f.pos = pos
 	return nil
 }
 
 func (f *Fragment) Position() time.Duration {
 	f.Lock()
 	defer f.Unlock()
-	return time.Second / time.Duration(f.pcmBytesPerSec) * time.Duration(f.nWrite)
+	return f.pos
 }
 
 func (f *Fragment) pause(pause bool) bool {
