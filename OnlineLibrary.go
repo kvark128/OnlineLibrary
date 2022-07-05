@@ -14,14 +14,22 @@ import (
 )
 
 func main() {
-	if fl, err := os.Create(filepath.Join(config.UserData(), config.LogFile)); err == nil {
+	userDataDir := config.UserData()
+	if err := os.MkdirAll(userDataDir, os.ModeDir); err != nil {
+		os.Exit(1)
+	}
+
+	configFile := filepath.Join(userDataDir, config.ConfigFile)
+	logFile := filepath.Join(userDataDir, config.LogFile)
+
+	if fl, err := os.Create(logFile); err == nil {
 		log.SetOutput(fl)
 		defer fl.Close()
 	}
 
 	log.Info("Starting OnlineLibrary version %s", config.ProgramVersion)
 	conf := config.NewConfig()
-	conf.Load()
+	conf.Load(configFile)
 
 	if level, err := log.StringToLevel(conf.General.LogLevel); err == nil {
 		log.SetLevel(level)
@@ -58,6 +66,6 @@ func main() {
 		os.Exit(1)
 	}
 
-	conf.Save()
+	conf.Save(configFile)
 	log.Info("Exiting")
 }

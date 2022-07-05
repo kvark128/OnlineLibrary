@@ -152,10 +152,7 @@ func NewConfig() *Config {
 	return cfg
 }
 
-func (cfg *Config) Load() {
-	os.MkdirAll(UserData(), os.ModeDir)
-
-	path := filepath.Join(UserData(), ConfigFile)
+func (cfg *Config) Load(path string) {
 	f, err := os.Open(path)
 	if err != nil {
 		log.Error("Opening config file: %v", err)
@@ -168,12 +165,10 @@ func (cfg *Config) Load() {
 		log.Error("Reading from config file: %v", err)
 		return
 	}
-
 	log.Info("Loading config from %v", path)
 }
 
-func (cfg *Config) Save() {
-	path := filepath.Join(UserData(), ConfigFile)
+func (cfg *Config) Save(path string) {
 	f, err := util.CreateSecureFile(path)
 	if err != nil {
 		log.Error("Creating config file: %v", err)
@@ -182,12 +177,10 @@ func (cfg *Config) Save() {
 	defer f.Close()
 
 	e := yaml.NewEncoder(f)
-	//e.SetIndent("", "\t") // for readability
 	if err := e.Encode(cfg); err != nil {
 		f.Corrupted()
 		log.Error("Writing to config file: %v", err)
 		return
 	}
-
 	log.Info("Saving config to %v", path)
 }
