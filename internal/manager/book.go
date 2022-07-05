@@ -13,13 +13,15 @@ import (
 type Book struct {
 	ContentItem
 	*player.Player
-	conf config.Book
+	conf       config.Book
+	globalConf *config.Config
 }
 
-func NewBook(contentItem ContentItem) (*Book, error) {
+func NewBook(conf *config.Config, contentItem ContentItem) (*Book, error) {
 	book := &Book{
 		ContentItem: contentItem,
 		conf:        contentItem.Config(),
+		globalConf:  conf,
 	}
 
 	rsrc, err := book.Resources()
@@ -32,10 +34,10 @@ func NewBook(contentItem ContentItem) (*Book, error) {
 	}
 
 	bookDir := filepath.Join(config.UserData(), util.ReplaceForbiddenCharacters(book.Name()))
-	book.Player = player.NewPlayer(bookDir, rsrc, config.Conf.General.OutputDevice)
+	book.Player = player.NewPlayer(bookDir, rsrc, book.globalConf.General.OutputDevice)
 	book.SetSpeed(book.conf.Speed)
-	book.SetTimerDuration(config.Conf.General.PauseTimer)
-	book.SetVolume(config.Conf.General.Volume)
+	book.SetTimerDuration(book.globalConf.General.PauseTimer)
+	book.SetVolume(book.globalConf.General.Volume)
 	if bookmark, err := book.Bookmark(config.ListeningPosition); err == nil {
 		book.SetFragment(bookmark.Fragment)
 		book.SetPosition(bookmark.Position)
@@ -107,7 +109,7 @@ func (book *Book) Bookmarks() map[string]string {
 
 func (book *Book) Close() {
 	book.SetBookmarkWithID(config.ListeningPosition)
-	config.Conf.General.Volume = book.Volume()
+	book.globalConf.General.Volume = book.Volume()
 	book.conf.Speed = book.Speed()
 	book.SetConfig(book.conf)
 	book.Stop()

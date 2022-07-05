@@ -45,7 +45,7 @@ type Manager struct {
 	lastInputText string
 }
 
-func (m *Manager) Start(msgCH chan msg.Message, done chan<- bool) {
+func (m *Manager) Start(conf *config.Config, msgCH chan msg.Message, done chan<- bool) {
 	log.Debug("Entering to Manager Loop")
 	defer func() {
 		if p := recover(); p != nil {
@@ -59,8 +59,8 @@ func (m *Manager) Start(msgCH chan msg.Message, done chan<- bool) {
 		done <- true
 	}()
 
-	if config.Conf.General.Provider != "" {
-		msgCH <- msg.Message{Code: msg.SET_PROVIDER, Data: config.Conf.General.Provider}
+	if conf.General.Provider != "" {
+		msgCH <- msg.Message{Code: msg.SET_PROVIDER, Data: conf.General.Provider}
 	}
 
 	for message := range msgCH {
@@ -70,7 +70,7 @@ func (m *Manager) Start(msgCH chan msg.Message, done chan<- bool) {
 			if m.contentList != nil {
 				book := m.contentList.Items[index]
 				if m.book == nil || m.book.ID() != book.ID() {
-					if err := m.setBook(msgCH, book); err != nil {
+					if err := m.setBook(conf, msgCH, book); err != nil {
 						m.messageBoxError(fmt.Errorf("Set book: %w", err))
 						break
 					}
@@ -113,22 +113,22 @@ func (m *Manager) Start(msgCH chan msg.Message, done chan<- bool) {
 			var provider Provider
 			var err error
 			if id == config.LocalStorageID {
-				provider = NewLocalStorage()
+				provider = NewLocalStorage(conf)
 			} else {
 				var service *config.Service
-				service, err = config.Conf.ServiceByID(id)
+				service, err = conf.ServiceByID(id)
 				if err != nil {
 					log.Debug("Get service %v: %v", id, err)
 					break
 				}
-				provider, err = NewLibrary(service)
+				provider, err = NewLibrary(conf, service)
 			}
 
 			if err != nil {
 				log.Error("Provider creating %v: %v", id, err)
 				break
 			}
-			m.setProvider(provider, msgCH, id)
+			m.setProvider(provider, conf, msgCH, id)
 
 		case msg.LIBRARY_ADD:
 			service := new(config.Service)
@@ -137,7 +137,7 @@ func (m *Manager) Start(msgCH chan msg.Message, done chan<- bool) {
 				break
 			}
 
-			if _, err := config.Conf.ServiceByName(service.Name); err == nil {
+			if _, err := conf.ServiceByName(service.Name); err == nil {
 				gui.MessageBox("Ошибка", fmt.Sprintf("Учётная запись «%v» уже существует", service.Name), walk.MsgBoxOK|walk.MsgBoxIconError)
 				break
 			}
@@ -145,20 +145,20 @@ func (m *Manager) Start(msgCH chan msg.Message, done chan<- bool) {
 			// Service id creation. Maximum index value of 256 is intended to protect against an infinite loop
 			for i := 0; i < 256; i++ {
 				id := fmt.Sprintf("library%d", i)
-				if _, err := config.Conf.ServiceByID(id); err != nil {
+				if _, err := conf.ServiceByID(id); err != nil {
 					service.ID = id
 					log.Debug("Created new service id: %v", id)
 					break
 				}
 			}
 
-			provider, err := NewLibrary(service)
+			provider, err := NewLibrary(conf, service)
 			if err != nil {
 				m.messageBoxError(fmt.Errorf("library creating: %w", err))
 				break
 			}
-			config.Conf.SetService(service)
-			m.setProvider(provider, msgCH, service.ID)
+			conf.SetService(service)
+			m.setProvider(provider, conf, msgCH, service.ID)
 
 		case msg.LIBRARY_REMOVE:
 			lib, ok := m.provider.(*Library)
@@ -169,9 +169,9 @@ func (m *Manager) Start(msgCH chan msg.Message, done chan<- bool) {
 			if gui.MessageBox("Удаление учётной записи", msg, walk.MsgBoxYesNo|walk.MsgBoxIconQuestion) != walk.DlgCmdYes {
 				break
 			}
-			config.Conf.RemoveService(lib.service)
+			conf.RemoveService(lib.service)
 			m.cleaning()
-			gui.SetProvidersMenu(msgCH, config.Conf.Services, "")
+			gui.SetProvidersMenu(msgCH, conf.Services, "")
 
 		case msg.ISSUE_BOOK:
 			if m.contentList == nil {
@@ -339,7 +339,7 @@ func (m *Manager) Start(msgCH chan msg.Message, done chan<- bool) {
 				log.Error("Invalid output device")
 				break
 			}
-			config.Conf.General.OutputDevice = device
+			conf.General.OutputDevice = device
 			if m.book != nil {
 				m.book.SetOutputDevice(device)
 			}
@@ -360,10 +360,10 @@ func (m *Manager) Start(msgCH chan msg.Message, done chan<- bool) {
 				break
 			}
 
-			config.Conf.General.PauseTimer = time.Minute * time.Duration(n)
+			conf.General.PauseTimer = time.Minute * time.Duration(n)
 			gui.SetPauseTimerLabel(n)
 			if m.book != nil {
-				m.book.SetTimerDuration(config.Conf.General.PauseTimer)
+				m.book.SetTimerDuration(conf.General.PauseTimer)
 			}
 
 		case msg.BOOKMARK_SET:
@@ -418,7 +418,7 @@ func (m *Manager) Start(msgCH chan msg.Message, done chan<- bool) {
 				log.Error("Invalid log level")
 				break
 			}
-			config.Conf.General.LogLevel = level.String()
+			conf.General.LogLevel = level.String()
 			log.SetLevel(level)
 			log.Info("Set log level to %s", level)
 
@@ -468,11 +468,11 @@ func (m *Manager) cleaning() {
 	}
 }
 
-func (m *Manager) setProvider(provider Provider, msgCH chan msg.Message, id string) {
+func (m *Manager) setProvider(provider Provider, conf *config.Config, msgCH chan msg.Message, id string) {
 	log.Info("Set provider: %v", id)
 	m.cleaning()
 	m.provider = provider
-	config.Conf.General.Provider = id
+	conf.General.Provider = id
 	if id, err := m.provider.LastContentListID(); err == nil {
 		m.setContentList(id)
 	} else if _, ok := m.provider.(Questioner); ok {
@@ -480,12 +480,12 @@ func (m *Manager) setProvider(provider Provider, msgCH chan msg.Message, id stri
 	}
 	if id, err := m.provider.LastContentItemID(); err == nil {
 		if contentItem, err := m.provider.ContentItem(id); err == nil {
-			if err := m.setBook(msgCH, contentItem); err != nil {
+			if err := m.setBook(conf, msgCH, contentItem); err != nil {
 				log.Error("Set book: %v", err)
 			}
 		}
 	}
-	gui.SetProvidersMenu(msgCH, config.Conf.Services, id)
+	gui.SetProvidersMenu(msgCH, conf.Services, id)
 }
 
 func (m *Manager) setQuestions(response ...daisy.UserResponse) {
@@ -608,8 +608,8 @@ func (m *Manager) updateContentList(contentList *ContentList) {
 	gui.MainList.SetItems(labels, contentList.Name, true)
 }
 
-func (m *Manager) setBook(msgCH chan msg.Message, contentItem ContentItem) error {
-	book, err := NewBook(contentItem)
+func (m *Manager) setBook(conf *config.Config, msgCH chan msg.Message, contentItem ContentItem) error {
+	book, err := NewBook(conf, contentItem)
 	if err != nil {
 		return err
 	}

@@ -52,10 +52,15 @@ var ReadingSystemAttributes = daisy.ReadingSystemAttributes{
 	},
 }
 
-var Conf Config
-
-func init() {
-	Conf.General.Volume = 1.0
+func UserData() string {
+	if path, err := filepath.Abs(ProgramName); err == nil {
+		if info, err := os.Stat(path); err == nil {
+			if info.IsDir() {
+				return path
+			}
+		}
+	}
+	return filepath.Join(os.Getenv("USERPROFILE"), ProgramName)
 }
 
 type Service struct {
@@ -141,18 +146,13 @@ func (cfg *Config) CurrentService() (*Service, error) {
 	return nil, errors.New("services list is empty")
 }
 
-func UserData() string {
-	if path, err := filepath.Abs(ProgramName); err == nil {
-		if info, err := os.Stat(path); err == nil {
-			if info.IsDir() {
-				return path
-			}
-		}
-	}
-	return filepath.Join(os.Getenv("USERPROFILE"), ProgramName)
+func NewConfig() *Config {
+	cfg := new(Config)
+	cfg.General.Volume = 1.0
+	return cfg
 }
 
-func (c *Config) Load() {
+func (cfg *Config) Load() {
 	os.MkdirAll(UserData(), os.ModeDir)
 
 	path := filepath.Join(UserData(), ConfigFile)
@@ -164,7 +164,7 @@ func (c *Config) Load() {
 	defer f.Close()
 
 	d := yaml.NewDecoder(f)
-	if err := d.Decode(c); err != nil {
+	if err := d.Decode(cfg); err != nil {
 		log.Error("Reading from config file: %v", err)
 		return
 	}
@@ -172,7 +172,7 @@ func (c *Config) Load() {
 	log.Info("Loading config from %v", path)
 }
 
-func (c *Config) Save() {
+func (cfg *Config) Save() {
 	path := filepath.Join(UserData(), ConfigFile)
 	f, err := util.CreateSecureFile(path)
 	if err != nil {
@@ -183,7 +183,7 @@ func (c *Config) Save() {
 
 	e := yaml.NewEncoder(f)
 	//e.SetIndent("", "\t") // for readability
-	if err := e.Encode(c); err != nil {
+	if err := e.Encode(cfg); err != nil {
 		f.Corrupted()
 		log.Error("Writing to config file: %v", err)
 		return

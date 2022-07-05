@@ -20,9 +20,10 @@ func main() {
 	}
 
 	log.Info("Starting OnlineLibrary version %s", config.ProgramVersion)
-	config.Conf.Load()
+	conf := config.NewConfig()
+	conf.Load()
 
-	if level, err := log.StringToLevel(config.Conf.General.LogLevel); err == nil {
+	if level, err := log.StringToLevel(conf.General.LogLevel); err == nil {
 		log.SetLevel(level)
 	}
 
@@ -34,17 +35,17 @@ func main() {
 	}
 
 	// Filling in the menu with the available audio output devices
-	gui.SetOutputDeviceMenu(msgCH, waveout.OutputDeviceNames(), config.Conf.General.OutputDevice)
+	gui.SetOutputDeviceMenu(msgCH, waveout.OutputDeviceNames(), conf.General.OutputDevice)
 
 	// Filling in the menu with the available providers
-	gui.SetProvidersMenu(msgCH, config.Conf.Services, "")
+	gui.SetProvidersMenu(msgCH, conf.Services, "")
 
 	// Setting label for the pause timer in the menu
-	gui.SetPauseTimerLabel(int(config.Conf.General.PauseTimer.Minutes()))
+	gui.SetPauseTimerLabel(int(conf.General.PauseTimer.Minutes()))
 
 	mng := new(manager.Manager)
 	done := make(chan bool)
-	go mng.Start(msgCH, done)
+	go mng.Start(conf, msgCH, done)
 	gui.RunMainWindow()
 	close(msgCH)
 
@@ -57,6 +58,6 @@ func main() {
 		os.Exit(1)
 	}
 
-	config.Conf.Save()
+	conf.Save()
 	log.Info("Exiting")
 }

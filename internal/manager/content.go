@@ -79,13 +79,15 @@ func (ci *LibraryContentItem) SetConfig(conf config.Book) {
 }
 
 type LocalContentItem struct {
-	path string
-	conf config.Book
+	storage *LocalStorage
+	path    string
+	conf    config.Book
 }
 
-func NewLocalContentItem(path string) *LocalContentItem {
+func NewLocalContentItem(storage *LocalStorage, path string) *LocalContentItem {
 	ci := &LocalContentItem{
-		path: path,
+		storage: storage,
+		path:    path,
 		conf: config.Book{
 			Name:  filepath.Base(path),
 			ID:    filepath.Base(path),
@@ -93,7 +95,7 @@ func NewLocalContentItem(path string) *LocalContentItem {
 		},
 	}
 
-	if conf, err := config.Conf.LocalBooks.Book(ci.conf.ID); err == nil {
+	if conf, err := ci.storage.conf.LocalBooks.Book(ci.conf.ID); err == nil {
 		ci.conf = conf
 	}
 	return ci
@@ -152,5 +154,5 @@ func (ci *LocalContentItem) Config() config.Book {
 
 func (ci *LocalContentItem) SetConfig(conf config.Book) {
 	ci.conf = conf
-	config.Conf.LocalBooks.SetBook(conf)
+	ci.storage.conf.LocalBooks.SetBook(conf)
 }

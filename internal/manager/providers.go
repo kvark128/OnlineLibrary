@@ -14,9 +14,10 @@ type Library struct {
 	*daisy.Client
 	service           *config.Service
 	serviceAttributes *daisy.ServiceAttributes
+	conf              *config.Config
 }
 
-func NewLibrary(service *config.Service) (*Library, error) {
+func NewLibrary(conf *config.Config, service *config.Service) (*Library, error) {
 	client := daisy.NewClient(service.URL, config.HTTPTimeout)
 	success, err := client.LogOn(service.Username, service.Password)
 	if err != nil {
@@ -45,6 +46,7 @@ func NewLibrary(service *config.Service) (*Library, error) {
 		Client:            client,
 		service:           service,
 		serviceAttributes: serviceAttributes,
+		conf:              conf,
 	}
 
 	return library, nil
@@ -100,10 +102,12 @@ func (l *Library) GetQuestions(ur *daisy.UserResponses) (*daisy.Questions, error
 	return questions, err
 }
 
-type LocalStorage struct{}
+type LocalStorage struct {
+	conf *config.Config
+}
 
-func NewLocalStorage() *LocalStorage {
-	return &LocalStorage{}
+func NewLocalStorage(conf *config.Config) *LocalStorage {
+	return &LocalStorage{conf: conf}
 }
 
 func (s *LocalStorage) ContentList(string) (*ContentList, error) {
@@ -120,7 +124,7 @@ func (s *LocalStorage) ContentList(string) (*ContentList, error) {
 	for _, e := range entrys {
 		if e.IsDir() {
 			path := filepath.Join(userData, e.Name())
-			item := NewLocalContentItem(path)
+			item := NewLocalContentItem(s, path)
 			lst.Items = append(lst.Items, item)
 		}
 	}
@@ -140,7 +144,7 @@ func (s *LocalStorage) ContentItem(id string) (ContentItem, error) {
 
 	for _, item := range lst.Items {
 		if item.ID() == id {
-			config.Conf.LocalBooks.SetBook(item.Config())
+			s.conf.LocalBooks.SetBook(item.Config())
 			return item, nil
 		}
 	}
@@ -148,7 +152,7 @@ func (s *LocalStorage) ContentItem(id string) (ContentItem, error) {
 }
 
 func (s *LocalStorage) LastContentItemID() (string, error) {
-	book, err := config.Conf.LocalBooks.LastBook()
+	book, err := s.conf.LocalBooks.LastBook()
 	if err != nil {
 		return "", err
 	}
