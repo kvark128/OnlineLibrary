@@ -497,17 +497,17 @@ func (m *Manager) setQuestions(response ...daisy.UserResponse) {
 
 	if len(response) == 0 {
 		log.Error("len(response) == 0")
-		m.questions = nil
-		gui.MainList.Clear()
 		return
 	}
+
+	m.questions = nil
+	m.userResponses = nil
+	gui.MainList.Clear()
 
 	ur := daisy.UserResponses{UserResponse: response}
 	questions, err := qst.GetQuestions(&ur)
 	if err != nil {
 		m.messageBoxError(fmt.Errorf("GetQuestions: %w", err))
-		m.questions = nil
-		gui.MainList.Clear()
 		return
 	}
 
@@ -532,17 +532,15 @@ func (m *Manager) setQuestions(response ...daisy.UserResponse) {
 		m.setMultipleChoiceQuestion(0)
 		return
 	}
-
 	m.setInputQuestion()
 }
 
 func (m *Manager) setMultipleChoiceQuestion(index int) {
 	choiceQuestion := m.questions.MultipleChoiceQuestion[index]
-	var labels []string
-	for _, c := range choiceQuestion.Choices.Choice {
-		labels = append(labels, c.Label.Text)
+	labels := make([]string, len(choiceQuestion.Choices.Choice))
+	for i, c := range choiceQuestion.Choices.Choice {
+		labels[i] = c.Label.Text
 	}
-
 	m.contentList = nil
 	gui.MainList.SetItems(labels, choiceQuestion.Label.Text, false)
 }
@@ -558,7 +556,6 @@ func (m *Manager) setInputQuestion() {
 		m.lastInputText = text
 		m.userResponses = append(m.userResponses, daisy.UserResponse{QuestionID: inputQuestion.ID, Value: text})
 	}
-
 	m.setQuestions(m.userResponses...)
 }
 
