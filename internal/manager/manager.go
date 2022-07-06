@@ -563,32 +563,31 @@ func (m *Manager) setInputQuestion() {
 }
 
 func (m *Manager) setContentList(contentID string) {
+	m.questions = nil
+	gui.MainList.Clear()
 	log.Debug("Set content list: %v", contentID)
+
 	contentList, err := m.provider.ContentList(contentID)
 	if err != nil {
 		m.messageBoxError(fmt.Errorf("GetContentList: %w", err))
-		m.questions = nil
-		gui.MainList.Clear()
 		return
 	}
 
 	if len(contentList.Items) == 0 {
 		gui.MessageBox("Предупреждение", "Список книг пуст", walk.MsgBoxOK|walk.MsgBoxIconWarning)
-		// Return to the main menu of the library
-		m.setQuestions(daisy.UserResponse{QuestionID: daisy.Default})
 		return
 	}
 
 	if contentID == daisy.Issued {
-		ids := make([]string, len(contentList.Items))
-		for i := range ids {
-			book := contentList.Items[i]
-			ids[i] = book.ID()
-		}
-		if m.book != nil && !util.StringInSlice(m.book.ID(), ids) {
-			ids = append(ids, m.book.ID())
-		}
 		if lib, ok := m.provider.(*Library); ok {
+			ids := make([]string, len(contentList.Items))
+			for i := range ids {
+				book := contentList.Items[i]
+				ids[i] = book.ID()
+			}
+			if m.book != nil && !util.StringInSlice(m.book.ID(), ids) {
+				ids = append(ids, m.book.ID())
+			}
 			lib.service.RecentBooks.Tidy(ids)
 		}
 	}
@@ -602,9 +601,7 @@ func (m *Manager) updateContentList(contentList *ContentList) {
 		book := contentList.Items[i]
 		labels[i] = book.Name()
 	}
-
 	m.contentList = contentList
-	m.questions = nil
 	gui.MainList.SetItems(labels, contentList.Name, true)
 }
 
