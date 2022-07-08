@@ -125,7 +125,7 @@ func (m *Manager) Start(conf *config.Config, msgCH chan msg.Message, done chan<-
 			}
 
 			if err != nil {
-				log.Error("Provider creating %v: %v", id, err)
+				m.messageBoxError(fmt.Errorf("Provider creating %v: %w", id, err))
 				break
 			}
 			m.setProvider(provider, conf, msgCH, id)
