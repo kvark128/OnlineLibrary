@@ -140,7 +140,7 @@ func (m *Manager) Start(conf *config.Config, msgCH chan msg.Message, logger *log
 			}
 
 			if _, err := conf.ServiceByName(service.Name); err == nil {
-				gui.MessageBox("Ошибка", fmt.Sprintf("Учётная запись «%v» уже существует", service.Name), walk.MsgBoxOK|walk.MsgBoxIconError)
+				gui.MessageBoxError("Ошибка", fmt.Sprintf("Учётная запись «%v» уже существует", service.Name))
 				break
 			}
 
@@ -168,7 +168,7 @@ func (m *Manager) Start(conf *config.Config, msgCH chan msg.Message, logger *log
 				break
 			}
 			msg := fmt.Sprintf("Вы действительно хотите удалить учётную запись %v?%sТакже будут удалены сохранённые позиции всех книг этой библиотеки.%sЭто действие не может быть отменено.", lib.service.Name, CRLF, CRLF)
-			if gui.MessageBox("Удаление учётной записи", msg, walk.MsgBoxYesNo|walk.MsgBoxIconQuestion) != walk.DlgCmdYes {
+			if !gui.MessageBoxQuestion("Удаление учётной записи", msg) {
 				break
 			}
 			conf.RemoveService(lib.service)
@@ -185,7 +185,7 @@ func (m *Manager) Start(conf *config.Config, msgCH chan msg.Message, logger *log
 				m.messageBoxError(fmt.Errorf("Issue book: %w", err))
 				break
 			}
-			gui.MessageBox("Уведомление", fmt.Sprintf("«%s» добавлена на книжную полку", book.Name()), walk.MsgBoxOK|walk.MsgBoxIconWarning)
+			gui.MessageBoxWarning("Уведомление", fmt.Sprintf("«%s» добавлена на книжную полку", book.Name()))
 
 		case msg.REMOVE_BOOK:
 			if m.contentList == nil {
@@ -197,7 +197,7 @@ func (m *Manager) Start(conf *config.Config, msgCH chan msg.Message, logger *log
 				m.messageBoxError(fmt.Errorf("Removing book: %w", err))
 				break
 			}
-			gui.MessageBox("Уведомление", fmt.Sprintf("«%s» удалена с книжной полки", book.Name()), walk.MsgBoxOK|walk.MsgBoxIconWarning)
+			gui.MessageBoxWarning("Уведомление", fmt.Sprintf("«%s» удалена с книжной полки", book.Name()))
 			// If a bookshelf is open, it must be updated to reflect the changes made
 			if m.contentList.ID == daisy.Issued {
 				m.setContentList(daisy.Issued)
@@ -224,7 +224,7 @@ func (m *Manager) Start(conf *config.Config, msgCH chan msg.Message, logger *log
 				m.messageBoxError(err)
 				break
 			}
-			gui.MessageBox("Информация о книге", text, walk.MsgBoxOK|walk.MsgBoxIconWarning)
+			gui.MessageBoxWarning("Информация о книге", text)
 
 		case msg.PLAYER_PLAY_PAUSE:
 			if m.book != nil {
@@ -407,7 +407,7 @@ func (m *Manager) Start(conf *config.Config, msgCH chan msg.Message, logger *log
 					break
 				}
 				msg := fmt.Sprintf("Вы действительно хотите удалить закладку «%v»?", bookmark.Name)
-				if gui.MessageBox("Удаление закладки", msg, walk.MsgBoxYesNo|walk.MsgBoxIconQuestion) != walk.DlgCmdYes {
+				if !gui.MessageBoxQuestion("Удаление закладки", msg) {
 					break
 				}
 				m.book.RemoveBookmark(bookmarkID)
@@ -439,7 +439,7 @@ func (m *Manager) Start(conf *config.Config, msgCH chan msg.Message, logger *log
 			lines = append(lines, fmt.Sprintf("Поддержка команды search: %v", attrs.SupportsSearch))
 			lines = append(lines, fmt.Sprintf("Поддержка аудиометок: %v", attrs.SupportsAudioLabels))
 			lines = append(lines, fmt.Sprintf("Поддерживаемые опциональные операции: %v", attrs.SupportedOptionalOperations.Operation))
-			gui.MessageBox("Информация о библиотеке", strings.Join(lines, CRLF), walk.MsgBoxOK|walk.MsgBoxIconWarning)
+			gui.MessageBoxWarning("Информация о библиотеке", strings.Join(lines, CRLF))
 
 		default:
 			m.logger.Warning("Unknown message: %v", message.Code)
@@ -515,7 +515,7 @@ func (m *Manager) setQuestions(response ...daisy.UserResponse) {
 
 	if questions.Label.Text != "" {
 		// We have received a notification from the library. Show it to the user
-		gui.MessageBox("Предупреждение", questions.Label.Text, walk.MsgBoxOK|walk.MsgBoxIconWarning)
+		gui.MessageBoxWarning("Предупреждение", questions.Label.Text)
 		// Return to the main menu of the library
 		m.setQuestions(daisy.UserResponse{QuestionID: daisy.Default})
 		return
@@ -573,7 +573,7 @@ func (m *Manager) setContentList(contentID string) {
 	}
 
 	if len(contentList.Items) == 0 {
-		gui.MessageBox("Предупреждение", "Список книг пуст", walk.MsgBoxOK|walk.MsgBoxIconWarning)
+		gui.MessageBoxWarning("Предупреждение", "Список книг пуст")
 		return
 	}
 
@@ -722,11 +722,11 @@ func (m *Manager) downloadBook(book ContentItem) error {
 
 		switch {
 		case errors.Is(err, context.Canceled):
-			gui.MessageBox("Предупреждение", "Загрузка отменена пользователем", walk.MsgBoxOK|walk.MsgBoxIconWarning)
+			gui.MessageBoxWarning("Предупреждение", "Загрузка отменена пользователем")
 		case err != nil:
-			gui.MessageBox("Ошибка", err.Error(), walk.MsgBoxOK|walk.MsgBoxIconError)
+			gui.MessageBoxError("Ошибка", err.Error())
 		default:
-			gui.MessageBox("Уведомление", "Книга успешно загружена", walk.MsgBoxOK|walk.MsgBoxIconWarning)
+			gui.MessageBoxWarning("Уведомление", "Книга успешно загружена")
 			m.logger.Debug("Book %v has been successfully downloaded. Total size: %v", bookID, totalSize)
 		}
 	}
@@ -776,5 +776,5 @@ func (m *Manager) messageBoxError(err error) {
 	case errors.Is(err, BookDescriptionNotAvailable):
 		msg = "Описание книги недоступно"
 	}
-	gui.MessageBox("Ошибка", msg, walk.MsgBoxOK|walk.MsgBoxIconError)
+	gui.MessageBoxError("Ошибка", msg)
 }

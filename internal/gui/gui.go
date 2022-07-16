@@ -673,10 +673,22 @@ func TextEntryDialog(title, msg, value string, text *string) int {
 	return <-result
 }
 
-func MessageBox(title, text string, style walk.MsgBoxStyle) int {
-	result := make(chan int)
+func MessageBox(title, message string, style walk.MsgBoxStyle) int {
+	res := make(chan int)
 	mainWindow.Synchronize(func() {
-		result <- walk.MsgBox(mainWindow, title, text, style)
+		res <- walk.MsgBox(mainWindow, title, message, style)
 	})
-	return <-result
+	return <-res
+}
+
+func MessageBoxError(title, message string) {
+	MessageBox(title, message, walk.MsgBoxOK|walk.MsgBoxIconError)
+}
+
+func MessageBoxWarning(title, message string) {
+	MessageBox(title, message, walk.MsgBoxOK|walk.MsgBoxIconWarning)
+}
+
+func MessageBoxQuestion(title, message string) bool {
+	return MessageBox(title, message, walk.MsgBoxYesNo|walk.MsgBoxIconQuestion) == walk.DlgCmdYes
 }
