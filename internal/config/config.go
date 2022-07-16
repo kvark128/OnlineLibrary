@@ -6,7 +6,6 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/kvark128/OnlineLibrary/internal/log"
 	"github.com/kvark128/OnlineLibrary/internal/util"
 	daisy "github.com/kvark128/daisyonline"
 	"gopkg.in/yaml.v3"
@@ -152,35 +151,26 @@ func NewConfig() *Config {
 	return cfg
 }
 
-func (cfg *Config) Load(path string) {
+func (cfg *Config) Load(path string) error {
 	f, err := os.Open(path)
 	if err != nil {
-		log.Error("Opening config file: %v", err)
-		return
+		return err
 	}
 	defer f.Close()
-
 	d := yaml.NewDecoder(f)
-	if err := d.Decode(cfg); err != nil {
-		log.Error("Reading from config file: %v", err)
-		return
-	}
-	log.Info("Loading config from %v", path)
+	return d.Decode(cfg)
 }
 
-func (cfg *Config) Save(path string) {
+func (cfg *Config) Save(path string) error {
 	f, err := util.CreateSecureFile(path)
 	if err != nil {
-		log.Error("Creating config file: %v", err)
-		return
+		return err
 	}
 	defer f.Close()
-
 	e := yaml.NewEncoder(f)
 	if err := e.Encode(cfg); err != nil {
 		f.Corrupted()
-		log.Error("Writing to config file: %v", err)
-		return
+		return err
 	}
-	log.Info("Saving config to %v", path)
+	return nil
 }

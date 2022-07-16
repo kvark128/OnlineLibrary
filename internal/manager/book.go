@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/kvark128/OnlineLibrary/internal/config"
+	"github.com/kvark128/OnlineLibrary/internal/log"
 	"github.com/kvark128/OnlineLibrary/internal/player"
 	"github.com/kvark128/OnlineLibrary/internal/util"
 )
@@ -17,7 +18,7 @@ type Book struct {
 	globalConf *config.Config
 }
 
-func NewBook(conf *config.Config, contentItem ContentItem) (*Book, error) {
+func NewBook(conf *config.Config, contentItem ContentItem, logger *log.Logger) (*Book, error) {
 	book := &Book{
 		ContentItem: contentItem,
 		conf:        contentItem.Config(),
@@ -34,7 +35,7 @@ func NewBook(conf *config.Config, contentItem ContentItem) (*Book, error) {
 	}
 
 	bookDir := filepath.Join(config.UserData(), util.ReplaceForbiddenCharacters(book.Name()))
-	book.Player = player.NewPlayer(bookDir, rsrc, book.globalConf.General.OutputDevice)
+	book.Player = player.NewPlayer(bookDir, rsrc, book.globalConf.General.OutputDevice, logger)
 	book.SetSpeed(book.conf.Speed)
 	book.SetTimerDuration(book.globalConf.General.PauseTimer)
 	book.SetVolume(book.globalConf.General.Volume)

@@ -38,6 +38,7 @@ var (
 
 type Manager struct {
 	provider      Provider
+	logger        *log.Logger
 	book          *Book
 	contentList   *ContentList
 	questions     *daisy.Questions
@@ -45,17 +46,18 @@ type Manager struct {
 	lastInputText string
 }
 
-func (m *Manager) Start(conf *config.Config, msgCH chan msg.Message, done chan<- bool) {
-	log.Debug("Entering to Manager Loop")
+func (m *Manager) Start(conf *config.Config, msgCH chan msg.Message, logger *log.Logger, done chan<- bool) {
+	m.logger = logger
+	m.logger.Debug("Entering to Manager Loop")
 	defer func() {
 		if p := recover(); p != nil {
 			buf := make([]byte, 4096)
 			n := runtime.Stack(buf, false)
-			log.Error("Manager panic: %v:\n\n%v", p, string(buf[:n]))
+			m.logger.Error("Manager panic: %v:\n\n%v", p, string(buf[:n]))
 			os.Exit(1)
 		}
 		m.cleaning()
-		log.Debug("Exiting from Manager Loop")
+		m.logger.Debug("Exiting from Manager Loop")
 		done <- true
 	}()
 
@@ -118,7 +120,7 @@ func (m *Manager) Start(conf *config.Config, msgCH chan msg.Message, done chan<-
 				var service *config.Service
 				service, err = conf.ServiceByID(id)
 				if err != nil {
-					log.Debug("Get service %v: %v", id, err)
+					m.logger.Debug("Get service %v: %v", id, err)
 					break
 				}
 				provider, err = NewLibrary(conf, service)
@@ -133,7 +135,7 @@ func (m *Manager) Start(conf *config.Config, msgCH chan msg.Message, done chan<-
 		case msg.LIBRARY_ADD:
 			service := new(config.Service)
 			if gui.Credentials(service) != walk.DlgCmdOK || service.Name == "" {
-				log.Warning("Library adding: pressed Cancel button or len(service.Name) == 0")
+				m.logger.Warning("Library adding: pressed Cancel button or len(service.Name) == 0")
 				break
 			}
 
@@ -147,7 +149,7 @@ func (m *Manager) Start(conf *config.Config, msgCH chan msg.Message, done chan<-
 				id := fmt.Sprintf("library%d", i)
 				if _, err := conf.ServiceByID(id); err != nil {
 					service.ID = id
-					log.Debug("Created new service id: %v", id)
+					m.logger.Debug("Created new service id: %v", id)
 					break
 				}
 			}
@@ -175,7 +177,7 @@ func (m *Manager) Start(conf *config.Config, msgCH chan msg.Message, done chan<-
 
 		case msg.ISSUE_BOOK:
 			if m.contentList == nil {
-				log.Warning("Attempt to add book to bookshelf when there is no content list")
+				m.logger.Warning("Attempt to add book to bookshelf when there is no content list")
 				break
 			}
 			book := m.contentList.Items[gui.MainList.CurrentIndex()]
@@ -187,7 +189,7 @@ func (m *Manager) Start(conf *config.Config, msgCH chan msg.Message, done chan<-
 
 		case msg.REMOVE_BOOK:
 			if m.contentList == nil {
-				log.Warning("Attempt to remove book from bookshelf when there is no content list")
+				m.logger.Warning("Attempt to remove book from bookshelf when there is no content list")
 				break
 			}
 			book := m.contentList.Items[gui.MainList.CurrentIndex()]
@@ -238,7 +240,7 @@ func (m *Manager) Start(conf *config.Config, msgCH chan msg.Message, done chan<-
 		case msg.PLAYER_OFFSET_FRAGMENT:
 			offset, ok := message.Data.(int)
 			if !ok {
-				log.Error("Invalid fragment offset")
+				m.logger.Error("Invalid fragment offset")
 				break
 			}
 			if m.book != nil {
@@ -283,7 +285,7 @@ func (m *Manager) Start(conf *config.Config, msgCH chan msg.Message, done chan<-
 		case msg.PLAYER_OFFSET_POSITION:
 			offset, ok := message.Data.(time.Duration)
 			if !ok {
-				log.Error("Invalid position offset")
+				m.logger.Error("Invalid position offset")
 				break
 			}
 			if m.book != nil {
@@ -306,7 +308,7 @@ func (m *Manager) Start(conf *config.Config, msgCH chan msg.Message, done chan<-
 				}
 				fragment, err = strconv.Atoi(text)
 				if err != nil {
-					log.Error("Goto fragment: %v", err)
+					m.logger.Error("Goto fragment: %v", err)
 					break
 				}
 				fragment-- // Player needs the fragment index instead of its number
@@ -327,7 +329,7 @@ func (m *Manager) Start(conf *config.Config, msgCH chan msg.Message, done chan<-
 				}
 				pos, err = util.ParseDuration(text)
 				if err != nil {
-					log.Error("Goto position: %v", err)
+					m.logger.Error("Goto position: %v", err)
 					break
 				}
 			}
@@ -336,7 +338,7 @@ func (m *Manager) Start(conf *config.Config, msgCH chan msg.Message, done chan<-
 		case msg.PLAYER_OUTPUT_DEVICE:
 			device, ok := message.Data.(string)
 			if !ok {
-				log.Error("Invalid output device")
+				m.logger.Error("Invalid output device")
 				break
 			}
 			conf.General.OutputDevice = device
@@ -380,7 +382,7 @@ func (m *Manager) Start(conf *config.Config, msgCH chan msg.Message, done chan<-
 				break
 			}
 			if err := m.book.SetBookmarkWithName(bookmarkName); err != nil {
-				log.Warning("Set bookmark with name: %v", err)
+				m.logger.Warning("Set bookmark with name: %v", err)
 			}
 			gui.SetBookmarksMenu(msgCH, m.book.Bookmarks())
 
@@ -390,7 +392,7 @@ func (m *Manager) Start(conf *config.Config, msgCH chan msg.Message, done chan<-
 			}
 			if bookmarkID, ok := message.Data.(string); ok {
 				if err := m.book.ToBookmark(bookmarkID); err != nil {
-					log.Warning("Bookmark fetching: %v", err)
+					m.logger.Warning("Bookmark fetching: %v", err)
 				}
 			}
 
@@ -401,7 +403,7 @@ func (m *Manager) Start(conf *config.Config, msgCH chan msg.Message, done chan<-
 			if bookmarkID, ok := message.Data.(string); ok {
 				bookmark, err := m.book.Bookmark(bookmarkID)
 				if err != nil {
-					log.Warning("Bookmark removing: %v", err)
+					m.logger.Warning("Bookmark removing: %v", err)
 					break
 				}
 				msg := fmt.Sprintf("Вы действительно хотите удалить закладку «%v»?", bookmark.Name)
@@ -415,12 +417,12 @@ func (m *Manager) Start(conf *config.Config, msgCH chan msg.Message, done chan<-
 		case msg.LOG_SET_LEVEL:
 			level, ok := message.Data.(log.Level)
 			if !ok {
-				log.Error("Invalid log level")
+				m.logger.Error("Invalid log level")
 				break
 			}
 			conf.General.LogLevel = level.String()
-			log.SetLevel(level)
-			log.Info("Set log level to %s", level)
+			m.logger.SetLevel(level)
+			m.logger.Info("Set log level to %s", level)
 
 		case msg.LIBRARY_INFO:
 			if m.provider == nil {
@@ -440,7 +442,7 @@ func (m *Manager) Start(conf *config.Config, msgCH chan msg.Message, done chan<-
 			gui.MessageBox("Информация о библиотеке", strings.Join(lines, CRLF), walk.MsgBoxOK|walk.MsgBoxIconWarning)
 
 		default:
-			log.Warning("Unknown message: %v", message.Code)
+			m.logger.Warning("Unknown message: %v", message.Code)
 
 		}
 	}
@@ -461,7 +463,7 @@ func (m *Manager) cleaning() {
 		if lib, ok := m.provider.(*Library); ok {
 			_, err := lib.LogOff()
 			if err != nil {
-				log.Warning("Library logoff: %v", err)
+				m.logger.Warning("Library logoff: %v", err)
 			}
 		}
 		m.provider = nil
@@ -469,7 +471,7 @@ func (m *Manager) cleaning() {
 }
 
 func (m *Manager) setProvider(provider Provider, conf *config.Config, msgCH chan msg.Message, id string) {
-	log.Info("Set provider: %v", id)
+	m.logger.Info("Set provider: %v", id)
 	m.cleaning()
 	m.provider = provider
 	conf.General.Provider = id
@@ -481,7 +483,7 @@ func (m *Manager) setProvider(provider Provider, conf *config.Config, msgCH chan
 	if id, err := m.provider.LastContentItemID(); err == nil {
 		if contentItem, err := m.provider.ContentItem(id); err == nil {
 			if err := m.setBook(conf, msgCH, contentItem); err != nil {
-				log.Error("Set book: %v", err)
+				m.logger.Error("Set book: %v", err)
 			}
 		}
 	}
@@ -496,7 +498,7 @@ func (m *Manager) setQuestions(response ...daisy.UserResponse) {
 	}
 
 	if len(response) == 0 {
-		log.Error("len(response) == 0")
+		m.logger.Error("len(response) == 0")
 		return
 	}
 
@@ -562,7 +564,7 @@ func (m *Manager) setInputQuestion() {
 func (m *Manager) setContentList(contentID string) {
 	m.questions = nil
 	gui.MainList.Clear()
-	log.Debug("Set content list: %v", contentID)
+	m.logger.Debug("Set content list: %v", contentID)
 
 	contentList, err := m.provider.ContentList(contentID)
 	if err != nil {
@@ -603,7 +605,7 @@ func (m *Manager) updateContentList(contentList *ContentList) {
 }
 
 func (m *Manager) setBook(conf *config.Config, msgCH chan msg.Message, contentItem ContentItem) error {
-	book, err := NewBook(conf, contentItem)
+	book, err := NewBook(conf, contentItem, m.logger)
 	if err != nil {
 		return err
 	}
@@ -615,7 +617,7 @@ func (m *Manager) setBook(conf *config.Config, msgCH chan msg.Message, contentIt
 	gui.SetMainWindowTitle(book.Name())
 	gui.SetBookmarksMenu(msgCH, book.Bookmarks())
 	m.book = book
-	log.Debug("Set book: %v", book.ID())
+	m.logger.Debug("Set book: %v", book.ID())
 	return nil
 }
 
@@ -636,14 +638,14 @@ func (m *Manager) downloadBook(book ContentItem) error {
 		path := filepath.Join(bookDir, MetadataFileName)
 		f, err := util.CreateSecureFile(path)
 		if err != nil {
-			log.Warning("Creating %v: %v", MetadataFileName, err)
+			m.logger.Warning("Creating %v: %v", MetadataFileName, err)
 		} else {
 			defer f.Close()
 			e := xml.NewEncoder(f)
 			e.Indent("", "\t") // for readability
 			if err := e.Encode(md); err != nil {
 				f.Corrupted()
-				log.Error("Writing to %v: %v", MetadataFileName, err)
+				m.logger.Error("Writing to %v: %v", MetadataFileName, err)
 			}
 		}
 	}
@@ -660,7 +662,7 @@ func (m *Manager) downloadBook(book ContentItem) error {
 			totalSize += r.Size
 		}
 
-		log.Debug("Downloading book %v started", bookID)
+		m.logger.Debug("Downloading book %v started", bookID)
 		for _, r := range rsrc {
 			err = func() error {
 				path := filepath.Join(bookDir, r.LocalURI)
@@ -671,7 +673,7 @@ func (m *Manager) downloadBook(book ContentItem) error {
 					return nil
 				}
 
-				conn, err := connection.NewConnectionWithContext(ctx, r.URI)
+				conn, err := connection.NewConnectionWithContext(ctx, r.URI, m.logger)
 				if err != nil {
 					return err
 				}
@@ -725,7 +727,7 @@ func (m *Manager) downloadBook(book ContentItem) error {
 			gui.MessageBox("Ошибка", err.Error(), walk.MsgBoxOK|walk.MsgBoxIconError)
 		default:
 			gui.MessageBox("Уведомление", "Книга успешно загружена", walk.MsgBoxOK|walk.MsgBoxIconWarning)
-			log.Debug("Book %v has been successfully downloaded. Total size: %v", bookID, totalSize)
+			m.logger.Debug("Book %v has been successfully downloaded. Total size: %v", bookID, totalSize)
 		}
 	}
 
@@ -765,7 +767,7 @@ func (m *Manager) bookDescription(book ContentItem) (string, error) {
 
 func (m *Manager) messageBoxError(err error) {
 	msg := err.Error()
-	log.Error(msg)
+	m.logger.Error(msg)
 	switch {
 	case errors.As(err, new(net.Error)):
 		msg = "Ошибка сети. Пожалуйста, проверьте ваше подключение к интернету."

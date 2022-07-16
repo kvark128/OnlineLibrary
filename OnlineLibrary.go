@@ -19,26 +19,30 @@ func main() {
 		os.Exit(1)
 	}
 
+	logger := log.New(os.Stdout, log.Info, "\t")
 	configFile := filepath.Join(userDataDir, config.ConfigFile)
 	logFile := filepath.Join(userDataDir, config.LogFile)
 
 	if fl, err := os.Create(logFile); err == nil {
-		log.SetOutput(fl)
+		logger.SetOutput(fl)
 		defer fl.Close()
 	}
 
-	log.Info("Starting OnlineLibrary version %s", config.ProgramVersion)
+	logger.Info("Starting OnlineLibrary version %s", config.ProgramVersion)
 	conf := config.NewConfig()
-	conf.Load(configFile)
+	logger.Info("Loading config file from %v", configFile)
+	if err := conf.Load(configFile); err != nil {
+		logger.Error("Loading config file: %v", err)
+	}
 
 	if level, err := log.StringToLevel(conf.General.LogLevel); err == nil {
-		log.SetLevel(level)
+		logger.SetLevel(level)
 	}
 
 	msgCH := make(chan msg.Message, config.MessageBufferSize)
 
-	if err := gui.Initialize(msgCH); err != nil {
-		log.Error("GUI initializing: %v", err)
+	if err := gui.Initialize(msgCH, logger.Level()); err != nil {
+		logger.Error("GUI initializing: %v", err)
 		os.Exit(1)
 	}
 
@@ -53,19 +57,22 @@ func main() {
 
 	mng := new(manager.Manager)
 	done := make(chan bool)
-	go mng.Start(conf, msgCH, done)
+	go mng.Start(conf, msgCH, logger, done)
 	gui.RunMainWindow()
 	close(msgCH)
 
-	log.Debug("Waiting for the manager to finish")
+	logger.Debug("Waiting for the manager to finish")
 	select {
 	case <-done:
 		break
 	case <-time.After(time.Second * 16):
-		log.Error("Manager termination timeout has expired. Forced program exit")
+		logger.Error("Manager termination timeout has expired. Forced program exit")
 		os.Exit(1)
 	}
 
-	conf.Save(configFile)
-	log.Info("Exiting")
+	logger.Info("Saving config file to %v", configFile)
+	if err := conf.Save(configFile); err != nil {
+		logger.Error("Saving config file: %v", err)
+	}
+	logger.Info("Exiting")
 }

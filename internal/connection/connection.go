@@ -22,19 +22,21 @@ type Connection struct {
 	ctx           context.Context
 	resp          *http.Response
 	lastErr       error
+	logger        *log.Logger
 	timer         *time.Timer
 	reads         int64
 	contentLength int64
 }
 
-func NewConnection(url string) (*Connection, error) {
-	return NewConnectionWithContext(context.TODO(), url)
+func NewConnection(url string, logger *log.Logger) (*Connection, error) {
+	return NewConnectionWithContext(context.TODO(), url, logger)
 }
 
-func NewConnectionWithContext(ctx context.Context, url string) (*Connection, error) {
+func NewConnectionWithContext(ctx context.Context, url string, logger *log.Logger) (*Connection, error) {
 	c := &Connection{
-		url: url,
-		ctx: ctx,
+		url:    url,
+		ctx:    ctx,
+		logger: logger,
 	}
 
 	if err := c.createResponse(); err != nil {
@@ -95,7 +97,7 @@ func (c *Connection) Read(p []byte) (int, error) {
 	c.reads += int64(n)
 
 	if err != nil && err != context.Canceled && c.reads < c.contentLength {
-		log.Warning("Connection recovery: %v", err)
+		c.logger.Warning("Connection recovery: %v", err)
 		if c.createResponse() == nil {
 			err = nil
 		}

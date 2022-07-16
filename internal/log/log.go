@@ -3,7 +3,6 @@ package log
 import (
 	"fmt"
 	"io"
-	"os"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -13,15 +12,22 @@ import (
 
 type Level int
 
+const (
+	Error Level = iota
+	Info
+	Warning
+	Debug
+)
+
 func (l Level) String() string {
 	switch l {
-	case ErrorLevel:
+	case Error:
 		return "ERROR"
-	case InfoLevel:
+	case Info:
 		return "INFO"
-	case WarningLevel:
+	case Warning:
 		return "WARNING"
-	case DebugLevel:
+	case Debug:
 		return "DEBUG"
 	default:
 		return "UNKNOWN"
@@ -30,36 +36,34 @@ func (l Level) String() string {
 
 func StringToLevel(str string) (Level, error) {
 	switch str {
-	case ErrorLevel.String():
-		return ErrorLevel, nil
-	case InfoLevel.String():
-		return InfoLevel, nil
-	case WarningLevel.String():
-		return WarningLevel, nil
-	case DebugLevel.String():
-		return DebugLevel, nil
+	case Error.String():
+		return Error, nil
+	case Info.String():
+		return Info, nil
+	case Warning.String():
+		return Warning, nil
+	case Debug.String():
+		return Debug, nil
 	default:
 		return 0, fmt.Errorf("%s is not a supported log level", str)
 	}
 }
 
-const (
-	ErrorLevel Level = iota
-	InfoLevel
-	WarningLevel
-	DebugLevel
-)
+type Logger struct {
+	mu     sync.Mutex
+	level  Level
+	indent string
+	out    io.Writer
+}
 
-var (
-	mu                 = new(sync.Mutex)
-	logLevel           = InfoLevel
-	out      io.Writer = os.Stdout
-)
+func New(out io.Writer, level Level, indent string) *Logger {
+	return &Logger{out: out, level: level, indent: indent}
+}
 
-func log(calldepth int, level Level, format string, args ...interface{}) {
-	mu.Lock()
-	defer mu.Unlock()
-	if logLevel < level || out == nil {
+func (l *Logger) log(calldepth int, level Level, format string, args ...interface{}) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	if l.level < level || l.out == nil {
 		return
 	}
 	hour, min, sec := time.Now().Clock()
@@ -69,44 +73,44 @@ func log(calldepth int, level Level, format string, args ...interface{}) {
 		file = "???"
 		line = 0
 	}
-	msg := fmt.Sprintf(strings.ReplaceAll(format, "\n", "\n\t"), args...)
-	fmt.Fprintf(out, "%s - %s:%d (%s):\r\n\t%s\r\n", level, filepath.Base(file), line, clock, msg)
+	msg := fmt.Sprintf(strings.ReplaceAll(format, "\n", "\n"+l.indent), args...)
+	fmt.Fprintf(l.out, "%s - %s:%d (%s):\r\n%s%s\r\n", level, filepath.Base(file), line, clock, l.indent, msg)
 }
 
-func Error(format string, args ...interface{}) {
-	log(2, ErrorLevel, format, args...)
+func (l *Logger) Error(format string, args ...interface{}) {
+	l.log(2, Error, format, args...)
 }
 
-func Info(format string, args ...interface{}) {
-	log(2, InfoLevel, format, args...)
+func (l *Logger) Info(format string, args ...interface{}) {
+	l.log(2, Info, format, args...)
 }
 
-func Warning(format string, args ...interface{}) {
-	log(2, WarningLevel, format, args...)
+func (l *Logger) Warning(format string, args ...interface{}) {
+	l.log(2, Warning, format, args...)
 }
 
-func Debug(format string, args ...interface{}) {
-	log(2, DebugLevel, format, args...)
+func (l *Logger) Debug(format string, args ...interface{}) {
+	l.log(2, Debug, format, args...)
 }
 
-func SetOutput(newOut io.Writer) {
-	mu.Lock()
-	defer mu.Unlock()
-	out = newOut
+func (l *Logger) SetOutput(out io.Writer) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	l.out = out
 }
 
-func SetLevel(level Level) error {
-	mu.Lock()
-	defer mu.Unlock()
-	if level < ErrorLevel || level > DebugLevel {
-		return fmt.Errorf("unsupported log level")
+func (l *Logger) SetLevel(level Level) error {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	if level < Error || level > Debug {
+		return fmt.Errorf("unsupported log level: %v", level)
 	}
-	logLevel = level
+	l.level = level
 	return nil
 }
 
-func GetLevel() Level {
-	mu.Lock()
-	defer mu.Unlock()
-	return logLevel
+func (l *Logger) Level() Level {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	return l.level
 }

@@ -26,7 +26,7 @@ var (
 	pauseTimerItem                                *walk.Action
 )
 
-func Initialize(msgCH chan msg.Message) error {
+func Initialize(msgCH chan msg.Message, currentLogLevel log.Level) error {
 	if mainWindow != nil {
 		panic("GUI already initialized")
 	}
@@ -358,9 +358,8 @@ func Initialize(msgCH chan msg.Message) error {
 		return err
 	}
 
-	logLevels := []log.Level{log.ErrorLevel, log.InfoLevel, log.WarningLevel, log.DebugLevel}
+	logLevels := []log.Level{log.Error, log.Info, log.Warning, log.Debug}
 	logActions := logLevelMenu.Actions()
-	currentLogLevel := log.GetLevel()
 	for _, level := range logLevels {
 		level := level // Avoid capturing the iteration variable
 		a := walk.NewAction()

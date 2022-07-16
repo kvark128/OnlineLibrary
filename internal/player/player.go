@@ -40,6 +40,7 @@ const (
 var PlaybackStopped = fmt.Errorf("playback stopped")
 
 type Player struct {
+	logger *log.Logger
 	sync.Mutex
 	playList      []daisy.Resource
 	playListSize  int64
@@ -56,8 +57,9 @@ type Player struct {
 	pauseTimer    *time.Timer
 }
 
-func NewPlayer(bookDir string, resources []daisy.Resource, outputDevice string) *Player {
+func NewPlayer(bookDir string, resources []daisy.Resource, outputDevice string, logger *log.Logger) *Player {
 	p := &Player{
+		logger:       logger,
 		playing:      new(util.Flag),
 		wg:           new(sync.WaitGroup),
 		bookDir:      bookDir,
@@ -66,7 +68,7 @@ func NewPlayer(bookDir string, resources []daisy.Resource, outputDevice string) 
 		outputDevice: outputDevice,
 	}
 
-	// The player supports only LKF and MP3 formats. Unsupported resources must not be uploaded to the player
+	// Player supports only LKF and MP3 resources. Unsupported resources must not be uploaded to the player
 	// Some services specify an incorrect r.MimeType value, so we check the resource type by extension from the r.LocalURI field
 	for _, r := range resources {
 		ext := strings.ToLower(filepath.Ext(r.LocalURI))
@@ -83,7 +85,7 @@ func (p *Player) SetTimerDuration(d time.Duration) {
 	p.Lock()
 	defer p.Unlock()
 	p.timerDuration = d
-	log.Debug("Playback timer set to %v", d)
+	p.logger.Debug("Playback timer set to %v", d)
 	if p.playing.IsSet() && p.fragment != nil && !p.fragment.IsPause() {
 		p.updateTimer(p.timerDuration)
 	}
@@ -99,11 +101,11 @@ func (p *Player) updateTimer(d time.Duration) {
 	if p.pauseTimer != nil {
 		p.pauseTimer.Stop()
 		p.pauseTimer = nil
-		log.Debug("Playback timer stopped")
+		p.logger.Debug("Playback timer stopped")
 	}
 	if d > 0 {
 		p.pauseTimer = time.AfterFunc(d, p.PlayPause)
-		log.Debug("Playback timer started on %v", d)
+		p.logger.Debug("Playback timer started on %v", d)
 	}
 }
 
@@ -125,7 +127,7 @@ func (p *Player) SetPosition(pos time.Duration) {
 	}
 	if p.fragment != nil {
 		if err := p.fragment.SetPosition(pos); err != nil {
-			log.Error("Set fragment position: %v", err)
+			p.logger.Error("Set fragment position: %v", err)
 			return
 		}
 		gui.SetElapsedTime(p.fragment.Position())
@@ -261,9 +263,9 @@ func (p *Player) sizeof(rsrc []daisy.Resource) int64 {
 }
 
 func (p *Player) playback(startFragment int) {
-	log.Debug("Starting playback with fragment %v. Waiting other fragments...", startFragment)
+	p.logger.Debug("Starting playback with fragment %v. Waiting other fragments...", startFragment)
 	p.wg.Wait()
-	log.Debug("Fragment %v started", startFragment)
+	p.logger.Debug("Fragment %v started", startFragment)
 
 	p.wg.Add(1)
 	p.playing.Set()
@@ -274,7 +276,7 @@ func (p *Player) playback(startFragment int) {
 	defer p.updateTimer(0)
 
 	for index, r := range p.playList[startFragment:] {
-		log.Debug("Fetching resource: %v\r\nMimeType: %v\r\nSize: %v", r.LocalURI, r.MimeType, r.Size)
+		p.logger.Debug("Fetching resource: %v\r\nMimeType: %v\r\nSize: %v", r.LocalURI, r.MimeType, r.Size)
 
 		err := func(r daisy.Resource) error {
 			var src io.ReadSeekCloser
@@ -288,15 +290,15 @@ func (p *Player) playback(startFragment int) {
 				if err != nil {
 					return fmt.Errorf("opening local fragment: %w", err)
 				}
-				log.Debug("Opening local fragment from %v", localPath)
+				p.logger.Debug("Opening local fragment from %v", localPath)
 			} else {
 				// There is no fragment on the local disc. Trying to get it from the network
 				var err error
-				src, err = connection.NewConnection(r.URI)
+				src, err = connection.NewConnection(r.URI, p.logger)
 				if err != nil {
 					return fmt.Errorf("connection creating: %w", err)
 				}
-				log.Debug("Fetching fragment by network from %v", r.URI)
+				p.logger.Debug("Fetching fragment by network from %v", r.URI)
 			}
 			defer src.Close()
 
@@ -364,7 +366,7 @@ func (p *Player) playback(startFragment int) {
 		}(r)
 
 		if err != nil {
-			log.Warning("Resource %v: %v", r.LocalURI, err)
+			p.logger.Warning("Resource %v: %v", r.LocalURI, err)
 			break
 		}
 	}
