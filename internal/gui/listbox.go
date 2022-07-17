@@ -3,7 +3,7 @@ package gui
 import (
 	"time"
 
-	"github.com/kvark128/OnlineLibrary/internal/msg"
+	"github.com/kvark128/OnlineLibrary/internal/gui/msg"
 	"github.com/lxn/walk"
 	"github.com/lxn/win"
 )
@@ -32,37 +32,18 @@ type MainListBox struct {
 	msgCH chan msg.Message
 }
 
-func NewMainListBox(lb *walk.ListBox, label *walk.TextLabel, msgCH chan msg.Message) (*MainListBox, error) {
-	mlb := &MainListBox{
-		ListBox: lb,
-		label:   label,
-		msgCH:   msgCH,
-	}
-
-	if err := walk.InitWrapperWindow(mlb); err != nil {
-		return nil, err
-	}
-
-	return mlb, nil
-}
-
-func (mlb *MainListBox) SetItems(items []string, label string, bookMenuEnable bool) {
+func (mlb *MainListBox) SetItems(items []string, label string, contextMenu *walk.Menu) {
 	mlb.Synchronize(func() {
 		mlb.label.SetText(label)
 		mlb.Accessibility().SetName(label)
 		mlb.SetModel(items)
-		bookMenuEnabled.SetSatisfied(bookMenuEnable)
-		if bookMenuEnable {
-			mlb.ListBox.SetContextMenu(bookMenu)
-		} else {
-			mlb.ListBox.SetContextMenu(nil)
-		}
+		mlb.ListBox.SetContextMenu(contextMenu)
 		mlb.SetCurrentIndex(0)
 	})
 }
 
 func (mlb *MainListBox) Clear() {
-	mlb.SetItems([]string{}, "", false)
+	mlb.SetItems([]string{}, "", nil)
 }
 
 func (mlb *MainListBox) CurrentIndex() int {

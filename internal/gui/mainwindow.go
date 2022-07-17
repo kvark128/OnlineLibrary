@@ -5,57 +5,50 @@ import (
 	"time"
 
 	"github.com/kvark128/OnlineLibrary/internal/config"
+	"github.com/kvark128/OnlineLibrary/internal/gui/msg"
 	"github.com/kvark128/OnlineLibrary/internal/log"
-	"github.com/kvark128/OnlineLibrary/internal/msg"
-	"github.com/kvark128/OnlineLibrary/internal/util"
 	"github.com/lxn/walk"
 	. "github.com/lxn/walk/declarative"
 )
 
-var (
-	mainWindow                                    *walk.MainWindow
-	MainList                                      *MainListBox
-	libraryMenu                                   *walk.Menu
-	libraryLogon                                  *walk.MutableCondition
-	outputDeviceMenu                              *walk.Menu
-	bookmarkMenu                                  *walk.Menu
-	bookMenu                                      *walk.Menu
-	bookMenuEnabled                               *walk.MutableCondition
-	logLevelMenu                                  *walk.Menu
-	elapseTime, totalTime, fragments, bookPercent *walk.StatusBarItem
-	pauseTimerItem                                *walk.Action
-)
+type MainWnd struct {
+	mainWindow  *walk.MainWindow
+	msgChan     chan msg.Message
+	menuBar     *MenuBar
+	mainListBox *MainListBox
+	statusBar   *StatusBar
+}
 
-func Initialize(msgCH chan msg.Message, currentLogLevel log.Level) error {
-	if mainWindow != nil {
-		panic("GUI already initialized")
+func NewMainWindow(currentLogLevel log.Level) (*MainWnd, error) {
+	wnd := &MainWnd{
+		msgChan:     make(chan msg.Message, config.MessageBufferSize),
+		menuBar:     new(MenuBar),
+		mainListBox: new(MainListBox),
+		statusBar:   new(StatusBar),
 	}
 
-	libraryLogon = walk.NewMutableCondition()
-	MustRegisterCondition("libraryLogon", libraryLogon)
-	bookMenuEnabled = walk.NewMutableCondition()
-	MustRegisterCondition("bookMenuEnabled", bookMenuEnabled)
+	wnd.menuBar.libraryLogon = walk.NewMutableCondition()
+	MustRegisterCondition("libraryLogon", wnd.menuBar.libraryLogon)
+	wnd.menuBar.bookMenuEnabled = walk.NewMutableCondition()
+	MustRegisterCondition("bookMenuEnabled", wnd.menuBar.bookMenuEnabled)
 
-	var lb *walk.ListBox
-	var label *walk.TextLabel
-
-	if err := (MainWindow{
+	wndLayout := MainWindow{
 		Title:    config.ProgramName,
 		Layout:   VBox{},
-		AssignTo: &mainWindow,
-		MenuItems: []MenuItem{
+		AssignTo: &wnd.mainWindow,
 
+		MenuItems: []MenuItem{
 			Menu{
 				Text: "&Библиотека",
 				Items: []MenuItem{
 					Menu{
 						Text:     "Учётные записи",
-						AssignTo: &libraryMenu,
+						AssignTo: &wnd.menuBar.libraryMenu,
 						Items: []MenuItem{
 							Action{
 								Text:        "Добавить учётную запись",
 								Shortcut:    Shortcut{walk.ModControl, walk.KeyN},
-								OnTriggered: func() { msgCH <- msg.Message{msg.LIBRARY_ADD, nil} },
+								OnTriggered: func() { wnd.msgChan <- msg.Message{msg.LIBRARY_ADD, nil} },
 							},
 						},
 					},
@@ -63,82 +56,82 @@ func Initialize(msgCH chan msg.Message, currentLogLevel log.Level) error {
 						Text:        "Главное меню",
 						Shortcut:    Shortcut{walk.ModControl, walk.KeyM},
 						Enabled:     Bind("libraryLogon"),
-						OnTriggered: func() { msgCH <- msg.Message{msg.MAIN_MENU, nil} },
+						OnTriggered: func() { wnd.msgChan <- msg.Message{msg.MAIN_MENU, nil} },
 					},
 					Action{
 						Text:        "Книжная полка",
 						Shortcut:    Shortcut{walk.ModControl, walk.KeyE},
 						Enabled:     Bind("libraryLogon"),
-						OnTriggered: func() { msgCH <- msg.Message{msg.OPEN_BOOKSHELF, nil} },
+						OnTriggered: func() { wnd.msgChan <- msg.Message{msg.OPEN_BOOKSHELF, nil} },
 					},
 					Action{
 						Text:        "Новые поступления",
 						Shortcut:    Shortcut{walk.ModControl, walk.KeyK},
 						Enabled:     Bind("libraryLogon"),
-						OnTriggered: func() { msgCH <- msg.Message{msg.OPEN_NEWBOOKS, nil} },
+						OnTriggered: func() { wnd.msgChan <- msg.Message{msg.OPEN_NEWBOOKS, nil} },
 					},
 					Action{
 						Text:        "Поиск...",
 						Shortcut:    Shortcut{walk.ModControl, walk.KeyF},
 						Enabled:     Bind("libraryLogon"),
-						OnTriggered: func() { msgCH <- msg.Message{msg.SEARCH_BOOK, nil} },
+						OnTriggered: func() { wnd.msgChan <- msg.Message{msg.SEARCH_BOOK, nil} },
 					},
 					Action{
 						Text:        "Предыдущее меню",
 						Shortcut:    Shortcut{0, walk.KeyBack},
 						Enabled:     Bind("libraryLogon"),
-						OnTriggered: func() { msgCH <- msg.Message{msg.MENU_BACK, nil} },
+						OnTriggered: func() { wnd.msgChan <- msg.Message{msg.MENU_BACK, nil} },
 					},
 					Action{
 						Text:        "Локальные книги",
 						Shortcut:    Shortcut{walk.ModControl, walk.KeyL},
-						OnTriggered: func() { msgCH <- msg.Message{msg.SET_PROVIDER, config.LocalStorageID} },
+						OnTriggered: func() { wnd.msgChan <- msg.Message{msg.SET_PROVIDER, config.LocalStorageID} },
 					},
 					Action{
 						Text:        "Информация о библиотеке",
 						Enabled:     Bind("libraryLogon"),
-						OnTriggered: func() { msgCH <- msg.Message{Code: msg.LIBRARY_INFO} },
+						OnTriggered: func() { wnd.msgChan <- msg.Message{Code: msg.LIBRARY_INFO} },
 					},
 					Action{
 						Text:        "Удалить учётную запись",
 						Enabled:     Bind("libraryLogon"),
-						OnTriggered: func() { msgCH <- msg.Message{msg.LIBRARY_REMOVE, nil} },
+						OnTriggered: func() { wnd.msgChan <- msg.Message{msg.LIBRARY_REMOVE, nil} },
 					},
 					Action{
 						Text:        "Выйти из программы",
 						Shortcut:    Shortcut{walk.ModAlt, walk.KeyF4},
-						OnTriggered: func() { mainWindow.Close() },
+						OnTriggered: func() { wnd.mainWindow.Close() },
 					},
 				},
 			},
 
 			Menu{
 				Text:     "&Книга",
-				AssignTo: &bookMenu,
+				AssignTo: &wnd.menuBar.bookMenu,
 				Enabled:  Bind("bookMenuEnabled"),
 				Items: []MenuItem{
 					Action{
 						Text:        "Загрузить книгу",
 						Shortcut:    Shortcut{walk.ModControl, walk.KeyD},
 						Enabled:     Bind("libraryLogon"),
-						OnTriggered: func() { msgCH <- msg.Message{msg.DOWNLOAD_BOOK, nil} },
+						OnTriggered: func() { wnd.msgChan <- msg.Message{msg.DOWNLOAD_BOOK, nil} },
 					},
 					Action{
 						Text:        "Убрать книгу с полки",
 						Shortcut:    Shortcut{walk.ModShift, walk.KeyDelete},
 						Enabled:     Bind("libraryLogon"),
-						OnTriggered: func() { msgCH <- msg.Message{msg.REMOVE_BOOK, nil} },
+						OnTriggered: func() { wnd.msgChan <- msg.Message{msg.REMOVE_BOOK, nil} },
 					},
 					Action{
 						Text:        "Поставить книгу на полку",
 						Shortcut:    Shortcut{walk.ModControl, walk.KeyA},
 						Enabled:     Bind("libraryLogon"),
-						OnTriggered: func() { msgCH <- msg.Message{msg.ISSUE_BOOK, nil} },
+						OnTriggered: func() { wnd.msgChan <- msg.Message{msg.ISSUE_BOOK, nil} },
 					},
 					Action{
 						Text:        "Информация о книге",
 						Shortcut:    Shortcut{walk.ModControl, walk.KeyI},
-						OnTriggered: func() { msgCH <- msg.Message{msg.BOOK_DESCRIPTION, nil} },
+						OnTriggered: func() { wnd.msgChan <- msg.Message{msg.BOOK_DESCRIPTION, nil} },
 					},
 				},
 			},
@@ -148,24 +141,24 @@ func Initialize(msgCH chan msg.Message, currentLogLevel log.Level) error {
 				Items: []MenuItem{
 					Menu{
 						Text:     "Закладки",
-						AssignTo: &bookmarkMenu,
+						AssignTo: &wnd.menuBar.bookmarkMenu,
 						Items: []MenuItem{
 							Action{
 								Text:        "Добавить закладку",
 								Shortcut:    Shortcut{walk.ModControl, walk.KeyB},
-								OnTriggered: func() { msgCH <- msg.Message{msg.BOOKMARK_SET, nil} },
+								OnTriggered: func() { wnd.msgChan <- msg.Message{msg.BOOKMARK_SET, nil} },
 							},
 						},
 					},
 					Action{
 						Text:        "Воспроизвести / Приостановить",
 						Shortcut:    Shortcut{Key: walk.KeySpace},
-						OnTriggered: func() { msgCH <- msg.Message{msg.PLAYER_PLAY_PAUSE, nil} },
+						OnTriggered: func() { wnd.msgChan <- msg.Message{msg.PLAYER_PLAY_PAUSE, nil} },
 					},
 					Action{
 						Text:        "Остановить",
 						Shortcut:    Shortcut{walk.ModControl, walk.KeySpace},
-						OnTriggered: func() { msgCH <- msg.Message{msg.PLAYER_STOP, nil} },
+						OnTriggered: func() { wnd.msgChan <- msg.Message{msg.PLAYER_STOP, nil} },
 					},
 
 					Menu{
@@ -174,22 +167,22 @@ func Initialize(msgCH chan msg.Message, currentLogLevel log.Level) error {
 							Action{
 								Text:        "На первый фрагмент",
 								Shortcut:    Shortcut{walk.ModControl, walk.KeyBack},
-								OnTriggered: func() { msgCH <- msg.Message{msg.PLAYER_GOTO_FRAGMENT, 0} },
+								OnTriggered: func() { wnd.msgChan <- msg.Message{msg.PLAYER_GOTO_FRAGMENT, 0} },
 							},
 							Action{
 								Text:        "На указанный фрагмент",
 								Shortcut:    Shortcut{walk.ModControl, walk.KeyG},
-								OnTriggered: func() { msgCH <- msg.Message{msg.PLAYER_GOTO_FRAGMENT, nil} },
+								OnTriggered: func() { wnd.msgChan <- msg.Message{msg.PLAYER_GOTO_FRAGMENT, nil} },
 							},
 							Action{
 								Text:        "На следующий фрагмент",
 								Shortcut:    Shortcut{walk.ModControl, walk.KeyNext},
-								OnTriggered: func() { msgCH <- next_fragment },
+								OnTriggered: func() { wnd.msgChan <- next_fragment },
 							},
 							Action{
 								Text:        "На предыдущий фрагмент",
 								Shortcut:    Shortcut{walk.ModControl, walk.KeyPrior},
-								OnTriggered: func() { msgCH <- previous_fragment },
+								OnTriggered: func() { wnd.msgChan <- previous_fragment },
 							},
 						},
 					},
@@ -200,52 +193,52 @@ func Initialize(msgCH chan msg.Message, currentLogLevel log.Level) error {
 							Action{
 								Text:        "В начало фрагмента",
 								Shortcut:    Shortcut{walk.ModShift, walk.KeyBack},
-								OnTriggered: func() { msgCH <- msg.Message{msg.PLAYER_GOTO_POSITION, time.Duration(0)} },
+								OnTriggered: func() { wnd.msgChan <- msg.Message{msg.PLAYER_GOTO_POSITION, time.Duration(0)} },
 							},
 							Action{
 								Text:        "На указанную позицию",
 								Shortcut:    Shortcut{walk.ModShift, walk.KeyG},
-								OnTriggered: func() { msgCH <- msg.Message{msg.PLAYER_GOTO_POSITION, nil} },
+								OnTriggered: func() { wnd.msgChan <- msg.Message{msg.PLAYER_GOTO_POSITION, nil} },
 							},
 							Action{
 								Text:        "На 5 сек. вперёд",
 								Shortcut:    Shortcut{0, walk.KeyRight},
-								OnTriggered: func() { msgCH <- rewind_5sec_forward },
+								OnTriggered: func() { wnd.msgChan <- rewind_5sec_forward },
 							},
 							Action{
 								Text:        "На 5 сек. назад",
 								Shortcut:    Shortcut{0, walk.KeyLeft},
-								OnTriggered: func() { msgCH <- rewind_5sec_back },
+								OnTriggered: func() { wnd.msgChan <- rewind_5sec_back },
 							},
 							Action{
 								Text:        "На 30 сек. вперёд",
 								Shortcut:    Shortcut{walk.ModControl, walk.KeyRight},
-								OnTriggered: func() { msgCH <- rewind_30sec_forward },
+								OnTriggered: func() { wnd.msgChan <- rewind_30sec_forward },
 							},
 							Action{
 								Text:        "На 30 сек. назад",
 								Shortcut:    Shortcut{walk.ModControl, walk.KeyLeft},
-								OnTriggered: func() { msgCH <- rewind_30sec_back },
+								OnTriggered: func() { wnd.msgChan <- rewind_30sec_back },
 							},
 							Action{
 								Text:        "На 1 мин. вперёд",
 								Shortcut:    Shortcut{walk.ModShift, walk.KeyRight},
-								OnTriggered: func() { msgCH <- rewind_1min_forward },
+								OnTriggered: func() { wnd.msgChan <- rewind_1min_forward },
 							},
 							Action{
 								Text:        "На 1 мин. назад",
 								Shortcut:    Shortcut{walk.ModShift, walk.KeyLeft},
-								OnTriggered: func() { msgCH <- rewind_1min_back },
+								OnTriggered: func() { wnd.msgChan <- rewind_1min_back },
 							},
 							Action{
 								Text:        "На 5 мин. вперёд",
 								Shortcut:    Shortcut{walk.ModControl | walk.ModShift, walk.KeyRight},
-								OnTriggered: func() { msgCH <- rewind_5min_forward },
+								OnTriggered: func() { wnd.msgChan <- rewind_5min_forward },
 							},
 							Action{
 								Text:        "На 5 мин. назад",
 								Shortcut:    Shortcut{walk.ModControl | walk.ModShift, walk.KeyLeft},
-								OnTriggered: func() { msgCH <- rewind_5min_back },
+								OnTriggered: func() { wnd.msgChan <- rewind_5min_back },
 							},
 						},
 					},
@@ -256,17 +249,17 @@ func Initialize(msgCH chan msg.Message, currentLogLevel log.Level) error {
 							Action{
 								Text:        "Увеличить громкость",
 								Shortcut:    Shortcut{walk.ModControl, walk.KeyUp},
-								OnTriggered: func() { msgCH <- msg.Message{msg.PLAYER_VOLUME_UP, nil} },
+								OnTriggered: func() { wnd.msgChan <- msg.Message{msg.PLAYER_VOLUME_UP, nil} },
 							},
 							Action{
 								Text:        "Уменьшить громкость",
 								Shortcut:    Shortcut{walk.ModControl, walk.KeyDown},
-								OnTriggered: func() { msgCH <- msg.Message{msg.PLAYER_VOLUME_DOWN, nil} },
+								OnTriggered: func() { wnd.msgChan <- msg.Message{msg.PLAYER_VOLUME_DOWN, nil} },
 							},
 							Action{
 								Text:        "Сбросить громкость",
 								Shortcut:    Shortcut{walk.ModControl, walk.KeyR},
-								OnTriggered: func() { msgCH <- msg.Message{msg.PLAYER_VOLUME_RESET, nil} },
+								OnTriggered: func() { wnd.msgChan <- msg.Message{msg.PLAYER_VOLUME_RESET, nil} },
 							},
 						},
 					},
@@ -277,17 +270,17 @@ func Initialize(msgCH chan msg.Message, currentLogLevel log.Level) error {
 							Action{
 								Text:        "Увеличить скорость",
 								Shortcut:    Shortcut{walk.ModShift, walk.KeyUp},
-								OnTriggered: func() { msgCH <- msg.Message{msg.PLAYER_SPEED_UP, nil} },
+								OnTriggered: func() { wnd.msgChan <- msg.Message{msg.PLAYER_SPEED_UP, nil} },
 							},
 							Action{
 								Text:        "Уменьшить скорость",
 								Shortcut:    Shortcut{walk.ModShift, walk.KeyDown},
-								OnTriggered: func() { msgCH <- msg.Message{msg.PLAYER_SPEED_DOWN, nil} },
+								OnTriggered: func() { wnd.msgChan <- msg.Message{msg.PLAYER_SPEED_DOWN, nil} },
 							},
 							Action{
 								Text:        "Сбросить скорость",
 								Shortcut:    Shortcut{walk.ModShift, walk.KeyR},
-								OnTriggered: func() { msgCH <- msg.Message{msg.PLAYER_SPEED_RESET, nil} },
+								OnTriggered: func() { wnd.msgChan <- msg.Message{msg.PLAYER_SPEED_RESET, nil} },
 							},
 						},
 					},
@@ -298,17 +291,17 @@ func Initialize(msgCH chan msg.Message, currentLogLevel log.Level) error {
 				Items: []MenuItem{
 					Menu{
 						Text:     "Устройство вывода звука",
-						AssignTo: &outputDeviceMenu,
+						AssignTo: &wnd.menuBar.outputDeviceMenu,
 					},
 					Action{
 						Text:        "Таймер паузы",
-						AssignTo:    &pauseTimerItem,
+						AssignTo:    &wnd.menuBar.pauseTimerItem,
 						Shortcut:    Shortcut{walk.ModControl, walk.KeyP},
-						OnTriggered: func() { msgCH <- msg.Message{msg.PLAYER_SET_TIMER, nil} },
+						OnTriggered: func() { wnd.msgChan <- msg.Message{msg.PLAYER_SET_TIMER, nil} },
 					},
 					Menu{
 						Text:     "Уровень ведения журнала",
-						AssignTo: &logLevelMenu,
+						AssignTo: &wnd.menuBar.logLevelMenu,
 					},
 				},
 			},
@@ -319,7 +312,7 @@ func Initialize(msgCH chan msg.Message, currentLogLevel log.Level) error {
 						Text: "О программе",
 						OnTriggered: func() {
 							msg := fmt.Sprintf("%v версия %v\nРабочий каталог: %v\nАвтор: %v", config.ProgramName, config.ProgramVersion, config.UserData(), config.CopyrightInfo)
-							walk.MsgBox(mainWindow, "О программе", msg, walk.MsgBoxOK|walk.MsgBoxIconInformation)
+							walk.MsgBox(wnd.mainWindow, "О программе", msg, walk.MsgBoxOK|walk.MsgBoxIconInformation)
 						},
 					},
 				},
@@ -328,38 +321,41 @@ func Initialize(msgCH chan msg.Message, currentLogLevel log.Level) error {
 
 		Children: []Widget{
 			TextLabel{
-				AssignTo: &label,
+				AssignTo: &wnd.mainListBox.label,
 			},
 			ListBox{
-				AssignTo:        &lb,
-				OnItemActivated: func() { msgCH <- msg.Message{msg.ACTIVATE_MENU, nil} },
+				AssignTo:        &wnd.mainListBox.ListBox,
+				OnItemActivated: func() { wnd.msgChan <- msg.Message{msg.ACTIVATE_MENU, wnd.mainListBox.ListBox.CurrentIndex()} },
 			},
 		},
+
 		StatusBarItems: []StatusBarItem{
 			StatusBarItem{
-				AssignTo: &elapseTime,
+				AssignTo: &wnd.statusBar.elapseTime,
 				Text:     "00:00:00",
 			},
 			StatusBarItem{
 				Text: "/",
 			},
 			StatusBarItem{
-				AssignTo: &totalTime,
+				AssignTo: &wnd.statusBar.totalTime,
 				Text:     "00:00:00",
 			},
 			StatusBarItem{
-				AssignTo: &fragments,
+				AssignTo: &wnd.statusBar.fragments,
 			},
 			StatusBarItem{
-				AssignTo: &bookPercent,
+				AssignTo: &wnd.statusBar.bookPercent,
 			},
 		},
-	}.Create()); err != nil {
-		return err
+	}
+
+	if err := wndLayout.Create(); err != nil {
+		return nil, err
 	}
 
 	logLevels := []log.Level{log.Error, log.Info, log.Warning, log.Debug}
-	logActions := logLevelMenu.Actions()
+	logActions := wnd.menuBar.logLevelMenu.Actions()
 	for _, level := range logLevels {
 		level := level // Avoid capturing the iteration variable
 		a := walk.NewAction()
@@ -368,185 +364,66 @@ func Initialize(msgCH chan msg.Message, currentLogLevel log.Level) error {
 			a.SetChecked(true)
 		}
 		a.Triggered().Attach(func() {
-			actions := logLevelMenu.Actions()
+			actions := wnd.menuBar.logLevelMenu.Actions()
 			for i := 0; i < actions.Len(); i++ {
 				actions.At(i).SetChecked(false)
 			}
 			a.SetChecked(true)
-			msgCH <- msg.Message{Code: msg.LOG_SET_LEVEL, Data: level}
+			wnd.msgChan <- msg.Message{Code: msg.LOG_SET_LEVEL, Data: level}
 		})
 		logActions.Add(a)
 	}
 
-	var err error
-	MainList, err = NewMainListBox(lb, label, msgCH)
-	if err != nil {
-		return err
+	wnd.menuBar.wnd = wnd.mainWindow
+	wnd.menuBar.msgCH = wnd.msgChan
+	wnd.mainListBox.msgCH = wnd.msgChan
+	wnd.statusBar.StatusBar = wnd.mainWindow.StatusBar()
+
+	if err := walk.InitWrapperWindow(wnd.mainListBox); err != nil {
+		return nil, err
 	}
-
-	return nil
+	return wnd, nil
 }
 
-func SetElapsedTime(elapsed time.Duration) {
-	mainWindow.Synchronize(func() {
-		str := util.FmtDuration(elapsed)
-		elapseTime.SetText(str)
-	})
+func (mw *MainWnd) MsgChan() chan msg.Message {
+	return mw.msgChan
 }
 
-func SetTotalTime(total time.Duration) {
-	mainWindow.Synchronize(func() {
-		str := util.FmtDuration(total)
-		totalTime.SetText(str)
-	})
+func (mw *MainWnd) Run() {
+	mw.mainWindow.Run()
+	close(mw.msgChan)
 }
 
-func SetFragments(current, length int) {
-	mainWindow.Synchronize(func() {
-		text := fmt.Sprintf("Фрагмент %d из %d", current, length)
-		fragments.SetText(text)
-	})
+func (mw *MainWnd) MenuBar() *MenuBar {
+	return mw.menuBar
 }
 
-func SetBookPercent(p int) {
-	mainWindow.Synchronize(func() {
-		text := fmt.Sprintf("(%v%%)", p)
-		bookPercent.SetText(text)
-	})
+func (mw *MainWnd) MainListBox() *MainListBox {
+	return mw.mainListBox
 }
 
-func SetProvidersMenu(msgCH chan msg.Message, services []*config.Service, currentID string) {
-	mainWindow.Synchronize(func() {
-		libraryLogon.SetSatisfied(false)
-		actions := libraryMenu.Actions()
-		// Delete all elements except the last one
-		for i := actions.Len(); i > 1; i-- {
-			actions.RemoveAt(0)
-		}
-
-		// Filling the menu with services
-		for i, service := range services {
-			a := walk.NewAction()
-			id := service.ID
-			if id == currentID {
-				a.SetChecked(true)
-				libraryLogon.SetSatisfied(true)
-			}
-			a.SetText(service.Name)
-			a.Triggered().Attach(func() {
-				msgCH <- msg.Message{msg.SET_PROVIDER, id}
-			})
-			actions.Insert(i, a)
-		}
-	})
+func (mw *MainWnd) StatusBar() *StatusBar {
+	return mw.statusBar
 }
 
-func SetBookmarksMenu(msgCH chan msg.Message, bookmarks map[string]string) {
-	mainWindow.Synchronize(func() {
-		actions := bookmarkMenu.Actions()
-		// Delete all elements except the last one
-		for i := actions.Len(); i > 1; i-- {
-			actions.RemoveAt(0)
-		}
-
-		// Filling the menu with bookmarks
-		for id, name := range bookmarks {
-			if name == "" {
-				continue
-			}
-			id := id
-			subMenu, err := walk.NewMenu()
-			if err != nil {
-				panic(err)
-			}
-			a, err := actions.InsertMenu(0, subMenu)
-			if err != nil {
-				panic(err)
-			}
-			a.SetText(name)
-			bookmarkActions := subMenu.Actions()
-			moveAction := walk.NewAction()
-			moveAction.SetText("Перейти...")
-			moveAction.Triggered().Attach(func() {
-				msgCH <- msg.Message{msg.BOOKMARK_FETCH, id}
-			})
-			bookmarkActions.Add(moveAction)
-			removeAction := walk.NewAction()
-			removeAction.SetText("Удалить...")
-			removeAction.Triggered().Attach(func() {
-				msgCH <- msg.Message{msg.BOOKMARK_REMOVE, id}
-			})
-			bookmarkActions.Add(removeAction)
-		}
-	})
-}
-
-func SetBookMenuEnabled(enabled bool) {
-	done := make(chan bool)
-	mainWindow.Synchronize(func() {
-		bookMenuEnabled.SetSatisfied(enabled)
-		done <- true
-	})
-	<-done
-}
-
-func SetOutputDeviceMenu(msgCH chan msg.Message, deviceNames []string, current string) {
-	mainWindow.Synchronize(func() {
-		actions := outputDeviceMenu.Actions()
-		// Delete all elements
-		actions.Clear()
-
-		// Filling the menu with devices
-		for i, name := range deviceNames {
-			a := walk.NewAction()
-			if name == current || (current == "" && i == 0) {
-				a.SetChecked(true)
-			}
-			a.SetText(name)
-			a.Triggered().Attach(func() {
-				for index := 0; index < actions.Len(); index++ {
-					actions.At(index).SetChecked(false)
-				}
-				a.SetChecked(true)
-				msgCH <- msg.Message{msg.PLAYER_OUTPUT_DEVICE, a.Text()}
-			})
-			actions.Insert(i, a)
-		}
-	})
-}
-
-func SetPauseTimerLabel(minutes int) {
-	label := "Таймер паузы (Нет)"
-	if minutes > 0 {
-		label = fmt.Sprintf("Таймер паузы (%d мин.)", minutes)
-	}
-	mainWindow.Synchronize(func() {
-		pauseTimerItem.SetText(label)
-	})
-}
-
-func RunMainWindow() {
-	mainWindow.Run()
-}
-
-func SetMainWindowTitle(title string) {
-	mainWindow.Synchronize(func() {
+func (mw *MainWnd) SetTitle(title string) {
+	mw.mainWindow.Synchronize(func() {
 		var windowTitle = config.ProgramName
 		if title != "" {
 			windowTitle = fmt.Sprintf("%s — %s", title, windowTitle)
 		}
-		mainWindow.SetTitle(windowTitle)
+		mw.mainWindow.SetTitle(windowTitle)
 	})
 }
 
-func Credentials(service *config.Service) int {
+func (mw *MainWnd) Credentials(service *config.Service) int {
 	var (
 		dlg                                   *walk.Dialog
 		nameLE, urlLE, usernameLE, passwordLE *walk.LineEdit
 		OkPB, CancelPB                        *walk.PushButton
 	)
 
-	var layout = Dialog{
+	layout := Dialog{
 		Title:         "Добавление новой учётной записи",
 		AssignTo:      &dlg,
 		Layout:        VBox{},
@@ -605,25 +482,25 @@ func Credentials(service *config.Service) int {
 		},
 	}
 
-	result := make(chan int)
-	mainWindow.Synchronize(func() {
-		layout.Create(mainWindow)
+	res := make(chan int)
+	mw.mainWindow.Synchronize(func() {
+		layout.Create(mw.mainWindow)
 		NewFixedPushButton(OkPB)
 		NewFixedPushButton(CancelPB)
 		dlg.Run()
-		result <- dlg.Result()
+		res <- dlg.Result()
 	})
-	return <-result
+	return <-res
 }
 
-func TextEntryDialog(title, msg, value string, text *string) int {
+func (mw *MainWnd) TextEntryDialog(title, msg, value string, text *string) int {
 	var (
 		dlg            *walk.Dialog
 		textLE         *walk.LineEdit
 		OkPB, CancelPB *walk.PushButton
 	)
 
-	var layout = Dialog{
+	layout := Dialog{
 		Title:         title,
 		AssignTo:      &dlg,
 		Layout:        VBox{},
@@ -662,33 +539,33 @@ func TextEntryDialog(title, msg, value string, text *string) int {
 		},
 	}
 
-	result := make(chan int)
-	mainWindow.Synchronize(func() {
-		layout.Create(mainWindow)
+	res := make(chan int)
+	mw.mainWindow.Synchronize(func() {
+		layout.Create(mw.mainWindow)
 		NewFixedPushButton(OkPB)
 		NewFixedPushButton(CancelPB)
 		dlg.Run()
-		result <- dlg.Result()
-	})
-	return <-result
-}
-
-func MessageBox(title, message string, style walk.MsgBoxStyle) int {
-	res := make(chan int)
-	mainWindow.Synchronize(func() {
-		res <- walk.MsgBox(mainWindow, title, message, style)
+		res <- dlg.Result()
 	})
 	return <-res
 }
 
-func MessageBoxError(title, message string) {
-	MessageBox(title, message, walk.MsgBoxOK|walk.MsgBoxIconError)
+func (mw *MainWnd) MessageBox(title, message string, style walk.MsgBoxStyle) int {
+	res := make(chan int)
+	mw.mainWindow.Synchronize(func() {
+		res <- walk.MsgBox(mw.mainWindow, title, message, style)
+	})
+	return <-res
 }
 
-func MessageBoxWarning(title, message string) {
-	MessageBox(title, message, walk.MsgBoxOK|walk.MsgBoxIconWarning)
+func (mw *MainWnd) MessageBoxError(title, message string) {
+	mw.MessageBox(title, message, walk.MsgBoxOK|walk.MsgBoxIconError)
 }
 
-func MessageBoxQuestion(title, message string) bool {
-	return MessageBox(title, message, walk.MsgBoxYesNo|walk.MsgBoxIconQuestion) == walk.DlgCmdYes
+func (mw *MainWnd) MessageBoxWarning(title, message string) {
+	mw.MessageBox(title, message, walk.MsgBoxOK|walk.MsgBoxIconWarning)
+}
+
+func (mw *MainWnd) MessageBoxQuestion(title, message string) bool {
+	return mw.MessageBox(title, message, walk.MsgBoxYesNo|walk.MsgBoxIconQuestion) == walk.DlgCmdYes
 }

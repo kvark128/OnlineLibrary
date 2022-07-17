@@ -6,13 +6,14 @@ import (
 )
 
 type ProgressDialog struct {
-	dlg   *walk.Dialog
-	label *walk.TextLabel
-	pb    *walk.ProgressBar
+	parent *walk.MainWindow
+	dlg    *walk.Dialog
+	label  *walk.TextLabel
+	pb     *walk.ProgressBar
 }
 
-func NewProgressDialog(title, label string, maxValue int, cancelFN func()) *ProgressDialog {
-	pd := &ProgressDialog{}
+func NewProgressDialog(parent *MainWnd, title, label string, maxValue int, cancelFN func()) *ProgressDialog {
+	pd := &ProgressDialog{parent: parent.mainWindow}
 	var CancelPB *walk.PushButton
 
 	var layout = Dialog{
@@ -44,16 +45,16 @@ func NewProgressDialog(title, label string, maxValue int, cancelFN func()) *Prog
 	}
 
 	done := make(chan bool)
-	mainWindow.Synchronize(func() {
-		layout.Create(nil)
+	pd.parent.Synchronize(func() {
+		layout.Create(pd.parent)
 		done <- true
 	})
 	<-done
 	return pd
 }
 
-func (pd *ProgressDialog) Show() {
-	mainWindow.Synchronize(func() {
+func (pd *ProgressDialog) Run() {
+	pd.parent.Synchronize(func() {
 		pd.dlg.Run()
 	})
 }

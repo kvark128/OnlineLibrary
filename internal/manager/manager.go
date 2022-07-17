@@ -17,8 +17,8 @@ import (
 	"github.com/kvark128/OnlineLibrary/internal/config"
 	"github.com/kvark128/OnlineLibrary/internal/connection"
 	"github.com/kvark128/OnlineLibrary/internal/gui"
+	"github.com/kvark128/OnlineLibrary/internal/gui/msg"
 	"github.com/kvark128/OnlineLibrary/internal/log"
-	"github.com/kvark128/OnlineLibrary/internal/msg"
 	"github.com/kvark128/OnlineLibrary/internal/player"
 	"github.com/kvark128/OnlineLibrary/internal/util"
 	"github.com/kvark128/OnlineLibrary/internal/util/buffer"
@@ -38,6 +38,7 @@ var (
 
 type Manager struct {
 	provider      Provider
+	mainWnd       *gui.MainWnd
 	logger        *log.Logger
 	book          *Book
 	contentList   *ContentList
@@ -46,8 +47,11 @@ type Manager struct {
 	lastInputText string
 }
 
-func (m *Manager) Start(conf *config.Config, msgCH chan msg.Message, logger *log.Logger, done chan<- bool) {
-	m.logger = logger
+func NewManager(mainWnd *gui.MainWnd, logger *log.Logger) *Manager {
+	return &Manager{mainWnd: mainWnd, logger: logger}
+}
+
+func (m *Manager) Start(conf *config.Config, done chan<- bool) {
 	m.logger.Debug("Entering to Manager Loop")
 	defer func() {
 		if p := recover(); p != nil {
@@ -61,6 +65,7 @@ func (m *Manager) Start(conf *config.Config, msgCH chan msg.Message, logger *log
 		done <- true
 	}()
 
+	msgCH := m.mainWnd.MsgChan()
 	if conf.General.Provider != "" {
 		msgCH <- msg.Message{Code: msg.SET_PROVIDER, Data: conf.General.Provider}
 	}
@@ -68,11 +73,11 @@ func (m *Manager) Start(conf *config.Config, msgCH chan msg.Message, logger *log
 	for message := range msgCH {
 		switch message.Code {
 		case msg.ACTIVATE_MENU:
-			index := gui.MainList.CurrentIndex()
+			index := message.Data.(int)
 			if m.contentList != nil {
 				book := m.contentList.Items[index]
 				if m.book == nil || m.book.ID() != book.ID() {
-					if err := m.setBook(conf, msgCH, book); err != nil {
+					if err := m.setBook(conf, book); err != nil {
 						m.messageBoxError(fmt.Errorf("Set book: %w", err))
 						break
 					}
@@ -130,17 +135,17 @@ func (m *Manager) Start(conf *config.Config, msgCH chan msg.Message, logger *log
 				m.messageBoxError(fmt.Errorf("Provider creating %v: %w", id, err))
 				break
 			}
-			m.setProvider(provider, conf, msgCH, id)
+			m.setProvider(provider, conf, id)
 
 		case msg.LIBRARY_ADD:
 			service := new(config.Service)
-			if gui.Credentials(service) != walk.DlgCmdOK || service.Name == "" {
+			if m.mainWnd.Credentials(service) != walk.DlgCmdOK || service.Name == "" {
 				m.logger.Warning("Library adding: pressed Cancel button or len(service.Name) == 0")
 				break
 			}
 
 			if _, err := conf.ServiceByName(service.Name); err == nil {
-				gui.MessageBoxError("Ошибка", fmt.Sprintf("Учётная запись «%v» уже существует", service.Name))
+				m.mainWnd.MessageBoxError("Ошибка", fmt.Sprintf("Учётная запись «%v» уже существует", service.Name))
 				break
 			}
 
@@ -160,7 +165,7 @@ func (m *Manager) Start(conf *config.Config, msgCH chan msg.Message, logger *log
 				break
 			}
 			conf.SetService(service)
-			m.setProvider(provider, conf, msgCH, service.ID)
+			m.setProvider(provider, conf, service.ID)
 
 		case msg.LIBRARY_REMOVE:
 			lib, ok := m.provider.(*Library)
@@ -168,36 +173,36 @@ func (m *Manager) Start(conf *config.Config, msgCH chan msg.Message, logger *log
 				break
 			}
 			msg := fmt.Sprintf("Вы действительно хотите удалить учётную запись %v?%sТакже будут удалены сохранённые позиции всех книг этой библиотеки.%sЭто действие не может быть отменено.", lib.service.Name, CRLF, CRLF)
-			if !gui.MessageBoxQuestion("Удаление учётной записи", msg) {
+			if !m.mainWnd.MessageBoxQuestion("Удаление учётной записи", msg) {
 				break
 			}
 			conf.RemoveService(lib.service)
 			m.cleaning()
-			gui.SetProvidersMenu(msgCH, conf.Services, "")
+			m.mainWnd.MenuBar().SetProvidersMenu(conf.Services, "")
 
 		case msg.ISSUE_BOOK:
 			if m.contentList == nil {
 				m.logger.Warning("Attempt to add book to bookshelf when there is no content list")
 				break
 			}
-			book := m.contentList.Items[gui.MainList.CurrentIndex()]
+			book := m.contentList.Items[m.mainWnd.MainListBox().CurrentIndex()]
 			if err := m.issueBook(book); err != nil {
 				m.messageBoxError(fmt.Errorf("Issue book: %w", err))
 				break
 			}
-			gui.MessageBoxWarning("Уведомление", fmt.Sprintf("«%s» добавлена на книжную полку", book.Name()))
+			m.mainWnd.MessageBoxWarning("Уведомление", fmt.Sprintf("«%s» добавлена на книжную полку", book.Name()))
 
 		case msg.REMOVE_BOOK:
 			if m.contentList == nil {
 				m.logger.Warning("Attempt to remove book from bookshelf when there is no content list")
 				break
 			}
-			book := m.contentList.Items[gui.MainList.CurrentIndex()]
+			book := m.contentList.Items[m.mainWnd.MainListBox().CurrentIndex()]
 			if err := m.removeBook(book); err != nil {
 				m.messageBoxError(fmt.Errorf("Removing book: %w", err))
 				break
 			}
-			gui.MessageBoxWarning("Уведомление", fmt.Sprintf("«%s» удалена с книжной полки", book.Name()))
+			m.mainWnd.MessageBoxWarning("Уведомление", fmt.Sprintf("«%s» удалена с книжной полки", book.Name()))
 			// If a bookshelf is open, it must be updated to reflect the changes made
 			if m.contentList.ID == daisy.Issued {
 				m.setContentList(daisy.Issued)
@@ -207,7 +212,7 @@ func (m *Manager) Start(conf *config.Config, msgCH chan msg.Message, logger *log
 			if m.contentList == nil {
 				break
 			}
-			index := gui.MainList.CurrentIndex()
+			index := m.mainWnd.MainListBox().CurrentIndex()
 			book := m.contentList.Items[index]
 			if err := m.downloadBook(book); err != nil {
 				m.messageBoxError(fmt.Errorf("Book downloading: %w", err))
@@ -217,14 +222,14 @@ func (m *Manager) Start(conf *config.Config, msgCH chan msg.Message, logger *log
 			if m.contentList == nil {
 				break
 			}
-			index := gui.MainList.CurrentIndex()
+			index := m.mainWnd.MainListBox().CurrentIndex()
 			book := m.contentList.Items[index]
 			text, err := m.bookDescription(book)
 			if err != nil {
 				m.messageBoxError(err)
 				break
 			}
-			gui.MessageBoxWarning("Информация о книге", text)
+			m.mainWnd.MessageBoxWarning("Информация о книге", text)
 
 		case msg.PLAYER_PLAY_PAUSE:
 			if m.book != nil {
@@ -303,7 +308,7 @@ func (m *Manager) Start(conf *config.Config, msgCH chan msg.Message, logger *log
 				var err error
 				fragment = m.book.Fragment()
 				fragment++ // User needs a fragment number instead of an index
-				if gui.TextEntryDialog("Переход к фрагменту", "Введите номер фрагмента:", strconv.Itoa(fragment), &text) != walk.DlgCmdOK {
+				if m.mainWnd.TextEntryDialog("Переход к фрагменту", "Введите номер фрагмента:", strconv.Itoa(fragment), &text) != walk.DlgCmdOK {
 					break
 				}
 				fragment, err = strconv.Atoi(text)
@@ -324,7 +329,7 @@ func (m *Manager) Start(conf *config.Config, msgCH chan msg.Message, logger *log
 				var text string
 				var err error
 				pos = m.book.Position()
-				if gui.TextEntryDialog("Переход к позиции", "Введите позицию фрагмента:", util.FmtDuration(pos), &text) != walk.DlgCmdOK {
+				if m.mainWnd.TextEntryDialog("Переход к позиции", "Введите позицию фрагмента:", util.FmtDuration(pos), &text) != walk.DlgCmdOK {
 					break
 				}
 				pos, err = util.ParseDuration(text)
@@ -353,7 +358,7 @@ func (m *Manager) Start(conf *config.Config, msgCH chan msg.Message, logger *log
 				d = int(m.book.TimerDuration().Minutes())
 			}
 
-			if gui.TextEntryDialog("Установка таймера паузы", "Введите время таймера в минутах:", strconv.Itoa(d), &text) != walk.DlgCmdOK {
+			if m.mainWnd.TextEntryDialog("Установка таймера паузы", "Введите время таймера в минутах:", strconv.Itoa(d), &text) != walk.DlgCmdOK {
 				break
 			}
 
@@ -363,7 +368,7 @@ func (m *Manager) Start(conf *config.Config, msgCH chan msg.Message, logger *log
 			}
 
 			conf.General.PauseTimer = time.Minute * time.Duration(n)
-			gui.SetPauseTimerLabel(n)
+			m.mainWnd.MenuBar().SetPauseTimerLabel(n)
 			if m.book != nil {
 				m.book.SetTimerDuration(conf.General.PauseTimer)
 			}
@@ -378,13 +383,13 @@ func (m *Manager) Start(conf *config.Config, msgCH chan msg.Message, logger *log
 				break
 			}
 			var bookmarkName string
-			if gui.TextEntryDialog("Добавление новой закладки", "Имя закладки:", "", &bookmarkName) != walk.DlgCmdOK {
+			if m.mainWnd.TextEntryDialog("Добавление новой закладки", "Имя закладки:", "", &bookmarkName) != walk.DlgCmdOK {
 				break
 			}
 			if err := m.book.SetBookmarkWithName(bookmarkName); err != nil {
 				m.logger.Warning("Set bookmark with name: %v", err)
 			}
-			gui.SetBookmarksMenu(msgCH, m.book.Bookmarks())
+			m.mainWnd.MenuBar().SetBookmarksMenu(m.book.Bookmarks())
 
 		case msg.BOOKMARK_FETCH:
 			if m.book == nil {
@@ -407,11 +412,11 @@ func (m *Manager) Start(conf *config.Config, msgCH chan msg.Message, logger *log
 					break
 				}
 				msg := fmt.Sprintf("Вы действительно хотите удалить закладку «%v»?", bookmark.Name)
-				if !gui.MessageBoxQuestion("Удаление закладки", msg) {
+				if !m.mainWnd.MessageBoxQuestion("Удаление закладки", msg) {
 					break
 				}
 				m.book.RemoveBookmark(bookmarkID)
-				gui.SetBookmarksMenu(msgCH, m.book.Bookmarks())
+				m.mainWnd.MenuBar().SetBookmarksMenu(m.book.Bookmarks())
 			}
 
 		case msg.LOG_SET_LEVEL:
@@ -439,7 +444,7 @@ func (m *Manager) Start(conf *config.Config, msgCH chan msg.Message, logger *log
 			lines = append(lines, fmt.Sprintf("Поддержка команды search: %v", attrs.SupportsSearch))
 			lines = append(lines, fmt.Sprintf("Поддержка аудиометок: %v", attrs.SupportsAudioLabels))
 			lines = append(lines, fmt.Sprintf("Поддерживаемые опциональные операции: %v", attrs.SupportedOptionalOperations.Operation))
-			gui.MessageBoxWarning("Информация о библиотеке", strings.Join(lines, CRLF))
+			m.mainWnd.MessageBoxWarning("Информация о библиотеке", strings.Join(lines, CRLF))
 
 		default:
 			m.logger.Warning("Unknown message: %v", message.Code)
@@ -453,8 +458,8 @@ func (m *Manager) cleaning() {
 		m.book.Close()
 		m.book = nil
 	}
-	gui.MainList.Clear()
-	gui.SetMainWindowTitle("")
+	m.mainWnd.MainListBox().Clear()
+	m.mainWnd.SetTitle("")
 	m.contentList = nil
 	m.questions = nil
 	m.userResponses = nil
@@ -470,7 +475,7 @@ func (m *Manager) cleaning() {
 	}
 }
 
-func (m *Manager) setProvider(provider Provider, conf *config.Config, msgCH chan msg.Message, id string) {
+func (m *Manager) setProvider(provider Provider, conf *config.Config, id string) {
 	m.logger.Info("Set provider: %v", id)
 	m.cleaning()
 	m.provider = provider
@@ -482,12 +487,12 @@ func (m *Manager) setProvider(provider Provider, conf *config.Config, msgCH chan
 	}
 	if id, err := m.provider.LastContentItemID(); err == nil {
 		if contentItem, err := m.provider.ContentItem(id); err == nil {
-			if err := m.setBook(conf, msgCH, contentItem); err != nil {
+			if err := m.setBook(conf, contentItem); err != nil {
 				m.logger.Error("Set book: %v", err)
 			}
 		}
 	}
-	gui.SetProvidersMenu(msgCH, conf.Services, id)
+	m.mainWnd.MenuBar().SetProvidersMenu(conf.Services, id)
 }
 
 func (m *Manager) setQuestions(response ...daisy.UserResponse) {
@@ -504,7 +509,7 @@ func (m *Manager) setQuestions(response ...daisy.UserResponse) {
 
 	m.questions = nil
 	m.userResponses = nil
-	gui.MainList.Clear()
+	m.mainWnd.MainListBox().Clear()
 
 	ur := daisy.UserResponses{UserResponse: response}
 	questions, err := qst.GetQuestions(&ur)
@@ -515,7 +520,7 @@ func (m *Manager) setQuestions(response ...daisy.UserResponse) {
 
 	if questions.Label.Text != "" {
 		// We have received a notification from the library. Show it to the user
-		gui.MessageBoxWarning("Предупреждение", questions.Label.Text)
+		m.mainWnd.MessageBoxWarning("Предупреждение", questions.Label.Text)
 		// Return to the main menu of the library
 		m.setQuestions(daisy.UserResponse{QuestionID: daisy.Default})
 		return
@@ -544,13 +549,13 @@ func (m *Manager) setMultipleChoiceQuestion(index int) {
 		labels[i] = c.Label.Text
 	}
 	m.contentList = nil
-	gui.MainList.SetItems(labels, choiceQuestion.Label.Text, false)
+	m.mainWnd.MainListBox().SetItems(labels, choiceQuestion.Label.Text, nil)
 }
 
 func (m *Manager) setInputQuestion() {
 	for _, inputQuestion := range m.questions.InputQuestion {
 		var text string
-		if gui.TextEntryDialog("Ввод текста", inputQuestion.Label.Text, m.lastInputText, &text) != walk.DlgCmdOK {
+		if m.mainWnd.TextEntryDialog("Ввод текста", inputQuestion.Label.Text, m.lastInputText, &text) != walk.DlgCmdOK {
 			// Return to the main menu of the library
 			m.setQuestions(daisy.UserResponse{QuestionID: daisy.Default})
 			return
@@ -563,7 +568,7 @@ func (m *Manager) setInputQuestion() {
 
 func (m *Manager) setContentList(contentID string) {
 	m.questions = nil
-	gui.MainList.Clear()
+	m.mainWnd.MainListBox().Clear()
 	m.logger.Debug("Set content list: %v", contentID)
 
 	contentList, err := m.provider.ContentList(contentID)
@@ -573,7 +578,7 @@ func (m *Manager) setContentList(contentID string) {
 	}
 
 	if len(contentList.Items) == 0 {
-		gui.MessageBoxWarning("Предупреждение", "Список книг пуст")
+		m.mainWnd.MessageBoxWarning("Предупреждение", "Список книг пуст")
 		return
 	}
 
@@ -601,11 +606,11 @@ func (m *Manager) updateContentList(contentList *ContentList) {
 		labels[i] = book.Name()
 	}
 	m.contentList = contentList
-	gui.MainList.SetItems(labels, contentList.Name, true)
+	m.mainWnd.MainListBox().SetItems(labels, contentList.Name, m.mainWnd.MenuBar().BookMenu())
 }
 
-func (m *Manager) setBook(conf *config.Config, msgCH chan msg.Message, contentItem ContentItem) error {
-	book, err := NewBook(conf, contentItem, m.logger)
+func (m *Manager) setBook(conf *config.Config, contentItem ContentItem) error {
+	book, err := NewBook(conf, contentItem, m.logger, m.mainWnd.StatusBar())
 	if err != nil {
 		return err
 	}
@@ -614,8 +619,8 @@ func (m *Manager) setBook(conf *config.Config, msgCH chan msg.Message, contentIt
 		m.book.Close()
 	}
 
-	gui.SetMainWindowTitle(book.Name())
-	gui.SetBookmarksMenu(msgCH, book.Bookmarks())
+	m.mainWnd.SetTitle(book.Name())
+	m.mainWnd.MenuBar().SetBookmarksMenu(book.Bookmarks())
 	m.book = book
 	m.logger.Debug("Set book: %v", book.ID())
 	return nil
@@ -655,8 +660,8 @@ func (m *Manager) downloadBook(book ContentItem) error {
 		var totalSize, downloadedSize int64
 		ctx, cancelFunc := context.WithCancel(context.TODO())
 		label := "Загрузка «%s»\nСкорость: %d Кб/с"
-		dlg := gui.NewProgressDialog("Загрузка книги", fmt.Sprintf(label, book.Name(), 0), 100, cancelFunc)
-		dlg.Show()
+		dlg := gui.NewProgressDialog(m.mainWnd, "Загрузка книги", fmt.Sprintf(label, book.Name(), 0), 100, cancelFunc)
+		dlg.Run()
 
 		for _, r := range rsrc {
 			totalSize += r.Size
@@ -722,11 +727,11 @@ func (m *Manager) downloadBook(book ContentItem) error {
 
 		switch {
 		case errors.Is(err, context.Canceled):
-			gui.MessageBoxWarning("Предупреждение", "Загрузка отменена пользователем")
+			m.mainWnd.MessageBoxWarning("Предупреждение", "Загрузка отменена пользователем")
 		case err != nil:
-			gui.MessageBoxError("Ошибка", err.Error())
+			m.mainWnd.MessageBoxError("Ошибка", err.Error())
 		default:
-			gui.MessageBoxWarning("Уведомление", "Книга успешно загружена")
+			m.mainWnd.MessageBoxWarning("Уведомление", "Книга успешно загружена")
 			m.logger.Debug("Book %v has been successfully downloaded. Total size: %v", bookID, totalSize)
 		}
 	}
@@ -776,5 +781,5 @@ func (m *Manager) messageBoxError(err error) {
 	case errors.Is(err, BookDescriptionNotAvailable):
 		msg = "Описание книги недоступно"
 	}
-	gui.MessageBoxError("Ошибка", msg)
+	m.mainWnd.MessageBoxError("Ошибка", msg)
 }

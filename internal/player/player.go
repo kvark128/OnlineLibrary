@@ -40,7 +40,8 @@ const (
 var PlaybackStopped = fmt.Errorf("playback stopped")
 
 type Player struct {
-	logger *log.Logger
+	logger    *log.Logger
+	statusBar *gui.StatusBar
 	sync.Mutex
 	playList      []daisy.Resource
 	playListSize  int64
@@ -57,9 +58,10 @@ type Player struct {
 	pauseTimer    *time.Timer
 }
 
-func NewPlayer(bookDir string, resources []daisy.Resource, outputDevice string, logger *log.Logger) *Player {
+func NewPlayer(bookDir string, resources []daisy.Resource, outputDevice string, logger *log.Logger, statusBar *gui.StatusBar) *Player {
 	p := &Player{
 		logger:       logger,
+		statusBar:    statusBar,
 		playing:      new(util.Flag),
 		wg:           new(sync.WaitGroup),
 		bookDir:      bookDir,
@@ -130,7 +132,7 @@ func (p *Player) SetPosition(pos time.Duration) {
 			p.logger.Error("Set fragment position: %v", err)
 			return
 		}
-		gui.SetElapsedTime(p.fragment.Position())
+		p.statusBar.SetElapsedTime(p.fragment.Position())
 	}
 }
 
@@ -337,17 +339,17 @@ func (p *Player) playback(startFragment int) {
 			p.fragmentIndex = startFragment + index
 			prevFragmentsSize := p.sizeof(p.playList[:p.fragmentIndex])
 			byterate := int64(p.fragment.Bitrate * 1000 / 8)
-			gui.SetElapsedTime(p.fragment.Position())
-			gui.SetTotalTime(time.Second * time.Duration(r.Size/byterate))
-			gui.SetFragments(p.fragmentIndex+1, len(p.playList))
+			p.statusBar.SetElapsedTime(p.fragment.Position())
+			p.statusBar.SetTotalTime(time.Second * time.Duration(r.Size/byterate))
+			p.statusBar.SetFragments(p.fragmentIndex+1, len(p.playList))
 			p.offset = 0
 			p.Unlock()
 
 			elapsedTimeCallback := func(d time.Duration) {
 				prevSize := byterate * int64(d.Seconds())
-				p := (prevFragmentsSize + prevSize) * 100 / p.playListSize
-				gui.SetElapsedTime(d)
-				gui.SetBookPercent(int(p))
+				percent := (prevFragmentsSize + prevSize) * 100 / p.playListSize
+				p.statusBar.SetElapsedTime(d)
+				p.statusBar.SetBookPercent(int(percent))
 			}
 
 			err = fragment.play(p.playing, elapsedTimeCallback)
