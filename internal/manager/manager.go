@@ -23,7 +23,6 @@ import (
 	"github.com/kvark128/OnlineLibrary/internal/util"
 	"github.com/kvark128/OnlineLibrary/internal/util/buffer"
 	daisy "github.com/kvark128/daisyonline"
-	"github.com/lxn/walk"
 )
 
 const (
@@ -139,7 +138,7 @@ func (m *Manager) Start(conf *config.Config, done chan<- bool) {
 
 		case msg.LIBRARY_ADD:
 			service := new(config.Service)
-			if m.mainWnd.Credentials(service) != walk.DlgCmdOK || service.Name == "" {
+			if !m.mainWnd.CredentialsEntryDialog(service) || service.Name == "" {
 				m.logger.Warning("Library adding: pressed Cancel button or len(service.Name) == 0")
 				break
 			}
@@ -308,7 +307,7 @@ func (m *Manager) Start(conf *config.Config, done chan<- bool) {
 				var err error
 				fragment = m.book.Fragment()
 				fragment++ // User needs a fragment number instead of an index
-				if m.mainWnd.TextEntryDialog("Переход к фрагменту", "Введите номер фрагмента:", strconv.Itoa(fragment), &text) != walk.DlgCmdOK {
+				if !m.mainWnd.TextEntryDialog("Переход к фрагменту", "Введите номер фрагмента:", strconv.Itoa(fragment), &text) {
 					break
 				}
 				fragment, err = strconv.Atoi(text)
@@ -329,7 +328,7 @@ func (m *Manager) Start(conf *config.Config, done chan<- bool) {
 				var text string
 				var err error
 				pos = m.book.Position()
-				if m.mainWnd.TextEntryDialog("Переход к позиции", "Введите позицию фрагмента:", util.FmtDuration(pos), &text) != walk.DlgCmdOK {
+				if !m.mainWnd.TextEntryDialog("Переход к позиции", "Введите позицию фрагмента:", util.FmtDuration(pos), &text) {
 					break
 				}
 				pos, err = util.ParseDuration(text)
@@ -358,7 +357,7 @@ func (m *Manager) Start(conf *config.Config, done chan<- bool) {
 				d = int(m.book.TimerDuration().Minutes())
 			}
 
-			if m.mainWnd.TextEntryDialog("Установка таймера паузы", "Введите время таймера в минутах:", strconv.Itoa(d), &text) != walk.DlgCmdOK {
+			if !m.mainWnd.TextEntryDialog("Установка таймера паузы", "Введите время таймера в минутах:", strconv.Itoa(d), &text) {
 				break
 			}
 
@@ -383,7 +382,7 @@ func (m *Manager) Start(conf *config.Config, done chan<- bool) {
 				break
 			}
 			var bookmarkName string
-			if m.mainWnd.TextEntryDialog("Добавление новой закладки", "Имя закладки:", "", &bookmarkName) != walk.DlgCmdOK {
+			if !m.mainWnd.TextEntryDialog("Добавление новой закладки", "Имя закладки:", "", &bookmarkName) {
 				break
 			}
 			if err := m.book.SetBookmarkWithName(bookmarkName); err != nil {
@@ -555,7 +554,7 @@ func (m *Manager) setMultipleChoiceQuestion(index int) {
 func (m *Manager) setInputQuestion() {
 	for _, inputQuestion := range m.questions.InputQuestion {
 		var text string
-		if m.mainWnd.TextEntryDialog("Ввод текста", inputQuestion.Label.Text, m.lastInputText, &text) != walk.DlgCmdOK {
+		if !m.mainWnd.TextEntryDialog("Ввод текста", inputQuestion.Label.Text, m.lastInputText, &text) {
 			// Return to the main menu of the library
 			m.setQuestions(daisy.UserResponse{QuestionID: daisy.Default})
 			return

@@ -416,7 +416,7 @@ func (mw *MainWnd) SetTitle(title string) {
 	})
 }
 
-func (mw *MainWnd) Credentials(service *config.Service) int {
+func (mw *MainWnd) CredentialsEntryDialog(service *config.Service) bool {
 	var (
 		dlg                                   *walk.Dialog
 		nameLE, urlLE, usernameLE, passwordLE *walk.LineEdit
@@ -482,18 +482,18 @@ func (mw *MainWnd) Credentials(service *config.Service) int {
 		},
 	}
 
-	res := make(chan int)
+	res := make(chan bool)
 	mw.mainWindow.Synchronize(func() {
 		layout.Create(mw.mainWindow)
 		NewFixedPushButton(OkPB)
 		NewFixedPushButton(CancelPB)
 		dlg.Run()
-		res <- dlg.Result()
+		res <- dlg.Result() == walk.DlgCmdOK
 	})
 	return <-res
 }
 
-func (mw *MainWnd) TextEntryDialog(title, msg, value string, text *string) int {
+func (mw *MainWnd) TextEntryDialog(title, msg, value string, text *string) bool {
 	var (
 		dlg            *walk.Dialog
 		textLE         *walk.LineEdit
@@ -539,18 +539,18 @@ func (mw *MainWnd) TextEntryDialog(title, msg, value string, text *string) int {
 		},
 	}
 
-	res := make(chan int)
+	res := make(chan bool)
 	mw.mainWindow.Synchronize(func() {
 		layout.Create(mw.mainWindow)
 		NewFixedPushButton(OkPB)
 		NewFixedPushButton(CancelPB)
 		dlg.Run()
-		res <- dlg.Result()
+		res <- dlg.Result() == walk.DlgCmdOK
 	})
 	return <-res
 }
 
-func (mw *MainWnd) MessageBox(title, message string, style walk.MsgBoxStyle) int {
+func (mw *MainWnd) messageBox(title, message string, style walk.MsgBoxStyle) int {
 	res := make(chan int)
 	mw.mainWindow.Synchronize(func() {
 		res <- walk.MsgBox(mw.mainWindow, title, message, style)
@@ -559,13 +559,13 @@ func (mw *MainWnd) MessageBox(title, message string, style walk.MsgBoxStyle) int
 }
 
 func (mw *MainWnd) MessageBoxError(title, message string) {
-	mw.MessageBox(title, message, walk.MsgBoxOK|walk.MsgBoxIconError)
+	mw.messageBox(title, message, walk.MsgBoxOK|walk.MsgBoxIconError)
 }
 
 func (mw *MainWnd) MessageBoxWarning(title, message string) {
-	mw.MessageBox(title, message, walk.MsgBoxOK|walk.MsgBoxIconWarning)
+	mw.messageBox(title, message, walk.MsgBoxOK|walk.MsgBoxIconWarning)
 }
 
 func (mw *MainWnd) MessageBoxQuestion(title, message string) bool {
-	return mw.MessageBox(title, message, walk.MsgBoxYesNo|walk.MsgBoxIconQuestion) == walk.DlgCmdYes
+	return mw.messageBox(title, message, walk.MsgBoxYesNo|walk.MsgBoxIconQuestion) == walk.DlgCmdYes
 }
