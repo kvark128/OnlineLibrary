@@ -458,6 +458,7 @@ func (m *Manager) cleaning() {
 		m.book = nil
 	}
 	m.mainWnd.MainListBox().Clear()
+	m.mainWnd.MenuBar().SetBookMenuEnabled(false)
 	m.mainWnd.SetTitle("")
 	m.contentList = nil
 	m.questions = nil
@@ -509,6 +510,7 @@ func (m *Manager) setQuestions(response ...daisy.UserResponse) {
 	m.questions = nil
 	m.userResponses = nil
 	m.mainWnd.MainListBox().Clear()
+	m.mainWnd.MenuBar().SetBookMenuEnabled(false)
 
 	ur := daisy.UserResponses{UserResponse: response}
 	questions, err := qst.GetQuestions(&ur)
@@ -549,6 +551,7 @@ func (m *Manager) setMultipleChoiceQuestion(index int) {
 	}
 	m.contentList = nil
 	m.mainWnd.MainListBox().SetItems(labels, choiceQuestion.Label.Text, nil)
+	m.mainWnd.MenuBar().SetBookMenuEnabled(false)
 }
 
 func (m *Manager) setInputQuestion() {
@@ -568,6 +571,7 @@ func (m *Manager) setInputQuestion() {
 func (m *Manager) setContentList(contentID string) {
 	m.questions = nil
 	m.mainWnd.MainListBox().Clear()
+	m.mainWnd.MenuBar().SetBookMenuEnabled(false)
 	m.logger.Debug("Set content list: %v", contentID)
 
 	contentList, err := m.provider.ContentList(contentID)
@@ -606,6 +610,7 @@ func (m *Manager) updateContentList(contentList *ContentList) {
 	}
 	m.contentList = contentList
 	m.mainWnd.MainListBox().SetItems(labels, contentList.Name, m.mainWnd.MenuBar().BookMenu())
+	m.mainWnd.MenuBar().SetBookMenuEnabled(true)
 }
 
 func (m *Manager) setBook(conf *config.Config, contentItem ContentItem) error {
