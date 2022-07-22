@@ -5,6 +5,7 @@ import (
 
 	"github.com/kvark128/OnlineLibrary/internal/config"
 	"github.com/kvark128/OnlineLibrary/internal/gui/msg"
+	"github.com/kvark128/OnlineLibrary/internal/log"
 	"github.com/lxn/walk"
 )
 
@@ -125,6 +126,29 @@ func (mb *MenuBar) SetPauseTimerLabel(minutes int) {
 	}
 	mb.wnd.Synchronize(func() {
 		mb.pauseTimerItem.SetText(label)
+	})
+}
+
+func (mb *MenuBar) SetLogLevelsMenu(levels []log.Level, current log.Level) {
+	mb.wnd.Synchronize(func() {
+		logActions := mb.logLevelMenu.Actions()
+		for _, level := range levels {
+			level := level // Avoid capturing the iteration variable
+			a := walk.NewAction()
+			a.SetText(level.String())
+			if level == current {
+				a.SetChecked(true)
+			}
+			a.Triggered().Attach(func() {
+				actions := mb.logLevelMenu.Actions()
+				for i := 0; i < actions.Len(); i++ {
+					actions.At(i).SetChecked(false)
+				}
+				a.SetChecked(true)
+				mb.msgCH <- msg.Message{Code: msg.LOG_SET_LEVEL, Data: level}
+			})
+			logActions.Add(a)
+		}
 	})
 }
 

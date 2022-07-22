@@ -114,3 +114,7 @@ func (l *Logger) Level() Level {
 	defer l.mu.Unlock()
 	return l.level
 }
+
+func (l *Logger) SupportedLevels() []Level {
+	return []Level{Error, Info, Warning, Debug}
+}

@@ -6,7 +6,6 @@ import (
 
 	"github.com/kvark128/OnlineLibrary/internal/config"
 	"github.com/kvark128/OnlineLibrary/internal/gui/msg"
-	"github.com/kvark128/OnlineLibrary/internal/log"
 	"github.com/lxn/walk"
 	. "github.com/lxn/walk/declarative"
 )
@@ -19,7 +18,7 @@ type MainWnd struct {
 	statusBar   *StatusBar
 }
 
-func NewMainWindow(currentLogLevel log.Level) (*MainWnd, error) {
+func NewMainWindow() (*MainWnd, error) {
 	wnd := &MainWnd{
 		msgChan:     make(chan msg.Message, config.MessageBufferSize),
 		menuBar:     new(MenuBar),
@@ -352,26 +351,6 @@ func NewMainWindow(currentLogLevel log.Level) (*MainWnd, error) {
 
 	if err := wndLayout.Create(); err != nil {
 		return nil, err
-	}
-
-	logLevels := []log.Level{log.Error, log.Info, log.Warning, log.Debug}
-	logActions := wnd.menuBar.logLevelMenu.Actions()
-	for _, level := range logLevels {
-		level := level // Avoid capturing the iteration variable
-		a := walk.NewAction()
-		a.SetText(level.String())
-		if level == currentLogLevel {
-			a.SetChecked(true)
-		}
-		a.Triggered().Attach(func() {
-			actions := wnd.menuBar.logLevelMenu.Actions()
-			for i := 0; i < actions.Len(); i++ {
-				actions.At(i).SetChecked(false)
-			}
-			a.SetChecked(true)
-			wnd.msgChan <- msg.Message{Code: msg.LOG_SET_LEVEL, Data: level}
-		})
-		logActions.Add(a)
 	}
 
 	wnd.menuBar.wnd = wnd.mainWindow

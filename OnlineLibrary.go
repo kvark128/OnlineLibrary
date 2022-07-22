@@ -38,7 +38,7 @@ func main() {
 		logger.SetLevel(level)
 	}
 
-	wnd, err := gui.NewMainWindow(logger.Level())
+	wnd, err := gui.NewMainWindow()
 	if err != nil {
 		logger.Error("Creating main window: %v", err)
 		os.Exit(1)
@@ -53,6 +53,9 @@ func main() {
 
 	// Setting label for the pause timer in the menu
 	menuBar.SetPauseTimerLabel(int(conf.General.PauseTimer.Minutes()))
+
+	// Filling in the menu with the supported log levels
+	menuBar.SetLogLevelsMenu(logger.SupportedLevels(), logger.Level())
 
 	mng := manager.NewManager(wnd, logger)
 	done := make(chan bool)
