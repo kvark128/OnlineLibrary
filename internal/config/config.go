@@ -51,15 +51,23 @@ var ReadingSystemAttributes = daisy.ReadingSystemAttributes{
 	},
 }
 
+// Cached path to the user data directory
+var userDataPath string
+
 func UserData() string {
-	if path, err := filepath.Abs(ProgramName); err == nil {
-		if info, err := os.Stat(path); err == nil {
-			if info.IsDir() {
-				return path
+	if userDataPath == "" {
+		if path, err := filepath.Abs(ProgramName); err == nil {
+			if info, err := os.Stat(path); err == nil {
+				if info.IsDir() {
+					userDataPath = path
+				}
 			}
 		}
+		if userDataPath == "" {
+			userDataPath = filepath.Join(os.Getenv("USERPROFILE"), ProgramName)
+		}
 	}
-	return filepath.Join(os.Getenv("USERPROFILE"), ProgramName)
+	return userDataPath
 }
 
 type Service struct {
