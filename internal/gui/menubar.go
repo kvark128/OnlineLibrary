@@ -86,35 +86,31 @@ func (mb *MenuBar) SetBookmarksMenu(bookmarks map[string]string) {
 }
 
 func (mb *MenuBar) SetBookMenuEnabled(enabled bool) {
-	done := make(chan bool)
 	mb.wnd.Synchronize(func() {
 		mb.bookMenuEnabled.SetSatisfied(enabled)
-		done <- true
 	})
-	<-done
 }
 
 func (mb *MenuBar) SetOutputDeviceMenu(deviceNames []string, current string) {
 	mb.wnd.Synchronize(func() {
 		actions := mb.outputDeviceMenu.Actions()
-		// Delete all elements
 		actions.Clear()
 
-		// Filling the menu with devices
 		for i, name := range deviceNames {
 			a := walk.NewAction()
+			a.SetText(name)
 			if name == current || (current == "" && i == 0) {
 				a.SetChecked(true)
 			}
-			a.SetText(name)
 			a.Triggered().Attach(func() {
-				for index := 0; index < actions.Len(); index++ {
-					actions.At(index).SetChecked(false)
+				actions := mb.outputDeviceMenu.Actions()
+				for k := 0; k < actions.Len(); k++ {
+					actions.At(k).SetChecked(false)
 				}
 				a.SetChecked(true)
 				mb.msgCH <- msg.Message{msg.PLAYER_OUTPUT_DEVICE, a.Text()}
 			})
-			actions.Insert(i, a)
+			actions.Add(a)
 		}
 	})
 }
@@ -129,9 +125,11 @@ func (mb *MenuBar) SetPauseTimerLabel(minutes int) {
 	})
 }
 
-func (mb *MenuBar) SetLogLevelsMenu(levels []log.Level, current log.Level) {
+func (mb *MenuBar) SetLogLevelMenu(levels []log.Level, current log.Level) {
 	mb.wnd.Synchronize(func() {
-		logActions := mb.logLevelMenu.Actions()
+		actions := mb.logLevelMenu.Actions()
+		actions.Clear()
+
 		for _, level := range levels {
 			level := level // Avoid capturing the iteration variable
 			a := walk.NewAction()
@@ -141,13 +139,13 @@ func (mb *MenuBar) SetLogLevelsMenu(levels []log.Level, current log.Level) {
 			}
 			a.Triggered().Attach(func() {
 				actions := mb.logLevelMenu.Actions()
-				for i := 0; i < actions.Len(); i++ {
-					actions.At(i).SetChecked(false)
+				for k := 0; k < actions.Len(); k++ {
+					actions.At(k).SetChecked(false)
 				}
 				a.SetChecked(true)
 				mb.msgCH <- msg.Message{Code: msg.LOG_SET_LEVEL, Data: level}
 			})
-			logActions.Add(a)
+			actions.Add(a)
 		}
 	})
 }

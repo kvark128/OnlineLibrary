@@ -55,7 +55,7 @@ func main() {
 	menuBar.SetPauseTimerLabel(int(conf.General.PauseTimer.Minutes()))
 
 	// Filling in the menu with the supported log levels
-	menuBar.SetLogLevelsMenu(logger.SupportedLevels(), logger.Level())
+	menuBar.SetLogLevelMenu(logger.SupportedLevels(), logger.Level())
 
 	mng := manager.NewManager(wnd, logger)
 	done := make(chan bool)
