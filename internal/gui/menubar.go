@@ -25,10 +25,11 @@ func (mb *MenuBar) SetProvidersMenu(services []*config.Service, currentID string
 	mb.wnd.Synchronize(func() {
 		mb.libraryLogon.SetSatisfied(false)
 		actions := mb.libraryMenu.Actions()
-		newLibraryAction := actions.At(actions.Len() - 1)
-		actions.Clear()
+		for i := actions.Len(); i > 1; i-- {
+			actions.RemoveAt(0)
+		}
 
-		for _, service := range services {
+		for i, service := range services {
 			a := walk.NewAction()
 			id := service.ID
 			if id == currentID {
@@ -39,17 +40,17 @@ func (mb *MenuBar) SetProvidersMenu(services []*config.Service, currentID string
 			a.Triggered().Attach(func() {
 				mb.msgCH <- msg.Message{msg.SET_PROVIDER, id}
 			})
-			actions.Add(a)
+			actions.Insert(i, a)
 		}
-		actions.Add(newLibraryAction)
 	})
 }
 
 func (mb *MenuBar) SetBookmarksMenu(bookmarks map[string]string) {
 	mb.wnd.Synchronize(func() {
 		actions := mb.bookmarkMenu.Actions()
-		newBookmarkAction := actions.At(actions.Len() - 1)
-		actions.Clear()
+		for i := actions.Len(); i > 1; i-- {
+			actions.RemoveAt(0)
+		}
 
 		for id, name := range bookmarks {
 			if name == "" {
@@ -79,7 +80,6 @@ func (mb *MenuBar) SetBookmarksMenu(bookmarks map[string]string) {
 			})
 			bookmarkActions.Add(removeAction)
 		}
-		actions.Add(newBookmarkAction)
 	})
 }
 
