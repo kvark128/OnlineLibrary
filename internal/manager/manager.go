@@ -445,6 +445,14 @@ func (m *Manager) Start(conf *config.Config, done chan<- bool) {
 			lines = append(lines, fmt.Sprintf("Поддерживаемые опциональные операции: %v", attrs.SupportedOptionalOperations.Operation))
 			m.mainWnd.MessageBoxWarning("Информация о библиотеке", strings.Join(lines, CRLF))
 
+		case msg.SET_LANGUAGE:
+			lang, ok := message.Data.(string)
+			if !ok {
+				break
+			}
+			conf.General.Language = lang
+			m.mainWnd.MessageBoxWarning("Предупреждение", "Для применения нового языка интерфейса, требуется перезагрузка программы")
+
 		default:
 			m.logger.Warning("Unknown message: %v", message.Code)
 

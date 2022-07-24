@@ -7,6 +7,7 @@ import (
 
 	"github.com/kvark128/OnlineLibrary/internal/config"
 	"github.com/kvark128/OnlineLibrary/internal/gui"
+	"github.com/kvark128/OnlineLibrary/internal/lang"
 	"github.com/kvark128/OnlineLibrary/internal/log"
 	"github.com/kvark128/OnlineLibrary/internal/manager"
 	"github.com/kvark128/OnlineLibrary/internal/waveout"
@@ -38,6 +39,8 @@ func main() {
 		logger.SetLevel(level)
 	}
 
+	langs, langIsAvailable := lang.Init(conf.General.Language)
+
 	wnd, err := gui.NewMainWindow()
 	if err != nil {
 		logger.Error("Creating main window: %v", err)
@@ -47,6 +50,13 @@ func main() {
 
 	// Filling in the menu with the available audio output devices
 	menuBar.SetOutputDeviceMenu(waveout.OutputDeviceNames(), conf.General.OutputDevice)
+
+	// Filling in the menu with the available languages
+	if langIsAvailable {
+		menuBar.SetLanguageMenu(langs, conf.General.Language)
+	} else {
+		menuBar.SetLanguageMenu(langs, "")
+	}
 
 	// Filling in the menu with the available providers
 	menuBar.SetProvidersMenu(conf.Services, "")

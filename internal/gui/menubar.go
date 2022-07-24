@@ -5,6 +5,7 @@ import (
 
 	"github.com/kvark128/OnlineLibrary/internal/config"
 	"github.com/kvark128/OnlineLibrary/internal/gui/msg"
+	"github.com/kvark128/OnlineLibrary/internal/lang"
 	"github.com/kvark128/OnlineLibrary/internal/log"
 	"github.com/lxn/walk"
 )
@@ -15,6 +16,7 @@ type MenuBar struct {
 	libraryLogon                         *walk.MutableCondition
 	bookMenu, bookmarkMenu, logLevelMenu *walk.Menu
 	bookMenuEnabled                      *walk.MutableCondition
+	languageMenu                         *walk.Menu
 	pauseTimerItem                       *walk.Action
 	msgCH                                chan msg.Message
 }
@@ -105,6 +107,35 @@ func (mb *MenuBar) SetOutputDeviceMenu(deviceNames []string, current string) {
 				}
 				a.SetChecked(true)
 				mb.msgCH <- msg.Message{msg.PLAYER_OUTPUT_DEVICE, a.Text()}
+			})
+			actions.Add(a)
+		}
+	})
+}
+
+func (mb *MenuBar) SetLanguageMenu(langs []lang.Language, current string) {
+	mb.wnd.Synchronize(func() {
+		actions := mb.languageMenu.Actions()
+		actions.Clear()
+
+		langsWithDefaultLang := make([]lang.Language, len(langs)+1)
+		langsWithDefaultLang[0] = lang.Language{Description: "По умолчанию"}
+		copy(langsWithDefaultLang[1:], langs)
+
+		for _, lang := range langsWithDefaultLang {
+			a := walk.NewAction()
+			a.SetText(lang.Description)
+			id := lang.ID
+			if id == current {
+				a.SetChecked(true)
+			}
+			a.Triggered().Attach(func() {
+				actions := mb.languageMenu.Actions()
+				for k := 0; k < actions.Len(); k++ {
+					actions.At(k).SetChecked(false)
+				}
+				a.SetChecked(true)
+				mb.msgCH <- msg.Message{msg.SET_LANGUAGE, id}
 			})
 			actions.Add(a)
 		}

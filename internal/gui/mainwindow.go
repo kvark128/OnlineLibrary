@@ -292,6 +292,10 @@ func NewMainWindow() (*MainWnd, error) {
 						Text:     "Устройство вывода звука",
 						AssignTo: &wnd.menuBar.outputDeviceMenu,
 					},
+					Menu{
+						Text:     "Язык",
+						AssignTo: &wnd.menuBar.languageMenu,
+					},
 					Action{
 						Text:        "Таймер паузы",
 						AssignTo:    &wnd.menuBar.pauseTimerItem,

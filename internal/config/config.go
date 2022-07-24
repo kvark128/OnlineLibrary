@@ -82,6 +82,7 @@ type Service struct {
 
 type General struct {
 	OutputDevice string        `yaml:"output_device,omitempty"`
+	Language     string        `yaml:"language,omitempty"`
 	Volume       float64       `yaml:"volume,omitempty"`
 	PauseTimer   time.Duration `yaml:"pause_timer,omitempty"`
 	LogLevel     string        `yaml:"log_level,omitempty"`
