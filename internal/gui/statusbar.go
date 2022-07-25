@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/kvark128/OnlineLibrary/internal/util"
+	"github.com/leonelquinteros/gotext"
 	"github.com/lxn/walk"
 )
 
@@ -29,7 +30,7 @@ func (sb *StatusBar) SetTotalTime(total time.Duration) {
 
 func (sb *StatusBar) SetFragments(current, length int) {
 	sb.Synchronize(func() {
-		text := fmt.Sprintf("Фрагмент %d из %d", current, length)
+		text := gotext.Get("Fragment %d of %d", current, length)
 		sb.fragments.SetText(text)
 	})
 }

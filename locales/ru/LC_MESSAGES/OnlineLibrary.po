@@ -1,0 +1,268 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: OnlineLibrary\n"
+"POT-Creation-Date: \n"
+"PO-Revision-Date: \n"
+"Last-Translator: Kvark <kvark128@yandex.ru>\n"
+"Language-Team: \n"
+"Language: ru_RU\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n"
+"%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+"X-Generator: Poedit 1.6.11\n"
+
+#: gui\mainwindow.go:318
+msgid ""
+"%v version %v\n"
+"Working directory: %v\n"
+"Author: %v"
+msgstr ""
+"%v версия %v\n"
+"Рабочий каталог: %v\n"
+"Автор: %v"
+
+#: gui\mainwindow.go:109
+msgid "&Book"
+msgstr "&Книга"
+
+#: gui\mainwindow.go:313
+msgid "&Help"
+msgstr "&Справка"
+
+#: gui\mainwindow.go:42
+msgid "&Library"
+msgstr "&Библиотека"
+
+#: gui\mainwindow.go:140
+msgid "&Playback"
+msgstr "&Воспроизведение"
+
+#: gui\mainwindow.go:290
+msgid "&Settings"
+msgstr "&Настройки"
+
+#: gui\mainwindow.go:229
+msgid "1 min. backward"
+msgstr ""
+
+#: gui\mainwindow.go:224
+msgid "1 min. forward"
+msgstr ""
+
+#: gui\mainwindow.go:219
+msgid "30 sec. backward"
+msgstr ""
+
+#: gui\mainwindow.go:214
+msgid "30 sec. forward"
+msgstr ""
+
+#: gui\mainwindow.go:239
+msgid "5 min. backward"
+msgstr ""
+
+#: gui\mainwindow.go:234
+msgid "5 min. forward"
+msgstr ""
+
+#: gui\mainwindow.go:209
+msgid "5 sec. backward"
+msgstr ""
+
+#: gui\mainwindow.go:204
+msgid "5 sec. forward"
+msgstr ""
+
+#: gui\mainwindow.go:316 gui\mainwindow.go:319
+msgid "About"
+msgstr ""
+
+#: gui\mainwindow.go:45
+msgid "Accounts"
+msgstr ""
+
+#: gui\mainwindow.go:49
+msgid "Add account"
+msgstr ""
+
+#: gui\mainwindow.go:147
+msgid "Add bookmark"
+msgstr ""
+
+#: gui\mainwindow.go:411
+msgid "Adding a new account"
+msgstr ""
+
+#: gui\mainwindow.go:293
+msgid "Audio output device"
+msgstr ""
+
+#: gui\mainwindow.go:194
+msgid "Beginning of the fragment"
+msgstr ""
+
+#: gui\mainwindow.go:132
+msgid "Book information"
+msgstr ""
+
+#: gui\mainwindow.go:165
+msgid "Book navigation"
+msgstr ""
+
+#: gui\mainwindow.go:143
+msgid "Bookmarks"
+msgstr ""
+
+#: gui\mainwindow.go:62
+msgid "Bookshelf"
+msgstr ""
+
+#: gui\mainwindow.go:459 gui\mainwindow.go:516
+msgid "Cancel"
+msgstr ""
+
+#: gui\mainwindow.go:276
+msgid "Decrease speed"
+msgstr ""
+
+#: gui\mainwindow.go:255
+msgid "Decrease volume"
+msgstr ""
+
+#: gui\mainwindow.go:96
+msgid "Delete account"
+msgstr ""
+
+#: gui\mainwindow.go:417 gui\mainwindow.go:419
+msgid "Displayed name:"
+msgstr ""
+
+#: gui\mainwindow.go:114
+msgid "Download book"
+msgstr ""
+
+#: gui\mainwindow.go:101
+msgid "Exit"
+msgstr ""
+
+#: gui\mainwindow.go:168
+msgid "First fragment"
+msgstr ""
+
+#: gui\statusbar.go:33
+msgid "Fragment %d of %d"
+msgstr ""
+
+#: gui\mainwindow.go:191
+msgid "Fragment navigation"
+msgstr ""
+
+#: gui\mainwindow.go:173
+msgid "Go to fragment"
+msgstr ""
+
+#: gui\mainwindow.go:199
+msgid "Go to position"
+msgstr ""
+
+#: gui\mainwindow.go:271
+msgid "Increase speed"
+msgstr ""
+
+#: gui\mainwindow.go:250
+msgid "Increase volume"
+msgstr ""
+
+#: gui\mainwindow.go:297
+msgid "Language"
+msgstr ""
+
+#: gui\mainwindow.go:91
+msgid "Library information"
+msgstr ""
+
+#: gui\mainwindow.go:86
+msgid "Local books"
+msgstr ""
+
+#: gui\mainwindow.go:307
+msgid "Logging level"
+msgstr ""
+
+#: gui\mainwindow.go:56
+msgid "Main menu"
+msgstr ""
+
+#: gui\mainwindow.go:68
+msgid "New receipts"
+msgstr ""
+
+#: gui\mainwindow.go:178
+msgid "Next fragment"
+msgstr ""
+
+#: gui\mainwindow.go:448 gui\mainwindow.go:508
+msgid "OK"
+msgstr ""
+
+#: gui\mainwindow.go:435 gui\mainwindow.go:437
+msgid "Password:"
+msgstr ""
+
+#: gui\mainwindow.go:301
+msgid "Pause timer"
+msgstr ""
+
+#: gui\mainwindow.go:154
+msgid "Play / Pause"
+msgstr ""
+
+#: gui\mainwindow.go:183
+msgid "Previous fragment"
+msgstr ""
+
+#: gui\mainwindow.go:80
+msgid "Previous menu"
+msgstr ""
+
+#: gui\mainwindow.go:126
+msgid "Put book on bookshelf"
+msgstr ""
+
+#: gui\mainwindow.go:120
+msgid "Remove book from bookshelf"
+msgstr ""
+
+#: gui\mainwindow.go:281
+msgid "Reset speed"
+msgstr ""
+
+#: gui\mainwindow.go:260
+msgid "Reset volume"
+msgstr ""
+
+#: gui\mainwindow.go:74
+msgid "Search..."
+msgstr ""
+
+#: gui\mainwindow.go:423 gui\mainwindow.go:425
+msgid "Server address:"
+msgstr ""
+
+#: gui\mainwindow.go:268
+msgid "Speed"
+msgstr ""
+
+#: gui\mainwindow.go:159
+msgid "Stop"
+msgstr ""
+
+#: gui\mainwindow.go:429 gui\mainwindow.go:431
+msgid "User name:"
+msgstr ""
+
+#: gui\mainwindow.go:247
+msgid "Volume"
+msgstr ""

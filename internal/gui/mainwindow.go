@@ -6,6 +6,7 @@ import (
 
 	"github.com/kvark128/OnlineLibrary/internal/config"
 	"github.com/kvark128/OnlineLibrary/internal/gui/msg"
+	"github.com/leonelquinteros/gotext"
 	"github.com/lxn/walk"
 	. "github.com/lxn/walk/declarative"
 )
@@ -38,66 +39,66 @@ func NewMainWindow() (*MainWnd, error) {
 
 		MenuItems: []MenuItem{
 			Menu{
-				Text: "&Библиотека",
+				Text: gotext.Get("&Library"),
 				Items: []MenuItem{
 					Menu{
-						Text:     "Учётные записи",
+						Text:     gotext.Get("Accounts"),
 						AssignTo: &wnd.menuBar.libraryMenu,
 						Items: []MenuItem{
 							Action{
-								Text:        "Добавить учётную запись",
+								Text:        gotext.Get("Add account"),
 								Shortcut:    Shortcut{walk.ModControl, walk.KeyN},
 								OnTriggered: func() { wnd.msgChan <- msg.Message{msg.LIBRARY_ADD, nil} },
 							},
 						},
 					},
 					Action{
-						Text:        "Главное меню",
+						Text:        gotext.Get("Main menu"),
 						Shortcut:    Shortcut{walk.ModControl, walk.KeyM},
 						Enabled:     Bind("libraryLogon"),
 						OnTriggered: func() { wnd.msgChan <- msg.Message{msg.MAIN_MENU, nil} },
 					},
 					Action{
-						Text:        "Книжная полка",
+						Text:        gotext.Get("Bookshelf"),
 						Shortcut:    Shortcut{walk.ModControl, walk.KeyE},
 						Enabled:     Bind("libraryLogon"),
 						OnTriggered: func() { wnd.msgChan <- msg.Message{msg.OPEN_BOOKSHELF, nil} },
 					},
 					Action{
-						Text:        "Новые поступления",
+						Text:        gotext.Get("New receipts"),
 						Shortcut:    Shortcut{walk.ModControl, walk.KeyK},
 						Enabled:     Bind("libraryLogon"),
 						OnTriggered: func() { wnd.msgChan <- msg.Message{msg.OPEN_NEWBOOKS, nil} },
 					},
 					Action{
-						Text:        "Поиск...",
+						Text:        gotext.Get("Search..."),
 						Shortcut:    Shortcut{walk.ModControl, walk.KeyF},
 						Enabled:     Bind("libraryLogon"),
 						OnTriggered: func() { wnd.msgChan <- msg.Message{msg.SEARCH_BOOK, nil} },
 					},
 					Action{
-						Text:        "Предыдущее меню",
+						Text:        gotext.Get("Previous menu"),
 						Shortcut:    Shortcut{0, walk.KeyBack},
 						Enabled:     Bind("libraryLogon"),
 						OnTriggered: func() { wnd.msgChan <- msg.Message{msg.MENU_BACK, nil} },
 					},
 					Action{
-						Text:        "Локальные книги",
+						Text:        gotext.Get("Local books"),
 						Shortcut:    Shortcut{walk.ModControl, walk.KeyL},
 						OnTriggered: func() { wnd.msgChan <- msg.Message{msg.SET_PROVIDER, config.LocalStorageID} },
 					},
 					Action{
-						Text:        "Информация о библиотеке",
+						Text:        gotext.Get("Library information"),
 						Enabled:     Bind("libraryLogon"),
 						OnTriggered: func() { wnd.msgChan <- msg.Message{Code: msg.LIBRARY_INFO} },
 					},
 					Action{
-						Text:        "Удалить учётную запись",
+						Text:        gotext.Get("Delete account"),
 						Enabled:     Bind("libraryLogon"),
 						OnTriggered: func() { wnd.msgChan <- msg.Message{msg.LIBRARY_REMOVE, nil} },
 					},
 					Action{
-						Text:        "Выйти из программы",
+						Text:        gotext.Get("Exit"),
 						Shortcut:    Shortcut{walk.ModAlt, walk.KeyF4},
 						OnTriggered: func() { wnd.mainWindow.Close() },
 					},
@@ -105,30 +106,30 @@ func NewMainWindow() (*MainWnd, error) {
 			},
 
 			Menu{
-				Text:     "&Книга",
+				Text:     gotext.Get("&Book"),
 				AssignTo: &wnd.menuBar.bookMenu,
 				Enabled:  Bind("bookMenuEnabled"),
 				Items: []MenuItem{
 					Action{
-						Text:        "Загрузить книгу",
+						Text:        gotext.Get("Download book"),
 						Shortcut:    Shortcut{walk.ModControl, walk.KeyD},
 						Enabled:     Bind("libraryLogon"),
 						OnTriggered: func() { wnd.msgChan <- msg.Message{msg.DOWNLOAD_BOOK, nil} },
 					},
 					Action{
-						Text:        "Убрать книгу с полки",
+						Text:        gotext.Get("Remove book from bookshelf"),
 						Shortcut:    Shortcut{walk.ModShift, walk.KeyDelete},
 						Enabled:     Bind("libraryLogon"),
 						OnTriggered: func() { wnd.msgChan <- msg.Message{msg.REMOVE_BOOK, nil} },
 					},
 					Action{
-						Text:        "Поставить книгу на полку",
+						Text:        gotext.Get("Put book on bookshelf"),
 						Shortcut:    Shortcut{walk.ModControl, walk.KeyA},
 						Enabled:     Bind("libraryLogon"),
 						OnTriggered: func() { wnd.msgChan <- msg.Message{msg.ISSUE_BOOK, nil} },
 					},
 					Action{
-						Text:        "Информация о книге",
+						Text:        gotext.Get("Book information"),
 						Shortcut:    Shortcut{walk.ModControl, walk.KeyI},
 						OnTriggered: func() { wnd.msgChan <- msg.Message{msg.BOOK_DESCRIPTION, nil} },
 					},
@@ -136,50 +137,50 @@ func NewMainWindow() (*MainWnd, error) {
 			},
 
 			Menu{
-				Text: "&Воспроизведение",
+				Text: gotext.Get("&Playback"),
 				Items: []MenuItem{
 					Menu{
-						Text:     "Закладки",
+						Text:     gotext.Get("Bookmarks"),
 						AssignTo: &wnd.menuBar.bookmarkMenu,
 						Items: []MenuItem{
 							Action{
-								Text:        "Добавить закладку",
+								Text:        gotext.Get("Add bookmark"),
 								Shortcut:    Shortcut{walk.ModControl, walk.KeyB},
 								OnTriggered: func() { wnd.msgChan <- msg.Message{msg.BOOKMARK_SET, nil} },
 							},
 						},
 					},
 					Action{
-						Text:        "Воспроизвести / Приостановить",
+						Text:        gotext.Get("Play / Pause"),
 						Shortcut:    Shortcut{Key: walk.KeySpace},
 						OnTriggered: func() { wnd.msgChan <- msg.Message{msg.PLAYER_PLAY_PAUSE, nil} },
 					},
 					Action{
-						Text:        "Остановить",
+						Text:        gotext.Get("Stop"),
 						Shortcut:    Shortcut{walk.ModControl, walk.KeySpace},
 						OnTriggered: func() { wnd.msgChan <- msg.Message{msg.PLAYER_STOP, nil} },
 					},
 
 					Menu{
-						Text: "Переход по книге",
+						Text: gotext.Get("Book navigation"),
 						Items: []MenuItem{
 							Action{
-								Text:        "На первый фрагмент",
+								Text:        gotext.Get("First fragment"),
 								Shortcut:    Shortcut{walk.ModControl, walk.KeyBack},
 								OnTriggered: func() { wnd.msgChan <- msg.Message{msg.PLAYER_GOTO_FRAGMENT, 0} },
 							},
 							Action{
-								Text:        "На указанный фрагмент",
+								Text:        gotext.Get("Go to fragment"),
 								Shortcut:    Shortcut{walk.ModControl, walk.KeyG},
 								OnTriggered: func() { wnd.msgChan <- msg.Message{msg.PLAYER_GOTO_FRAGMENT, nil} },
 							},
 							Action{
-								Text:        "На следующий фрагмент",
+								Text:        gotext.Get("Next fragment"),
 								Shortcut:    Shortcut{walk.ModControl, walk.KeyNext},
 								OnTriggered: func() { wnd.msgChan <- next_fragment },
 							},
 							Action{
-								Text:        "На предыдущий фрагмент",
+								Text:        gotext.Get("Previous fragment"),
 								Shortcut:    Shortcut{walk.ModControl, walk.KeyPrior},
 								OnTriggered: func() { wnd.msgChan <- previous_fragment },
 							},
@@ -187,55 +188,55 @@ func NewMainWindow() (*MainWnd, error) {
 					},
 
 					Menu{
-						Text: "Переход по фрагменту",
+						Text: gotext.Get("Fragment navigation"),
 						Items: []MenuItem{
 							Action{
-								Text:        "В начало фрагмента",
+								Text:        gotext.Get("Beginning of the fragment"),
 								Shortcut:    Shortcut{walk.ModShift, walk.KeyBack},
 								OnTriggered: func() { wnd.msgChan <- msg.Message{msg.PLAYER_GOTO_POSITION, time.Duration(0)} },
 							},
 							Action{
-								Text:        "На указанную позицию",
+								Text:        gotext.Get("Go to position"),
 								Shortcut:    Shortcut{walk.ModShift, walk.KeyG},
 								OnTriggered: func() { wnd.msgChan <- msg.Message{msg.PLAYER_GOTO_POSITION, nil} },
 							},
 							Action{
-								Text:        "На 5 сек. вперёд",
+								Text:        gotext.Get("5 sec. forward"),
 								Shortcut:    Shortcut{0, walk.KeyRight},
 								OnTriggered: func() { wnd.msgChan <- rewind_5sec_forward },
 							},
 							Action{
-								Text:        "На 5 сек. назад",
+								Text:        gotext.Get("5 sec. backward"),
 								Shortcut:    Shortcut{0, walk.KeyLeft},
 								OnTriggered: func() { wnd.msgChan <- rewind_5sec_back },
 							},
 							Action{
-								Text:        "На 30 сек. вперёд",
+								Text:        gotext.Get("30 sec. forward"),
 								Shortcut:    Shortcut{walk.ModControl, walk.KeyRight},
 								OnTriggered: func() { wnd.msgChan <- rewind_30sec_forward },
 							},
 							Action{
-								Text:        "На 30 сек. назад",
+								Text:        gotext.Get("30 sec. backward"),
 								Shortcut:    Shortcut{walk.ModControl, walk.KeyLeft},
 								OnTriggered: func() { wnd.msgChan <- rewind_30sec_back },
 							},
 							Action{
-								Text:        "На 1 мин. вперёд",
+								Text:        gotext.Get("1 min. forward"),
 								Shortcut:    Shortcut{walk.ModShift, walk.KeyRight},
 								OnTriggered: func() { wnd.msgChan <- rewind_1min_forward },
 							},
 							Action{
-								Text:        "На 1 мин. назад",
+								Text:        gotext.Get("1 min. backward"),
 								Shortcut:    Shortcut{walk.ModShift, walk.KeyLeft},
 								OnTriggered: func() { wnd.msgChan <- rewind_1min_back },
 							},
 							Action{
-								Text:        "На 5 мин. вперёд",
+								Text:        gotext.Get("5 min. forward"),
 								Shortcut:    Shortcut{walk.ModControl | walk.ModShift, walk.KeyRight},
 								OnTriggered: func() { wnd.msgChan <- rewind_5min_forward },
 							},
 							Action{
-								Text:        "На 5 мин. назад",
+								Text:        gotext.Get("5 min. backward"),
 								Shortcut:    Shortcut{walk.ModControl | walk.ModShift, walk.KeyLeft},
 								OnTriggered: func() { wnd.msgChan <- rewind_5min_back },
 							},
@@ -243,20 +244,20 @@ func NewMainWindow() (*MainWnd, error) {
 					},
 
 					Menu{
-						Text: "Громкость",
+						Text: gotext.Get("Volume"),
 						Items: []MenuItem{
 							Action{
-								Text:        "Увеличить громкость",
+								Text:        gotext.Get("Increase volume"),
 								Shortcut:    Shortcut{walk.ModControl, walk.KeyUp},
 								OnTriggered: func() { wnd.msgChan <- msg.Message{msg.PLAYER_VOLUME_UP, nil} },
 							},
 							Action{
-								Text:        "Уменьшить громкость",
+								Text:        gotext.Get("Decrease volume"),
 								Shortcut:    Shortcut{walk.ModControl, walk.KeyDown},
 								OnTriggered: func() { wnd.msgChan <- msg.Message{msg.PLAYER_VOLUME_DOWN, nil} },
 							},
 							Action{
-								Text:        "Сбросить громкость",
+								Text:        gotext.Get("Reset volume"),
 								Shortcut:    Shortcut{walk.ModControl, walk.KeyR},
 								OnTriggered: func() { wnd.msgChan <- msg.Message{msg.PLAYER_VOLUME_RESET, nil} },
 							},
@@ -264,20 +265,20 @@ func NewMainWindow() (*MainWnd, error) {
 					},
 
 					Menu{
-						Text: "Скорость",
+						Text: gotext.Get("Speed"),
 						Items: []MenuItem{
 							Action{
-								Text:        "Увеличить скорость",
+								Text:        gotext.Get("Increase speed"),
 								Shortcut:    Shortcut{walk.ModShift, walk.KeyUp},
 								OnTriggered: func() { wnd.msgChan <- msg.Message{msg.PLAYER_SPEED_UP, nil} },
 							},
 							Action{
-								Text:        "Уменьшить скорость",
+								Text:        gotext.Get("Decrease speed"),
 								Shortcut:    Shortcut{walk.ModShift, walk.KeyDown},
 								OnTriggered: func() { wnd.msgChan <- msg.Message{msg.PLAYER_SPEED_DOWN, nil} },
 							},
 							Action{
-								Text:        "Сбросить скорость",
+								Text:        gotext.Get("Reset speed"),
 								Shortcut:    Shortcut{walk.ModShift, walk.KeyR},
 								OnTriggered: func() { wnd.msgChan <- msg.Message{msg.PLAYER_SPEED_RESET, nil} },
 							},
@@ -286,36 +287,36 @@ func NewMainWindow() (*MainWnd, error) {
 				},
 			},
 			Menu{
-				Text: "&Настройки",
+				Text: gotext.Get("&Settings"),
 				Items: []MenuItem{
 					Menu{
-						Text:     "Устройство вывода звука",
+						Text:     gotext.Get("Audio output device"),
 						AssignTo: &wnd.menuBar.outputDeviceMenu,
 					},
 					Menu{
-						Text:     "Язык",
+						Text:     gotext.Get("Language"),
 						AssignTo: &wnd.menuBar.languageMenu,
 					},
 					Action{
-						Text:        "Таймер паузы",
+						Text:        gotext.Get("Pause timer"),
 						AssignTo:    &wnd.menuBar.pauseTimerItem,
 						Shortcut:    Shortcut{walk.ModControl, walk.KeyP},
 						OnTriggered: func() { wnd.msgChan <- msg.Message{msg.PLAYER_SET_TIMER, nil} },
 					},
 					Menu{
-						Text:     "Уровень ведения журнала",
+						Text:     gotext.Get("Logging level"),
 						AssignTo: &wnd.menuBar.logLevelMenu,
 					},
 				},
 			},
 			Menu{
-				Text: "&Справка",
+				Text: gotext.Get("&Help"),
 				Items: []MenuItem{
 					Action{
-						Text: "О программе",
+						Text: gotext.Get("About"),
 						OnTriggered: func() {
-							msg := fmt.Sprintf("%v версия %v\nРабочий каталог: %v\nАвтор: %v", config.ProgramName, config.ProgramVersion, config.UserData(), config.CopyrightInfo)
-							walk.MsgBox(wnd.mainWindow, "О программе", msg, walk.MsgBoxOK|walk.MsgBoxIconInformation)
+							msg := gotext.Get("%v version %v\nWorking directory: %v\nAuthor: %v", config.ProgramName, config.ProgramVersion, config.UserData(), config.CopyrightInfo)
+							walk.MsgBox(wnd.mainWindow, gotext.Get("About"), msg, walk.MsgBoxOK|walk.MsgBoxIconInformation)
 						},
 					},
 				},
@@ -407,33 +408,33 @@ func (mw *MainWnd) CredentialsEntryDialog(service *config.Service) bool {
 	)
 
 	layout := Dialog{
-		Title:         "Добавление новой учётной записи",
+		Title:         gotext.Get("Adding a new account"),
 		AssignTo:      &dlg,
 		Layout:        VBox{},
 		CancelButton:  &CancelPB,
 		DefaultButton: &OkPB,
 		Children: []Widget{
-			TextLabel{Text: "Отображаемое имя:"},
+			TextLabel{Text: gotext.Get("Displayed name:")},
 			LineEdit{
-				Accessibility: Accessibility{Name: "Отображаемое имя:"},
+				Accessibility: Accessibility{Name: gotext.Get("Displayed name:")},
 				AssignTo:      &nameLE,
 			},
 
-			TextLabel{Text: "Адрес сервера:"},
+			TextLabel{Text: gotext.Get("Server address:")},
 			LineEdit{
-				Accessibility: Accessibility{Name: "Адрес сервера:"},
+				Accessibility: Accessibility{Name: gotext.Get("Server address:")},
 				AssignTo:      &urlLE,
 			},
 
-			TextLabel{Text: "Имя пользователя:"},
+			TextLabel{Text: gotext.Get("User name:")},
 			LineEdit{
-				Accessibility: Accessibility{Name: "Имя пользователя:"},
+				Accessibility: Accessibility{Name: gotext.Get("User name:")},
 				AssignTo:      &usernameLE,
 			},
 
-			TextLabel{Text: "Пароль:"},
+			TextLabel{Text: gotext.Get("Password:")},
 			LineEdit{
-				Accessibility: Accessibility{Name: "Пароль:"},
+				Accessibility: Accessibility{Name: gotext.Get("Password:")},
 				AssignTo:      &passwordLE,
 				PasswordMode:  true,
 			},
@@ -444,7 +445,7 @@ func (mw *MainWnd) CredentialsEntryDialog(service *config.Service) bool {
 					HSpacer{},
 					PushButton{
 						AssignTo: &OkPB,
-						Text:     "OK",
+						Text:     gotext.Get("OK"),
 						OnClicked: func() {
 							service.Name = nameLE.Text()
 							service.URL = urlLE.Text()
@@ -455,7 +456,7 @@ func (mw *MainWnd) CredentialsEntryDialog(service *config.Service) bool {
 					},
 					PushButton{
 						AssignTo: &CancelPB,
-						Text:     "Отмена",
+						Text:     gotext.Get("Cancel"),
 						OnClicked: func() {
 							dlg.Cancel()
 						},
@@ -504,7 +505,7 @@ func (mw *MainWnd) TextEntryDialog(title, msg, value string, text *string) bool 
 					HSpacer{},
 					PushButton{
 						AssignTo: &OkPB,
-						Text:     "OK",
+						Text:     gotext.Get("OK"),
 						OnClicked: func() {
 							*text = textLE.Text()
 							dlg.Close(walk.DlgCmdOK)
@@ -512,7 +513,7 @@ func (mw *MainWnd) TextEntryDialog(title, msg, value string, text *string) bool 
 					},
 					PushButton{
 						AssignTo: &CancelPB,
-						Text:     "Отмена",
+						Text:     gotext.Get("Cancel"),
 						OnClicked: func() {
 							dlg.Close(walk.DlgCmdCancel)
 						},
