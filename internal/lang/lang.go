@@ -13,7 +13,7 @@ import (
 )
 
 const (
-	LOCALE_SLOCALIZEDLANGUAGENAME = 0x0000006f
+	LOCALE_SNATIVELANGUAGENAME = 0x00000004
 )
 
 var kernel32 = windows.NewLazySystemDLL("kernel32.dll")
@@ -38,9 +38,8 @@ func GetUserDefaultUILanguage() LCID {
 }
 
 func GetLocaleDescription(lcid LCID) (string, error) {
-	bufSize := 1024
-	buf := make([]uint16, bufSize)
-	r, _, _ := procGetLocaleInfoW.Call(uintptr(lcid), LOCALE_SLOCALIZEDLANGUAGENAME, uintptr(unsafe.Pointer(&buf[0])), uintptr(bufSize))
+	buf := make([]uint16, 1024)
+	r, _, _ := procGetLocaleInfoW.Call(uintptr(lcid), LOCALE_SNATIVELANGUAGENAME, uintptr(unsafe.Pointer(&buf[0])), uintptr(len(buf)))
 	if r == 0 {
 		return "", errors.New("invalid lcid")
 	}
@@ -53,6 +52,9 @@ func LocaleNameToLCID(localeName string) (LCID, error) {
 		return 0, err
 	}
 	lcid, _, _ := procLocaleNameToLCID.Call(uintptr(unsafe.Pointer(str)), 0)
+	if lcid == 0 {
+		return 0, errors.New("invalid locale")
+	}
 	runtime.KeepAlive(localeName)
 	runtime.KeepAlive(str)
 	return LCID(lcid), nil
