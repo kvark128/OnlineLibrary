@@ -8,6 +8,7 @@ import (
 
 	"github.com/kvark128/OnlineLibrary/internal/config"
 	daisy "github.com/kvark128/daisyonline"
+	"github.com/leonelquinteros/gotext"
 )
 
 type Library struct {
@@ -118,7 +119,7 @@ func (s *LocalStorage) ContentList(string) (*ContentList, error) {
 	}
 
 	lst := &ContentList{
-		Name: "Локальные книги",
+		Name: gotext.Get("Local books"),
 	}
 
 	for _, e := range entrys {

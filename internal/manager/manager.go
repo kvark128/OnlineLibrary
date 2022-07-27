@@ -23,6 +23,7 @@ import (
 	"github.com/kvark128/OnlineLibrary/internal/util"
 	"github.com/kvark128/OnlineLibrary/internal/util/buffer"
 	daisy "github.com/kvark128/daisyonline"
+	"github.com/leonelquinteros/gotext"
 )
 
 const (
@@ -144,7 +145,7 @@ func (m *Manager) Start(conf *config.Config, done chan<- bool) {
 			}
 
 			if _, err := conf.ServiceByName(service.Name); err == nil {
-				m.mainWnd.MessageBoxError("Ошибка", fmt.Sprintf("Учётная запись «%v» уже существует", service.Name))
+				m.mainWnd.MessageBoxError(gotext.Get("Error"), gotext.Get("Account \"%v\" already exists", service.Name))
 				break
 			}
 
@@ -171,8 +172,8 @@ func (m *Manager) Start(conf *config.Config, done chan<- bool) {
 			if !ok {
 				break
 			}
-			msg := fmt.Sprintf("Вы действительно хотите удалить учётную запись %v?%sТакже будут удалены сохранённые позиции всех книг этой библиотеки.%sЭто действие не может быть отменено.", lib.service.Name, CRLF, CRLF)
-			if !m.mainWnd.MessageBoxQuestion("Удаление учётной записи", msg) {
+			msg := gotext.Get("Are you sure you want to delete the account \"%v\"?\nAll saved bookmarks of all books in this library will also be deleted.\nThis action cannot be undone.", lib.service.Name)
+			if !m.mainWnd.MessageBoxQuestion(gotext.Get("Deleting an account"), msg) {
 				break
 			}
 			conf.RemoveService(lib.service)
@@ -189,7 +190,7 @@ func (m *Manager) Start(conf *config.Config, done chan<- bool) {
 				m.messageBoxError(fmt.Errorf("Issue book: %w", err))
 				break
 			}
-			m.mainWnd.MessageBoxWarning("Уведомление", fmt.Sprintf("«%s» добавлена на книжную полку", book.Name()))
+			m.mainWnd.MessageBoxWarning(gotext.Get("Warning"), gotext.Get("\"%v\" is added to the bookshelf", book.Name()))
 
 		case msg.REMOVE_BOOK:
 			if m.contentList == nil {
@@ -201,7 +202,7 @@ func (m *Manager) Start(conf *config.Config, done chan<- bool) {
 				m.messageBoxError(fmt.Errorf("Removing book: %w", err))
 				break
 			}
-			m.mainWnd.MessageBoxWarning("Уведомление", fmt.Sprintf("«%s» удалена с книжной полки", book.Name()))
+			m.mainWnd.MessageBoxWarning(gotext.Get("Warning"), gotext.Get("\"%v\" removed from bookshelf", book.Name()))
 			// If a bookshelf is open, it must be updated to reflect the changes made
 			if m.contentList.ID == daisy.Issued {
 				m.setContentList(daisy.Issued)
@@ -228,7 +229,7 @@ func (m *Manager) Start(conf *config.Config, done chan<- bool) {
 				m.messageBoxError(err)
 				break
 			}
-			m.mainWnd.MessageBoxWarning("Информация о книге", text)
+			m.mainWnd.MessageBoxWarning(gotext.Get("Book information"), text)
 
 		case msg.PLAYER_PLAY_PAUSE:
 			if m.book != nil {
@@ -307,7 +308,7 @@ func (m *Manager) Start(conf *config.Config, done chan<- bool) {
 				var err error
 				fragment = m.book.Fragment()
 				fragment++ // User needs a fragment number instead of an index
-				if !m.mainWnd.TextEntryDialog("Переход к фрагменту", "Введите номер фрагмента:", strconv.Itoa(fragment), &text) {
+				if !m.mainWnd.TextEntryDialog(gotext.Get("Go to fragment"), gotext.Get("Enter fragment number:"), strconv.Itoa(fragment), &text) {
 					break
 				}
 				fragment, err = strconv.Atoi(text)
@@ -328,7 +329,7 @@ func (m *Manager) Start(conf *config.Config, done chan<- bool) {
 				var text string
 				var err error
 				pos = m.book.Position()
-				if !m.mainWnd.TextEntryDialog("Переход к позиции", "Введите позицию фрагмента:", util.FmtDuration(pos), &text) {
+				if !m.mainWnd.TextEntryDialog(gotext.Get("Go to position"), gotext.Get("Enter fragment position:"), util.FmtDuration(pos), &text) {
 					break
 				}
 				pos, err = util.ParseDuration(text)
@@ -357,7 +358,7 @@ func (m *Manager) Start(conf *config.Config, done chan<- bool) {
 				d = int(m.book.TimerDuration().Minutes())
 			}
 
-			if !m.mainWnd.TextEntryDialog("Установка таймера паузы", "Введите время таймера в минутах:", strconv.Itoa(d), &text) {
+			if !m.mainWnd.TextEntryDialog(gotext.Get("Setting the pause timer"), gotext.Get("Enter the timer value in minutes:"), strconv.Itoa(d), &text) {
 				break
 			}
 
@@ -382,7 +383,7 @@ func (m *Manager) Start(conf *config.Config, done chan<- bool) {
 				break
 			}
 			var bookmarkName string
-			if !m.mainWnd.TextEntryDialog("Добавление новой закладки", "Имя закладки:", "", &bookmarkName) {
+			if !m.mainWnd.TextEntryDialog(gotext.Get("Adding a new bookmark"), gotext.Get("Bookmark name:"), "", &bookmarkName) {
 				break
 			}
 			if err := m.book.SetBookmarkWithName(bookmarkName); err != nil {
@@ -410,8 +411,8 @@ func (m *Manager) Start(conf *config.Config, done chan<- bool) {
 					m.logger.Warning("Bookmark removing: %v", err)
 					break
 				}
-				msg := fmt.Sprintf("Вы действительно хотите удалить закладку «%v»?", bookmark.Name)
-				if !m.mainWnd.MessageBoxQuestion("Удаление закладки", msg) {
+				msg := gotext.Get("Are you sure you want to delete the bookmark \"%v\"?", bookmark.Name)
+				if !m.mainWnd.MessageBoxQuestion(gotext.Get("Deleting a bookmark"), msg) {
 					break
 				}
 				m.book.RemoveBookmark(bookmarkID)
@@ -438,12 +439,12 @@ func (m *Manager) Start(conf *config.Config, done chan<- bool) {
 			}
 			var lines []string
 			attrs := lib.serviceAttributes
-			lines = append(lines, fmt.Sprintf("Имя: «%v» (%v)", attrs.Service.Label.Text, attrs.Service.ID))
-			lines = append(lines, fmt.Sprintf("Поддержка команды back: %v", attrs.SupportsServerSideBack))
-			lines = append(lines, fmt.Sprintf("Поддержка команды search: %v", attrs.SupportsSearch))
-			lines = append(lines, fmt.Sprintf("Поддержка аудиометок: %v", attrs.SupportsAudioLabels))
-			lines = append(lines, fmt.Sprintf("Поддерживаемые опциональные операции: %v", attrs.SupportedOptionalOperations.Operation))
-			m.mainWnd.MessageBoxWarning("Информация о библиотеке", strings.Join(lines, CRLF))
+			lines = append(lines, gotext.Get("Name: %v (%v)", attrs.Service.Label.Text, attrs.Service.ID))
+			lines = append(lines, gotext.Get("Back command support: %v", attrs.SupportsServerSideBack))
+			lines = append(lines, gotext.Get("Search command support: %v", attrs.SupportsSearch))
+			lines = append(lines, gotext.Get("Audio labels support: %v", attrs.SupportsAudioLabels))
+			lines = append(lines, gotext.Get("Supported Optional Operations: %v", attrs.SupportedOptionalOperations.Operation))
+			m.mainWnd.MessageBoxWarning(gotext.Get("Library information"), strings.Join(lines, CRLF))
 
 		case msg.SET_LANGUAGE:
 			lang, ok := message.Data.(string)
@@ -451,7 +452,7 @@ func (m *Manager) Start(conf *config.Config, done chan<- bool) {
 				break
 			}
 			conf.General.Language = lang
-			m.mainWnd.MessageBoxWarning("Предупреждение", "Для применения нового языка интерфейса, требуется перезагрузка программы")
+			m.mainWnd.MessageBoxWarning(gotext.Get("Warning"), gotext.Get("Changes will be reflected upon restarting the program"))
 
 		default:
 			m.logger.Warning("Unknown message: %v", message.Code)
@@ -529,7 +530,7 @@ func (m *Manager) setQuestions(response ...daisy.UserResponse) {
 
 	if questions.Label.Text != "" {
 		// We have received a notification from the library. Show it to the user
-		m.mainWnd.MessageBoxWarning("Предупреждение", questions.Label.Text)
+		m.mainWnd.MessageBoxWarning(gotext.Get("Warning"), questions.Label.Text)
 		// Return to the main menu of the library
 		m.setQuestions(daisy.UserResponse{QuestionID: daisy.Default})
 		return
@@ -565,7 +566,7 @@ func (m *Manager) setMultipleChoiceQuestion(index int) {
 func (m *Manager) setInputQuestion() {
 	for _, inputQuestion := range m.questions.InputQuestion {
 		var text string
-		if !m.mainWnd.TextEntryDialog("Ввод текста", inputQuestion.Label.Text, m.lastInputText, &text) {
+		if !m.mainWnd.TextEntryDialog(gotext.Get("Entering text"), inputQuestion.Label.Text, m.lastInputText, &text) {
 			// Return to the main menu of the library
 			m.setQuestions(daisy.UserResponse{QuestionID: daisy.Default})
 			return
@@ -589,7 +590,7 @@ func (m *Manager) setContentList(contentID string) {
 	}
 
 	if len(contentList.Items) == 0 {
-		m.mainWnd.MessageBoxWarning("Предупреждение", "Список книг пуст")
+		m.mainWnd.MessageBoxWarning(gotext.Get("Warning"), gotext.Get("List of books is empty"))
 		return
 	}
 
@@ -671,8 +672,8 @@ func (m *Manager) downloadBook(book ContentItem) error {
 		var err error
 		var totalSize, downloadedSize int64
 		ctx, cancelFunc := context.WithCancel(context.TODO())
-		label := "Загрузка «%s»\nСкорость: %d Кб/с"
-		dlg := gui.NewProgressDialog(m.mainWnd, "Загрузка книги", fmt.Sprintf(label, book.Name(), 0), 100, cancelFunc)
+		label := gotext.Get("Downloading \"%v\"\nSpeed: %d KB/s")
+		dlg := gui.NewProgressDialog(m.mainWnd, gotext.Get("Book downloading"), fmt.Sprintf(label, book.Name(), 0), 100, cancelFunc)
 		dlg.Run()
 
 		for _, r := range rsrc {
@@ -739,11 +740,11 @@ func (m *Manager) downloadBook(book ContentItem) error {
 
 		switch {
 		case errors.Is(err, context.Canceled):
-			m.mainWnd.MessageBoxWarning("Предупреждение", "Загрузка отменена пользователем")
+			m.mainWnd.MessageBoxWarning(gotext.Get("Warning"), gotext.Get("Download canceled by user"))
 		case err != nil:
-			m.mainWnd.MessageBoxError("Ошибка", err.Error())
+			m.mainWnd.MessageBoxError(gotext.Get("Error"), err.Error())
 		default:
-			m.mainWnd.MessageBoxWarning("Уведомление", "Книга успешно загружена")
+			m.mainWnd.MessageBoxWarning(gotext.Get("Warning"), gotext.Get("Book successfully downloaded"))
 			m.logger.Debug("Book %v has been successfully downloaded. Total size: %v", bookID, totalSize)
 		}
 	}
@@ -775,7 +776,7 @@ func (m *Manager) bookDescription(book ContentItem) (string, error) {
 		return "", BookDescriptionNotAvailable
 	}
 
-	text := fmt.Sprintf("%v", strings.Join(md.Metadata.Description, CRLF))
+	text := strings.Join(md.Metadata.Description, CRLF)
 	if text == "" {
 		return "", BookDescriptionNotAvailable
 	}
@@ -787,11 +788,11 @@ func (m *Manager) messageBoxError(err error) {
 	m.logger.Error(msg)
 	switch {
 	case errors.As(err, new(net.Error)):
-		msg = "Ошибка сети. Пожалуйста, проверьте ваше подключение к интернету."
+		msg = gotext.Get("Network error. Please check your internet connection")
 	case errors.Is(err, OperationNotSupported):
-		msg = "Операция не поддерживается"
+		msg = gotext.Get("Operation not supported")
 	case errors.Is(err, BookDescriptionNotAvailable):
-		msg = "Описание книги недоступно"
+		msg = gotext.Get("Book description not available")
 	}
-	m.mainWnd.MessageBoxError("Ошибка", msg)
+	m.mainWnd.MessageBoxError(gotext.Get("Error"), msg)
 }

@@ -1,6 +1,7 @@
 package gui
 
 import (
+	"github.com/leonelquinteros/gotext"
 	"github.com/lxn/walk"
 	. "github.com/lxn/walk/declarative"
 )
@@ -35,7 +36,7 @@ func NewProgressDialog(parent *MainWnd, title, label string, maxValue int, cance
 
 			PushButton{
 				AssignTo: &CancelPB,
-				Text:     "Отмена",
+				Text:     gotext.Get("Cancel"),
 				OnClicked: func() {
 					cancelFN()
 					pd.dlg.Cancel()

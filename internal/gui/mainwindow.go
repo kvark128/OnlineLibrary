@@ -65,7 +65,7 @@ func NewMainWindow() (*MainWnd, error) {
 						OnTriggered: func() { wnd.msgChan <- msg.Message{msg.OPEN_BOOKSHELF, nil} },
 					},
 					Action{
-						Text:        gotext.Get("New receipts"),
+						Text:        gotext.Get("New books"),
 						Shortcut:    Shortcut{walk.ModControl, walk.KeyK},
 						Enabled:     Bind("libraryLogon"),
 						OnTriggered: func() { wnd.msgChan <- msg.Message{msg.OPEN_NEWBOOKS, nil} },
@@ -394,7 +394,7 @@ func (mw *MainWnd) SetTitle(title string) {
 	mw.mainWindow.Synchronize(func() {
 		var windowTitle = config.ProgramName
 		if title != "" {
-			windowTitle = fmt.Sprintf("%s — %s", title, windowTitle)
+			windowTitle = fmt.Sprintf("%s \u2014 %s", title, windowTitle)
 		}
 		mw.mainWindow.SetTitle(windowTitle)
 	})

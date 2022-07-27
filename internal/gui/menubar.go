@@ -1,12 +1,11 @@
 package gui
 
 import (
-	"fmt"
-
 	"github.com/kvark128/OnlineLibrary/internal/config"
 	"github.com/kvark128/OnlineLibrary/internal/gui/msg"
 	"github.com/kvark128/OnlineLibrary/internal/lang"
 	"github.com/kvark128/OnlineLibrary/internal/log"
+	"github.com/leonelquinteros/gotext"
 	"github.com/lxn/walk"
 )
 
@@ -68,13 +67,13 @@ func (mb *MenuBar) SetBookmarksMenu(bookmarks map[string]string) {
 			a.SetText(name)
 			bookmarkActions := subMenu.Actions()
 			moveAction := walk.NewAction()
-			moveAction.SetText("Перейти...")
+			moveAction.SetText(gotext.Get("Move"))
 			moveAction.Triggered().Attach(func() {
 				mb.msgCH <- msg.Message{msg.BOOKMARK_FETCH, id}
 			})
 			bookmarkActions.Add(moveAction)
 			removeAction := walk.NewAction()
-			removeAction.SetText("Удалить...")
+			removeAction.SetText(gotext.Get("Remove..."))
 			removeAction.Triggered().Attach(func() {
 				mb.msgCH <- msg.Message{msg.BOOKMARK_REMOVE, id}
 			})
@@ -119,7 +118,7 @@ func (mb *MenuBar) SetLanguageMenu(langs []lang.Language, current string) {
 		actions.Clear()
 
 		langsWithDefaultLang := make([]lang.Language, len(langs)+1)
-		langsWithDefaultLang[0] = lang.Language{Description: "По умолчанию"}
+		langsWithDefaultLang[0] = lang.Language{Description: gotext.Get("Default")}
 		copy(langsWithDefaultLang[1:], langs)
 
 		for _, lang := range langsWithDefaultLang {
@@ -143,9 +142,9 @@ func (mb *MenuBar) SetLanguageMenu(langs []lang.Language, current string) {
 }
 
 func (mb *MenuBar) SetPauseTimerLabel(minutes int) {
-	label := "Таймер паузы (Нет)"
+	label := gotext.Get("Pause timer (no)")
 	if minutes > 0 {
-		label = fmt.Sprintf("Таймер паузы (%d мин.)", minutes)
+		label = gotext.Get("Pause timer (%d min.)", minutes)
 	}
 	mb.wnd.Synchronize(func() {
 		mb.pauseTimerItem.SetText(label)
