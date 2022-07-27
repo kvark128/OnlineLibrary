@@ -55,17 +55,18 @@ var ReadingSystemAttributes = daisy.ReadingSystemAttributes{
 var userDataPath string
 
 func UserData() string {
-	if userDataPath == "" {
-		if path, err := filepath.Abs(ProgramName); err == nil {
-			if info, err := os.Stat(path); err == nil {
-				if info.IsDir() {
-					userDataPath = path
-				}
+	if userDataPath != "" {
+		return userDataPath
+	}
+	if path, err := filepath.Abs(ProgramName); err == nil {
+		if info, err := os.Stat(path); err == nil {
+			if info.IsDir() {
+				userDataPath = path
 			}
 		}
-		if userDataPath == "" {
-			userDataPath = filepath.Join(os.Getenv("USERPROFILE"), ProgramName)
-		}
+	}
+	if userDataPath == "" {
+		userDataPath = filepath.Join(os.Getenv("USERPROFILE"), ProgramName)
 	}
 	return userDataPath
 }
