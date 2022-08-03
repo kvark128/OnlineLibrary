@@ -37,7 +37,7 @@ func (mb *MenuBar) SetProvidersMenu(services []*config.Service, currentID string
 			}
 			a.SetText(service.Name)
 			a.Triggered().Attach(func() {
-				mb.msgCH <- msg.Message{msg.SET_PROVIDER, id}
+				mb.msgCH <- msg.Message{Code: msg.SET_PROVIDER, Data: id}
 			})
 			actions.Insert(i, a)
 		}
@@ -69,13 +69,13 @@ func (mb *MenuBar) SetBookmarksMenu(bookmarks map[string]string) {
 			moveAction := walk.NewAction()
 			moveAction.SetText(gotext.Get("Move"))
 			moveAction.Triggered().Attach(func() {
-				mb.msgCH <- msg.Message{msg.BOOKMARK_FETCH, id}
+				mb.msgCH <- msg.Message{Code: msg.BOOKMARK_FETCH, Data: id}
 			})
 			bookmarkActions.Add(moveAction)
 			removeAction := walk.NewAction()
 			removeAction.SetText(gotext.Get("Remove..."))
 			removeAction.Triggered().Attach(func() {
-				mb.msgCH <- msg.Message{msg.BOOKMARK_REMOVE, id}
+				mb.msgCH <- msg.Message{Code: msg.BOOKMARK_REMOVE, Data: id}
 			})
 			bookmarkActions.Add(removeAction)
 		}
@@ -105,7 +105,7 @@ func (mb *MenuBar) SetOutputDeviceMenu(deviceNames []string, current string) {
 					actions.At(k).SetChecked(false)
 				}
 				a.SetChecked(true)
-				mb.msgCH <- msg.Message{msg.PLAYER_OUTPUT_DEVICE, a.Text()}
+				mb.msgCH <- msg.Message{Code: msg.PLAYER_OUTPUT_DEVICE, Data: a.Text()}
 			})
 			actions.Add(a)
 		}
@@ -134,7 +134,7 @@ func (mb *MenuBar) SetLanguageMenu(langs []lang.Language, current string) {
 					actions.At(k).SetChecked(false)
 				}
 				a.SetChecked(true)
-				mb.msgCH <- msg.Message{msg.SET_LANGUAGE, id}
+				mb.msgCH <- msg.Message{Code: msg.SET_LANGUAGE, Data: id}
 			})
 			actions.Add(a)
 		}

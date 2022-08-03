@@ -10,20 +10,20 @@ import (
 
 // Messages for switching fragments
 var (
-	next_fragment     = msg.Message{msg.PLAYER_OFFSET_FRAGMENT, +1}
-	previous_fragment = msg.Message{msg.PLAYER_OFFSET_FRAGMENT, -1}
+	next_fragment     = msg.Message{Code: msg.PLAYER_OFFSET_FRAGMENT, Data: +1}
+	previous_fragment = msg.Message{Code: msg.PLAYER_OFFSET_FRAGMENT, Data: -1}
 )
 
 // Messages for rewinding a fragment
 var (
-	rewind_5sec_forward  = msg.Message{msg.PLAYER_OFFSET_POSITION, time.Second * 5}
-	rewind_5sec_back     = msg.Message{msg.PLAYER_OFFSET_POSITION, time.Second * -5}
-	rewind_30sec_forward = msg.Message{msg.PLAYER_OFFSET_POSITION, time.Second * 30}
-	rewind_30sec_back    = msg.Message{msg.PLAYER_OFFSET_POSITION, time.Second * -30}
-	rewind_1min_forward  = msg.Message{msg.PLAYER_OFFSET_POSITION, time.Minute}
-	rewind_1min_back     = msg.Message{msg.PLAYER_OFFSET_POSITION, -time.Minute}
-	rewind_5min_forward  = msg.Message{msg.PLAYER_OFFSET_POSITION, time.Minute * 5}
-	rewind_5min_back     = msg.Message{msg.PLAYER_OFFSET_POSITION, time.Minute * -5}
+	rewind_5sec_forward  = msg.Message{Code: msg.PLAYER_OFFSET_POSITION, Data: time.Second * 5}
+	rewind_5sec_back     = msg.Message{Code: msg.PLAYER_OFFSET_POSITION, Data: time.Second * -5}
+	rewind_30sec_forward = msg.Message{Code: msg.PLAYER_OFFSET_POSITION, Data: time.Second * 30}
+	rewind_30sec_back    = msg.Message{Code: msg.PLAYER_OFFSET_POSITION, Data: time.Second * -30}
+	rewind_1min_forward  = msg.Message{Code: msg.PLAYER_OFFSET_POSITION, Data: time.Minute}
+	rewind_1min_back     = msg.Message{Code: msg.PLAYER_OFFSET_POSITION, Data: -time.Minute}
+	rewind_5min_forward  = msg.Message{Code: msg.PLAYER_OFFSET_POSITION, Data: time.Minute * 5}
+	rewind_5min_back     = msg.Message{Code: msg.PLAYER_OFFSET_POSITION, Data: time.Minute * -5}
 )
 
 type MainListBox struct {
@@ -85,10 +85,10 @@ func (mlb *MainListBox) WndProc(hwnd win.HWND, winmsg uint32, wParam, lParam uin
 				mlb.msgCH <- rewind_1min_forward
 				return 0
 			case walk.KeyUp:
-				mlb.msgCH <- msg.Message{msg.PLAYER_SPEED_UP, nil}
+				mlb.msgCH <- msg.Message{Code: msg.PLAYER_SPEED_UP}
 				return 0
 			case walk.KeyDown:
-				mlb.msgCH <- msg.Message{msg.PLAYER_SPEED_DOWN, nil}
+				mlb.msgCH <- msg.Message{Code: msg.PLAYER_SPEED_DOWN}
 				return 0
 			case walk.Key1, walk.Key2, walk.Key3, walk.Key4, walk.Key5, walk.Key6, walk.Key7, walk.Key8, walk.Key9, walk.Key0:
 				mlb.msgCH <- msg.Message{Code: msg.BOOKMARK_SET, Data: key.String()}
@@ -108,10 +108,10 @@ func (mlb *MainListBox) WndProc(hwnd win.HWND, winmsg uint32, wParam, lParam uin
 				mlb.msgCH <- rewind_30sec_forward
 				return 0
 			case walk.KeyUp:
-				mlb.msgCH <- msg.Message{msg.PLAYER_VOLUME_UP, nil}
+				mlb.msgCH <- msg.Message{Code: msg.PLAYER_VOLUME_UP}
 				return 0
 			case walk.KeyDown:
-				mlb.msgCH <- msg.Message{msg.PLAYER_VOLUME_DOWN, nil}
+				mlb.msgCH <- msg.Message{Code: msg.PLAYER_VOLUME_DOWN}
 				return 0
 			case walk.KeyPrior:
 				mlb.msgCH <- previous_fragment
@@ -137,13 +137,13 @@ func (mlb *MainListBox) WndProc(hwnd win.HWND, winmsg uint32, wParam, lParam uin
 				mlb.msgCH <- rewind_5sec_back
 				return 0
 			case walk.KeySpace:
-				mlb.msgCH <- msg.Message{msg.PLAYER_PLAY_PAUSE, nil}
+				mlb.msgCH <- msg.Message{Code: msg.PLAYER_PLAY_PAUSE}
 				return 0
 			case walk.KeyMediaPlayPause:
-				mlb.msgCH <- msg.Message{msg.PLAYER_PLAY_PAUSE, nil}
+				mlb.msgCH <- msg.Message{Code: msg.PLAYER_PLAY_PAUSE}
 				return 0
 			case walk.KeyMediaStop:
-				mlb.msgCH <- msg.Message{msg.PLAYER_STOP, nil}
+				mlb.msgCH <- msg.Message{Code: msg.PLAYER_STOP}
 				return 0
 			case walk.KeyMediaNextTrack:
 				mlb.msgCH <- next_fragment

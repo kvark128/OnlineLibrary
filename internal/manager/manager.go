@@ -672,8 +672,7 @@ func (m *Manager) downloadBook(book ContentItem) error {
 		var err error
 		var totalSize, downloadedSize int64
 		ctx, cancelFunc := context.WithCancel(context.TODO())
-		label := gotext.Get("Downloading \"%v\"\nSpeed: %d KB/s")
-		dlg := gui.NewProgressDialog(m.mainWnd, gotext.Get("Book downloading"), fmt.Sprintf(label, book.Name(), 0), 100, cancelFunc)
+		dlg := gui.NewProgressDialog(m.mainWnd, gotext.Get("Book downloading"), gotext.Get("Downloading \"%v\"\nSpeed: %d KB/s", book.Name(), 0), 100, cancelFunc)
 		dlg.Run()
 
 		for _, r := range rsrc {
@@ -711,7 +710,7 @@ func (m *Manager) downloadBook(book ContentItem) error {
 					n, err = io.CopyN(dst, src, 512*1024)
 					sec := time.Since(t).Seconds()
 					speed := int(float64(n) / 1024 / sec)
-					dlg.SetLabel(fmt.Sprintf(label, book.Name(), speed))
+					dlg.SetLabel(gotext.Get("Downloading \"%v\"\nSpeed: %d KB/s", book.Name(), speed))
 					downloadedSize += n
 					fragmentSize += n
 					dlg.SetValue(int(downloadedSize / (totalSize / 100)))

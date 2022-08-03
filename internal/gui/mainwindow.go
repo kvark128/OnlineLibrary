@@ -47,45 +47,45 @@ func NewMainWindow() (*MainWnd, error) {
 						Items: []MenuItem{
 							Action{
 								Text:        gotext.Get("Add account"),
-								Shortcut:    Shortcut{walk.ModControl, walk.KeyN},
-								OnTriggered: func() { wnd.msgChan <- msg.Message{msg.LIBRARY_ADD, nil} },
+								Shortcut:    Shortcut{Modifiers: walk.ModControl, Key: walk.KeyN},
+								OnTriggered: func() { wnd.msgChan <- msg.Message{Code: msg.LIBRARY_ADD} },
 							},
 						},
 					},
 					Action{
 						Text:        gotext.Get("Main menu"),
-						Shortcut:    Shortcut{walk.ModControl, walk.KeyM},
+						Shortcut:    Shortcut{Modifiers: walk.ModControl, Key: walk.KeyM},
 						Enabled:     Bind("libraryLogon"),
-						OnTriggered: func() { wnd.msgChan <- msg.Message{msg.MAIN_MENU, nil} },
+						OnTriggered: func() { wnd.msgChan <- msg.Message{Code: msg.MAIN_MENU} },
 					},
 					Action{
 						Text:        gotext.Get("Bookshelf"),
-						Shortcut:    Shortcut{walk.ModControl, walk.KeyE},
+						Shortcut:    Shortcut{Modifiers: walk.ModControl, Key: walk.KeyE},
 						Enabled:     Bind("libraryLogon"),
-						OnTriggered: func() { wnd.msgChan <- msg.Message{msg.OPEN_BOOKSHELF, nil} },
+						OnTriggered: func() { wnd.msgChan <- msg.Message{Code: msg.OPEN_BOOKSHELF} },
 					},
 					Action{
 						Text:        gotext.Get("New books"),
-						Shortcut:    Shortcut{walk.ModControl, walk.KeyK},
+						Shortcut:    Shortcut{Modifiers: walk.ModControl, Key: walk.KeyK},
 						Enabled:     Bind("libraryLogon"),
-						OnTriggered: func() { wnd.msgChan <- msg.Message{msg.OPEN_NEWBOOKS, nil} },
+						OnTriggered: func() { wnd.msgChan <- msg.Message{Code: msg.OPEN_NEWBOOKS} },
 					},
 					Action{
 						Text:        gotext.Get("Search..."),
-						Shortcut:    Shortcut{walk.ModControl, walk.KeyF},
+						Shortcut:    Shortcut{Modifiers: walk.ModControl, Key: walk.KeyF},
 						Enabled:     Bind("libraryLogon"),
-						OnTriggered: func() { wnd.msgChan <- msg.Message{msg.SEARCH_BOOK, nil} },
+						OnTriggered: func() { wnd.msgChan <- msg.Message{Code: msg.SEARCH_BOOK} },
 					},
 					Action{
 						Text:        gotext.Get("Previous menu"),
-						Shortcut:    Shortcut{0, walk.KeyBack},
+						Shortcut:    Shortcut{Modifiers: 0, Key: walk.KeyBack},
 						Enabled:     Bind("libraryLogon"),
-						OnTriggered: func() { wnd.msgChan <- msg.Message{msg.MENU_BACK, nil} },
+						OnTriggered: func() { wnd.msgChan <- msg.Message{Code: msg.MENU_BACK} },
 					},
 					Action{
 						Text:        gotext.Get("Local books"),
-						Shortcut:    Shortcut{walk.ModControl, walk.KeyL},
-						OnTriggered: func() { wnd.msgChan <- msg.Message{msg.SET_PROVIDER, config.LocalStorageID} },
+						Shortcut:    Shortcut{Modifiers: walk.ModControl, Key: walk.KeyL},
+						OnTriggered: func() { wnd.msgChan <- msg.Message{Code: msg.SET_PROVIDER, Data: config.LocalStorageID} },
 					},
 					Action{
 						Text:        gotext.Get("Library information"),
@@ -95,11 +95,11 @@ func NewMainWindow() (*MainWnd, error) {
 					Action{
 						Text:        gotext.Get("Delete account"),
 						Enabled:     Bind("libraryLogon"),
-						OnTriggered: func() { wnd.msgChan <- msg.Message{msg.LIBRARY_REMOVE, nil} },
+						OnTriggered: func() { wnd.msgChan <- msg.Message{Code: msg.LIBRARY_REMOVE} },
 					},
 					Action{
 						Text:        gotext.Get("Exit"),
-						Shortcut:    Shortcut{walk.ModAlt, walk.KeyF4},
+						Shortcut:    Shortcut{Modifiers: walk.ModAlt, Key: walk.KeyF4},
 						OnTriggered: func() { wnd.mainWindow.Close() },
 					},
 				},
@@ -112,26 +112,26 @@ func NewMainWindow() (*MainWnd, error) {
 				Items: []MenuItem{
 					Action{
 						Text:        gotext.Get("Download book"),
-						Shortcut:    Shortcut{walk.ModControl, walk.KeyD},
+						Shortcut:    Shortcut{Modifiers: walk.ModControl, Key: walk.KeyD},
 						Enabled:     Bind("libraryLogon"),
-						OnTriggered: func() { wnd.msgChan <- msg.Message{msg.DOWNLOAD_BOOK, nil} },
+						OnTriggered: func() { wnd.msgChan <- msg.Message{Code: msg.DOWNLOAD_BOOK} },
 					},
 					Action{
 						Text:        gotext.Get("Remove book from bookshelf"),
-						Shortcut:    Shortcut{walk.ModShift, walk.KeyDelete},
+						Shortcut:    Shortcut{Modifiers: walk.ModShift, Key: walk.KeyDelete},
 						Enabled:     Bind("libraryLogon"),
-						OnTriggered: func() { wnd.msgChan <- msg.Message{msg.REMOVE_BOOK, nil} },
+						OnTriggered: func() { wnd.msgChan <- msg.Message{Code: msg.REMOVE_BOOK} },
 					},
 					Action{
 						Text:        gotext.Get("Put book on bookshelf"),
-						Shortcut:    Shortcut{walk.ModControl, walk.KeyA},
+						Shortcut:    Shortcut{Modifiers: walk.ModControl, Key: walk.KeyA},
 						Enabled:     Bind("libraryLogon"),
-						OnTriggered: func() { wnd.msgChan <- msg.Message{msg.ISSUE_BOOK, nil} },
+						OnTriggered: func() { wnd.msgChan <- msg.Message{Code: msg.ISSUE_BOOK} },
 					},
 					Action{
 						Text:        gotext.Get("Book information"),
-						Shortcut:    Shortcut{walk.ModControl, walk.KeyI},
-						OnTriggered: func() { wnd.msgChan <- msg.Message{msg.BOOK_DESCRIPTION, nil} },
+						Shortcut:    Shortcut{Modifiers: walk.ModControl, Key: walk.KeyI},
+						OnTriggered: func() { wnd.msgChan <- msg.Message{Code: msg.BOOK_DESCRIPTION} },
 					},
 				},
 			},
@@ -145,20 +145,20 @@ func NewMainWindow() (*MainWnd, error) {
 						Items: []MenuItem{
 							Action{
 								Text:        gotext.Get("Add bookmark"),
-								Shortcut:    Shortcut{walk.ModControl, walk.KeyB},
-								OnTriggered: func() { wnd.msgChan <- msg.Message{msg.BOOKMARK_SET, nil} },
+								Shortcut:    Shortcut{Modifiers: walk.ModControl, Key: walk.KeyB},
+								OnTriggered: func() { wnd.msgChan <- msg.Message{Code: msg.BOOKMARK_SET} },
 							},
 						},
 					},
 					Action{
 						Text:        gotext.Get("Play / Pause"),
 						Shortcut:    Shortcut{Key: walk.KeySpace},
-						OnTriggered: func() { wnd.msgChan <- msg.Message{msg.PLAYER_PLAY_PAUSE, nil} },
+						OnTriggered: func() { wnd.msgChan <- msg.Message{Code: msg.PLAYER_PLAY_PAUSE} },
 					},
 					Action{
 						Text:        gotext.Get("Stop"),
-						Shortcut:    Shortcut{walk.ModControl, walk.KeySpace},
-						OnTriggered: func() { wnd.msgChan <- msg.Message{msg.PLAYER_STOP, nil} },
+						Shortcut:    Shortcut{Modifiers: walk.ModControl, Key: walk.KeySpace},
+						OnTriggered: func() { wnd.msgChan <- msg.Message{Code: msg.PLAYER_STOP} },
 					},
 
 					Menu{
@@ -166,22 +166,22 @@ func NewMainWindow() (*MainWnd, error) {
 						Items: []MenuItem{
 							Action{
 								Text:        gotext.Get("First fragment"),
-								Shortcut:    Shortcut{walk.ModControl, walk.KeyBack},
-								OnTriggered: func() { wnd.msgChan <- msg.Message{msg.PLAYER_GOTO_FRAGMENT, 0} },
+								Shortcut:    Shortcut{Modifiers: walk.ModControl, Key: walk.KeyBack},
+								OnTriggered: func() { wnd.msgChan <- msg.Message{Code: msg.PLAYER_GOTO_FRAGMENT, Data: 0} },
 							},
 							Action{
 								Text:        gotext.Get("Go to fragment"),
-								Shortcut:    Shortcut{walk.ModControl, walk.KeyG},
-								OnTriggered: func() { wnd.msgChan <- msg.Message{msg.PLAYER_GOTO_FRAGMENT, nil} },
+								Shortcut:    Shortcut{Modifiers: walk.ModControl, Key: walk.KeyG},
+								OnTriggered: func() { wnd.msgChan <- msg.Message{Code: msg.PLAYER_GOTO_FRAGMENT} },
 							},
 							Action{
 								Text:        gotext.Get("Next fragment"),
-								Shortcut:    Shortcut{walk.ModControl, walk.KeyNext},
+								Shortcut:    Shortcut{Modifiers: walk.ModControl, Key: walk.KeyNext},
 								OnTriggered: func() { wnd.msgChan <- next_fragment },
 							},
 							Action{
 								Text:        gotext.Get("Previous fragment"),
-								Shortcut:    Shortcut{walk.ModControl, walk.KeyPrior},
+								Shortcut:    Shortcut{Modifiers: walk.ModControl, Key: walk.KeyPrior},
 								OnTriggered: func() { wnd.msgChan <- previous_fragment },
 							},
 						},
@@ -192,52 +192,52 @@ func NewMainWindow() (*MainWnd, error) {
 						Items: []MenuItem{
 							Action{
 								Text:        gotext.Get("Beginning of the fragment"),
-								Shortcut:    Shortcut{walk.ModShift, walk.KeyBack},
-								OnTriggered: func() { wnd.msgChan <- msg.Message{msg.PLAYER_GOTO_POSITION, time.Duration(0)} },
+								Shortcut:    Shortcut{Modifiers: walk.ModShift, Key: walk.KeyBack},
+								OnTriggered: func() { wnd.msgChan <- msg.Message{Code: msg.PLAYER_GOTO_POSITION, Data: time.Duration(0)} },
 							},
 							Action{
 								Text:        gotext.Get("Go to position"),
-								Shortcut:    Shortcut{walk.ModShift, walk.KeyG},
-								OnTriggered: func() { wnd.msgChan <- msg.Message{msg.PLAYER_GOTO_POSITION, nil} },
+								Shortcut:    Shortcut{Modifiers: walk.ModShift, Key: walk.KeyG},
+								OnTriggered: func() { wnd.msgChan <- msg.Message{Code: msg.PLAYER_GOTO_POSITION} },
 							},
 							Action{
 								Text:        gotext.Get("5 sec. forward"),
-								Shortcut:    Shortcut{0, walk.KeyRight},
+								Shortcut:    Shortcut{Modifiers: 0, Key: walk.KeyRight},
 								OnTriggered: func() { wnd.msgChan <- rewind_5sec_forward },
 							},
 							Action{
 								Text:        gotext.Get("5 sec. backward"),
-								Shortcut:    Shortcut{0, walk.KeyLeft},
+								Shortcut:    Shortcut{Modifiers: 0, Key: walk.KeyLeft},
 								OnTriggered: func() { wnd.msgChan <- rewind_5sec_back },
 							},
 							Action{
 								Text:        gotext.Get("30 sec. forward"),
-								Shortcut:    Shortcut{walk.ModControl, walk.KeyRight},
+								Shortcut:    Shortcut{Modifiers: walk.ModControl, Key: walk.KeyRight},
 								OnTriggered: func() { wnd.msgChan <- rewind_30sec_forward },
 							},
 							Action{
 								Text:        gotext.Get("30 sec. backward"),
-								Shortcut:    Shortcut{walk.ModControl, walk.KeyLeft},
+								Shortcut:    Shortcut{Modifiers: walk.ModControl, Key: walk.KeyLeft},
 								OnTriggered: func() { wnd.msgChan <- rewind_30sec_back },
 							},
 							Action{
 								Text:        gotext.Get("1 min. forward"),
-								Shortcut:    Shortcut{walk.ModShift, walk.KeyRight},
+								Shortcut:    Shortcut{Modifiers: walk.ModShift, Key: walk.KeyRight},
 								OnTriggered: func() { wnd.msgChan <- rewind_1min_forward },
 							},
 							Action{
 								Text:        gotext.Get("1 min. backward"),
-								Shortcut:    Shortcut{walk.ModShift, walk.KeyLeft},
+								Shortcut:    Shortcut{Modifiers: walk.ModShift, Key: walk.KeyLeft},
 								OnTriggered: func() { wnd.msgChan <- rewind_1min_back },
 							},
 							Action{
 								Text:        gotext.Get("5 min. forward"),
-								Shortcut:    Shortcut{walk.ModControl | walk.ModShift, walk.KeyRight},
+								Shortcut:    Shortcut{Modifiers: walk.ModControl | walk.ModShift, Key: walk.KeyRight},
 								OnTriggered: func() { wnd.msgChan <- rewind_5min_forward },
 							},
 							Action{
 								Text:        gotext.Get("5 min. backward"),
-								Shortcut:    Shortcut{walk.ModControl | walk.ModShift, walk.KeyLeft},
+								Shortcut:    Shortcut{Modifiers: walk.ModControl | walk.ModShift, Key: walk.KeyLeft},
 								OnTriggered: func() { wnd.msgChan <- rewind_5min_back },
 							},
 						},
@@ -248,18 +248,18 @@ func NewMainWindow() (*MainWnd, error) {
 						Items: []MenuItem{
 							Action{
 								Text:        gotext.Get("Increase volume"),
-								Shortcut:    Shortcut{walk.ModControl, walk.KeyUp},
-								OnTriggered: func() { wnd.msgChan <- msg.Message{msg.PLAYER_VOLUME_UP, nil} },
+								Shortcut:    Shortcut{Modifiers: walk.ModControl, Key: walk.KeyUp},
+								OnTriggered: func() { wnd.msgChan <- msg.Message{Code: msg.PLAYER_VOLUME_UP} },
 							},
 							Action{
 								Text:        gotext.Get("Decrease volume"),
-								Shortcut:    Shortcut{walk.ModControl, walk.KeyDown},
-								OnTriggered: func() { wnd.msgChan <- msg.Message{msg.PLAYER_VOLUME_DOWN, nil} },
+								Shortcut:    Shortcut{Modifiers: walk.ModControl, Key: walk.KeyDown},
+								OnTriggered: func() { wnd.msgChan <- msg.Message{Code: msg.PLAYER_VOLUME_DOWN} },
 							},
 							Action{
 								Text:        gotext.Get("Reset volume"),
-								Shortcut:    Shortcut{walk.ModControl, walk.KeyR},
-								OnTriggered: func() { wnd.msgChan <- msg.Message{msg.PLAYER_VOLUME_RESET, nil} },
+								Shortcut:    Shortcut{Modifiers: walk.ModControl, Key: walk.KeyR},
+								OnTriggered: func() { wnd.msgChan <- msg.Message{Code: msg.PLAYER_VOLUME_RESET} },
 							},
 						},
 					},
@@ -269,18 +269,18 @@ func NewMainWindow() (*MainWnd, error) {
 						Items: []MenuItem{
 							Action{
 								Text:        gotext.Get("Increase speed"),
-								Shortcut:    Shortcut{walk.ModShift, walk.KeyUp},
-								OnTriggered: func() { wnd.msgChan <- msg.Message{msg.PLAYER_SPEED_UP, nil} },
+								Shortcut:    Shortcut{Modifiers: walk.ModShift, Key: walk.KeyUp},
+								OnTriggered: func() { wnd.msgChan <- msg.Message{Code: msg.PLAYER_SPEED_UP} },
 							},
 							Action{
 								Text:        gotext.Get("Decrease speed"),
-								Shortcut:    Shortcut{walk.ModShift, walk.KeyDown},
-								OnTriggered: func() { wnd.msgChan <- msg.Message{msg.PLAYER_SPEED_DOWN, nil} },
+								Shortcut:    Shortcut{Modifiers: walk.ModShift, Key: walk.KeyDown},
+								OnTriggered: func() { wnd.msgChan <- msg.Message{Code: msg.PLAYER_SPEED_DOWN} },
 							},
 							Action{
 								Text:        gotext.Get("Reset speed"),
-								Shortcut:    Shortcut{walk.ModShift, walk.KeyR},
-								OnTriggered: func() { wnd.msgChan <- msg.Message{msg.PLAYER_SPEED_RESET, nil} },
+								Shortcut:    Shortcut{Modifiers: walk.ModShift, Key: walk.KeyR},
+								OnTriggered: func() { wnd.msgChan <- msg.Message{Code: msg.PLAYER_SPEED_RESET} },
 							},
 						},
 					},
@@ -300,8 +300,8 @@ func NewMainWindow() (*MainWnd, error) {
 					Action{
 						Text:        gotext.Get("Pause timer"),
 						AssignTo:    &wnd.menuBar.pauseTimerItem,
-						Shortcut:    Shortcut{walk.ModControl, walk.KeyP},
-						OnTriggered: func() { wnd.msgChan <- msg.Message{msg.PLAYER_SET_TIMER, nil} },
+						Shortcut:    Shortcut{Modifiers: walk.ModControl, Key: walk.KeyP},
+						OnTriggered: func() { wnd.msgChan <- msg.Message{Code: msg.PLAYER_SET_TIMER} },
 					},
 					Menu{
 						Text:     gotext.Get("Logging level"),
@@ -328,8 +328,10 @@ func NewMainWindow() (*MainWnd, error) {
 				AssignTo: &wnd.mainListBox.label,
 			},
 			ListBox{
-				AssignTo:        &wnd.mainListBox.ListBox,
-				OnItemActivated: func() { wnd.msgChan <- msg.Message{msg.ACTIVATE_MENU, wnd.mainListBox.ListBox.CurrentIndex()} },
+				AssignTo: &wnd.mainListBox.ListBox,
+				OnItemActivated: func() {
+					wnd.msgChan <- msg.Message{Code: msg.ACTIVATE_MENU, Data: wnd.mainListBox.ListBox.CurrentIndex()}
+				},
 			},
 		},
 
