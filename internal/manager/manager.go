@@ -65,12 +65,7 @@ func (m *Manager) Start(conf *config.Config, done chan<- bool) {
 		done <- true
 	}()
 
-	msgCH := m.mainWnd.MsgChan()
-	if conf.General.Provider != "" {
-		msgCH <- msg.Message{Code: msg.SET_PROVIDER, Data: conf.General.Provider}
-	}
-
-	for message := range msgCH {
+	for message := range m.mainWnd.MsgChan() {
 		switch message.Code {
 		case msg.ACTIVATE_MENU:
 			index := message.Data.(int)
@@ -114,7 +109,10 @@ func (m *Manager) Start(conf *config.Config, done chan<- bool) {
 		case msg.SET_PROVIDER:
 			id, ok := message.Data.(string)
 			if !ok {
-				break
+				if conf.General.Provider == "" {
+					break
+				}
+				id = conf.General.Provider
 			}
 
 			var provider Provider

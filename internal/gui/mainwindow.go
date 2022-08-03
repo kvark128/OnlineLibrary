@@ -376,6 +376,7 @@ func (mw *MainWnd) MsgChan() chan msg.Message {
 }
 
 func (mw *MainWnd) Run() {
+	mw.msgChan <- msg.Message{Code: msg.SET_PROVIDER}
 	mw.mainWindow.Run()
 	close(mw.msgChan)
 }
