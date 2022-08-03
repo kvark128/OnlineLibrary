@@ -60,7 +60,7 @@ func New(out io.Writer, level Level, indent string) *Logger {
 	return &Logger{out: out, level: level, indent: indent}
 }
 
-func (l *Logger) log(calldepth int, level Level, format string, args ...interface{}) {
+func (l *Logger) log(calldepth int, level Level, format string, args ...any) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 	if l.level < level || l.out == nil {
@@ -77,19 +77,19 @@ func (l *Logger) log(calldepth int, level Level, format string, args ...interfac
 	fmt.Fprintf(l.out, "%s - %s:%d (%s):\r\n%s%s\r\n", level, filepath.Base(file), line, clock, l.indent, msg)
 }
 
-func (l *Logger) Error(format string, args ...interface{}) {
+func (l *Logger) Error(format string, args ...any) {
 	l.log(2, Error, format, args...)
 }
 
-func (l *Logger) Info(format string, args ...interface{}) {
+func (l *Logger) Info(format string, args ...any) {
 	l.log(2, Info, format, args...)
 }
 
-func (l *Logger) Warning(format string, args ...interface{}) {
+func (l *Logger) Warning(format string, args ...any) {
 	l.log(2, Warning, format, args...)
 }
 
-func (l *Logger) Debug(format string, args ...interface{}) {
+func (l *Logger) Debug(format string, args ...any) {
 	l.log(2, Debug, format, args...)
 }
 

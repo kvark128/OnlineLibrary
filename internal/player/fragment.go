@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"io"
 	"sync"
+	"sync/atomic"
 	"time"
 
-	"github.com/kvark128/OnlineLibrary/internal/util"
 	"github.com/kvark128/OnlineLibrary/internal/util/syncio"
 	"github.com/kvark128/OnlineLibrary/internal/waveout"
 	"github.com/kvark128/minimp3"
@@ -63,13 +63,13 @@ func NewFragment(mp3Source io.Reader, devName string) (*Fragment, error) {
 	return f, nil
 }
 
-func (f *Fragment) play(playing *util.Flag, elapsedTimeCallback func(time.Duration)) error {
+func (f *Fragment) play(playing *atomic.Bool, elapsedTimeCallback func(time.Duration)) error {
 	var p time.Duration
 	wp := bufio.NewWriterSize(f.wp, f.wpBufSize)
 	stream := syncio.NewReadWriter(f.stream, f)
 	dec := syncio.NewReader(f.dec, f)
 
-	for playing.IsSet() {
+	for playing.Load() {
 		elapsedTimeCallback(f.Position())
 		_, err := io.CopyN(stream, dec, int64(f.wpBufSize))
 		if err != nil {

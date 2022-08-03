@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/kvark128/OnlineLibrary/internal/connection"
@@ -46,7 +47,7 @@ type Player struct {
 	playList      []daisy.Resource
 	playListSize  int64
 	bookDir       string
-	playing       *util.Flag
+	playing       *atomic.Bool
 	wg            *sync.WaitGroup
 	fragment      *Fragment
 	outputDevice  string
@@ -62,7 +63,7 @@ func NewPlayer(bookDir string, resources []daisy.Resource, outputDevice string, 
 	p := &Player{
 		logger:       logger,
 		statusBar:    statusBar,
-		playing:      new(util.Flag),
+		playing:      new(atomic.Bool),
 		wg:           new(sync.WaitGroup),
 		bookDir:      bookDir,
 		speed:        DEFAULT_SPEED,
@@ -88,7 +89,7 @@ func (p *Player) SetTimerDuration(d time.Duration) {
 	defer p.Unlock()
 	p.timerDuration = d
 	p.logger.Debug("Playback timer set to %v", d)
-	if p.playing.IsSet() && p.fragment != nil && !p.fragment.IsPause() {
+	if p.playing.Load() && p.fragment != nil && !p.fragment.IsPause() {
 		p.updateTimer(p.timerDuration)
 	}
 }
@@ -123,7 +124,7 @@ func (p *Player) Position() time.Duration {
 func (p *Player) SetPosition(pos time.Duration) {
 	p.Lock()
 	defer p.Unlock()
-	if !p.playing.IsSet() {
+	if !p.playing.Load() {
 		p.offset = pos
 		return
 	}
@@ -153,7 +154,7 @@ func (p *Player) SetFragment(fragment int) {
 		fragment = 0
 	}
 	p.fragmentIndex = fragment
-	if p.playing.IsSet() {
+	if p.playing.Load() {
 		p.stopPlayback()
 		p.startPlayback()
 	}
@@ -225,7 +226,7 @@ func (p *Player) SetVolume(volume float64) {
 func (p *Player) PlayPause() {
 	p.Lock()
 	defer p.Unlock()
-	if !p.playing.IsSet() {
+	if !p.playing.Load() {
 		p.startPlayback()
 		return
 	}
@@ -249,7 +250,7 @@ func (p *Player) startPlayback() {
 }
 
 func (p *Player) stopPlayback() {
-	p.playing.Clear()
+	p.playing.Store(false)
 	p.offset = 0
 	if p.fragment != nil {
 		p.fragment.stop()
@@ -270,9 +271,9 @@ func (p *Player) playback(startFragment int) {
 	p.logger.Debug("Fragment %v started", startFragment)
 
 	p.wg.Add(1)
-	p.playing.Set()
+	p.playing.Store(true)
 	defer p.wg.Done()
-	defer p.playing.Clear()
+	defer p.playing.Store(false)
 
 	p.updateTimer(p.timerDuration)
 	defer p.updateTimer(0)
@@ -330,7 +331,7 @@ func (p *Player) playback(startFragment int) {
 			defer fragment.Close()
 
 			// Fragment creation is an I/O operation and can be time consuming. We have to check that the fragment was not stopped by the user
-			if !p.playing.IsSet() {
+			if !p.playing.Load() {
 				return PlaybackStopped
 			}
 
@@ -361,7 +362,7 @@ func (p *Player) playback(startFragment int) {
 				return fmt.Errorf("fragment playing: %w", err)
 			}
 
-			if !p.playing.IsSet() {
+			if !p.playing.Load() {
 				return PlaybackStopped
 			}
 			return nil

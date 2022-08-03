@@ -2,7 +2,7 @@ package msg
 
 type Message struct {
 	Code MessageCode
-	Data interface{}
+	Data any
 }
 
 type MessageCode uint32
