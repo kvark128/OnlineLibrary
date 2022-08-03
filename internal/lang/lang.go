@@ -4,7 +4,6 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
-	"runtime"
 	"unsafe"
 
 	"github.com/kvark128/OnlineLibrary/internal/config"
@@ -43,31 +42,28 @@ func GetLocaleDescription(lcid LCID) (string, error) {
 	if r == 0 {
 		return "", errors.New("invalid lcid")
 	}
-	return windows.UTF16PtrToString(&buf[0]), nil
+	return windows.UTF16ToString(buf), nil
 }
 
 func LocaleNameToLCID(localeName string) (LCID, error) {
-	str, err := windows.UTF16PtrFromString(localeName)
+	buf, err := windows.UTF16FromString(localeName)
 	if err != nil {
 		return 0, err
 	}
-	lcid, _, _ := procLocaleNameToLCID.Call(uintptr(unsafe.Pointer(str)), 0)
+	lcid, _, _ := procLocaleNameToLCID.Call(uintptr(unsafe.Pointer(&buf[0])), 0)
 	if lcid == 0 {
-		return 0, errors.New("invalid locale")
+		return 0, errors.New("invalid locale name")
 	}
-	runtime.KeepAlive(localeName)
-	runtime.KeepAlive(str)
 	return LCID(lcid), nil
 }
 
 func LCIDToLocaleName(lcid LCID) (string, error) {
-	bufSize := 128
-	buf := make([]uint16, bufSize)
-	r, _, _ := procLCIDToLocaleName.Call(uintptr(lcid), uintptr(unsafe.Pointer(&buf[0])), uintptr(bufSize), 0)
+	buf := make([]uint16, 128)
+	r, _, _ := procLCIDToLocaleName.Call(uintptr(lcid), uintptr(unsafe.Pointer(&buf[0])), uintptr(len(buf)), 0)
 	if r == 0 {
 		return "", errors.New("invalid lcid")
 	}
-	return windows.UTF16PtrToString(&buf[0]), nil
+	return windows.UTF16ToString(buf), nil
 }
 
 func availableLanguages(lib string) []Language {
