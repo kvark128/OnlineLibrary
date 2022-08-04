@@ -127,7 +127,7 @@ func mmcall(p *windows.LazyProc, args ...uintptr) error {
 	if r != MMSYSERR_NOERROR {
 		return fmt.Errorf("%v: unknown error: code %v", p.Name, mmrError)
 	}
-	return fmt.Errorf("%v: %v", p.Name, windows.UTF16PtrToString(&buf[0]))
+	return fmt.Errorf("%v: %v", p.Name, windows.UTF16ToString(buf))
 }
 
 type WavePlayer struct {
