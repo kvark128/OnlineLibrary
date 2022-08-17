@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"path/filepath"
 
 	"github.com/kvark128/OnlineLibrary/internal/config"
 	daisy "github.com/kvark128/daisyonline"
@@ -65,7 +64,7 @@ func (l *Library) ContentList(id string) (*ContentList, error) {
 	}
 
 	for _, contentItem := range contentList.ContentItems {
-		item := NewLibraryContentItem(l, contentItem.ID, contentItem.Label.Text)
+		item := NewLibraryContentItemWithName(l, contentItem.ID, contentItem.Label.Text)
 		lst.Items = append(lst.Items, item)
 	}
 
@@ -81,8 +80,7 @@ func (l *Library) LastContentListID() (string, error) {
 }
 
 func (l *Library) ContentItem(id string) (ContentItem, error) {
-	book, _ := l.service.RecentBooks.Book(id)
-	item := NewLibraryContentItem(l, id, book.Name)
+	item := NewLibraryContentItem(l, id)
 	l.service.RecentBooks.SetBook(item.Config())
 	return item, nil
 }
@@ -124,12 +122,10 @@ func (s *LocalStorage) ContentList(string) (*ContentList, error) {
 
 	for _, e := range entrys {
 		if e.IsDir() {
-			path := filepath.Join(userData, e.Name())
-			item := NewLocalContentItem(s, path)
+			item := NewLocalContentItem(s, e.Name())
 			lst.Items = append(lst.Items, item)
 		}
 	}
-
 	return lst, nil
 }
 
