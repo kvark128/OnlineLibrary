@@ -24,6 +24,8 @@ type Bookmark struct {
 type Book struct {
 	// Unique ID of the book
 	ID string `yaml:"id"`
+	// Human-readable title of the book
+	Name string `yaml:"name"`
 	// Values for speed when playing the book
 	Speed float64 `yaml:"speed,omitempty"`
 	// Set of bookmarks in the book
