@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/kvark128/OnlineLibrary/internal/util"
-	daisy "github.com/kvark128/daisyonline"
+	"github.com/kvark128/dodp"
 	"gopkg.in/yaml.v3"
 )
 
@@ -36,17 +36,17 @@ const (
 )
 
 // General client configuration of DAISY-online
-var ReadingSystemAttributes = daisy.ReadingSystemAttributes{
+var ReadingSystemAttributes = dodp.ReadingSystemAttributes{
 	Manufacturer: ProgramAuthor,
 	Model:        ProgramName,
 	Version:      ProgramVersion,
-	Config: daisy.Config{
+	Config: dodp.Config{
 		SupportsMultipleSelections:        false,
 		PreferredUILanguage:               "ru-RU",
-		SupportedContentFormats:           daisy.SupportedContentFormats{},
-		SupportedContentProtectionFormats: daisy.SupportedContentProtectionFormats{},
-		SupportedMimeTypes:                daisy.SupportedMimeTypes{MimeType: []daisy.MimeType{daisy.MimeType{Type: LKF_FORMAT}, daisy.MimeType{Type: LGK_FORMAT}, daisy.MimeType{Type: MP3_FORMAT}}},
-		SupportedInputTypes:               daisy.SupportedInputTypes{Input: []daisy.Input{daisy.Input{Type: daisy.TEXT_ALPHANUMERIC}, daisy.Input{Type: daisy.AUDIO}}},
+		SupportedContentFormats:           dodp.SupportedContentFormats{},
+		SupportedContentProtectionFormats: dodp.SupportedContentProtectionFormats{},
+		SupportedMimeTypes:                dodp.SupportedMimeTypes{MimeType: []dodp.MimeType{dodp.MimeType{Type: LKF_FORMAT}, dodp.MimeType{Type: LGK_FORMAT}, dodp.MimeType{Type: MP3_FORMAT}}},
+		SupportedInputTypes:               dodp.SupportedInputTypes{Input: []dodp.Input{dodp.Input{Type: dodp.TEXT_ALPHANUMERIC}, dodp.Input{Type: dodp.AUDIO}}},
 		RequiresAudioLabels:               false,
 	},
 }

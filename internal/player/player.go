@@ -16,7 +16,7 @@ import (
 	"github.com/kvark128/OnlineLibrary/internal/log"
 	"github.com/kvark128/OnlineLibrary/internal/util"
 	"github.com/kvark128/OnlineLibrary/internal/util/buffer"
-	daisy "github.com/kvark128/daisyonline"
+	"github.com/kvark128/dodp"
 )
 
 const (
@@ -44,7 +44,7 @@ type Player struct {
 	logger    *log.Logger
 	statusBar *gui.StatusBar
 	sync.Mutex
-	playList      []daisy.Resource
+	playList      []dodp.Resource
 	playListSize  int64
 	bookDir       string
 	playing       *atomic.Bool
@@ -59,7 +59,7 @@ type Player struct {
 	pauseTimer    *time.Timer
 }
 
-func NewPlayer(bookDir string, resources []daisy.Resource, outputDevice string, logger *log.Logger, statusBar *gui.StatusBar) *Player {
+func NewPlayer(bookDir string, resources []dodp.Resource, outputDevice string, logger *log.Logger, statusBar *gui.StatusBar) *Player {
 	p := &Player{
 		logger:       logger,
 		statusBar:    statusBar,
@@ -257,7 +257,7 @@ func (p *Player) stopPlayback() {
 	}
 }
 
-func (p *Player) sizeof(rsrc []daisy.Resource) int64 {
+func (p *Player) sizeof(rsrc []dodp.Resource) int64 {
 	var size int64
 	for _, r := range rsrc {
 		size += r.Size
@@ -281,7 +281,7 @@ func (p *Player) playback(startFragment int) {
 	for index, r := range p.playList[startFragment:] {
 		p.logger.Debug("Fetching resource: %v\r\nMimeType: %v\r\nSize: %v", r.LocalURI, r.MimeType, r.Size)
 
-		err := func(r daisy.Resource) error {
+		err := func(r dodp.Resource) error {
 			var src io.ReadSeekCloser
 			localPath := filepath.Join(p.bookDir, r.LocalURI)
 

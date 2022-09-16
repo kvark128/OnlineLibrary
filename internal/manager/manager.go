@@ -22,7 +22,7 @@ import (
 	"github.com/kvark128/OnlineLibrary/internal/player"
 	"github.com/kvark128/OnlineLibrary/internal/util"
 	"github.com/kvark128/OnlineLibrary/internal/util/buffer"
-	daisy "github.com/kvark128/daisyonline"
+	"github.com/kvark128/dodp"
 	"github.com/leonelquinteros/gotext"
 )
 
@@ -42,8 +42,8 @@ type Manager struct {
 	logger        *log.Logger
 	book          *Book
 	contentList   *ContentList
-	questions     *daisy.Questions
-	userResponses []daisy.UserResponse
+	questions     *dodp.Questions
+	userResponses []dodp.UserResponse
 	lastInputText string
 }
 
@@ -82,7 +82,7 @@ func (m *Manager) Start(conf *config.Config, done chan<- bool) {
 				questionIndex := len(m.userResponses)
 				questionID := m.questions.MultipleChoiceQuestion[questionIndex].ID
 				value := m.questions.MultipleChoiceQuestion[questionIndex].Choices.Choice[index].ID
-				m.userResponses = append(m.userResponses, daisy.UserResponse{QuestionID: questionID, Value: value})
+				m.userResponses = append(m.userResponses, dodp.UserResponse{QuestionID: questionID, Value: value})
 				questionIndex++
 				if questionIndex < len(m.questions.MultipleChoiceQuestion) {
 					m.setMultipleChoiceQuestion(questionIndex)
@@ -92,19 +92,19 @@ func (m *Manager) Start(conf *config.Config, done chan<- bool) {
 			}
 
 		case msg.OPEN_BOOKSHELF:
-			m.setContentList(daisy.Issued)
+			m.setContentList(dodp.Issued)
 
 		case msg.OPEN_NEWBOOKS:
-			m.setContentList(daisy.New)
+			m.setContentList(dodp.New)
 
 		case msg.MAIN_MENU:
-			m.setQuestions(daisy.UserResponse{QuestionID: daisy.Default})
+			m.setQuestions(dodp.UserResponse{QuestionID: dodp.Default})
 
 		case msg.SEARCH_BOOK:
-			m.setQuestions(daisy.UserResponse{QuestionID: daisy.Search})
+			m.setQuestions(dodp.UserResponse{QuestionID: dodp.Search})
 
 		case msg.MENU_BACK:
-			m.setQuestions(daisy.UserResponse{QuestionID: daisy.Back})
+			m.setQuestions(dodp.UserResponse{QuestionID: dodp.Back})
 
 		case msg.SET_PROVIDER:
 			id, ok := message.Data.(string)
@@ -202,8 +202,8 @@ func (m *Manager) Start(conf *config.Config, done chan<- bool) {
 			}
 			m.mainWnd.MessageBoxWarning(gotext.Get("Warning"), gotext.Get("\"%v\" removed from bookshelf", book.Name()))
 			// If a bookshelf is open, it must be updated to reflect the changes made
-			if m.contentList.ID == daisy.Issued {
-				m.setContentList(daisy.Issued)
+			if m.contentList.ID == dodp.Issued {
+				m.setContentList(dodp.Issued)
 			}
 
 		case msg.DOWNLOAD_BOOK:
@@ -490,7 +490,7 @@ func (m *Manager) setProvider(provider Provider, conf *config.Config, id string)
 	if id, err := m.provider.LastContentListID(); err == nil {
 		m.setContentList(id)
 	} else if _, ok := m.provider.(Questioner); ok {
-		m.setQuestions(daisy.UserResponse{QuestionID: daisy.Default})
+		m.setQuestions(dodp.UserResponse{QuestionID: dodp.Default})
 	}
 	if id, err := m.provider.LastContentItemID(); err == nil {
 		if contentItem, err := m.provider.ContentItem(id); err == nil {
@@ -502,7 +502,7 @@ func (m *Manager) setProvider(provider Provider, conf *config.Config, id string)
 	m.mainWnd.MenuBar().SetProvidersMenu(conf.Services, id)
 }
 
-func (m *Manager) setQuestions(response ...daisy.UserResponse) {
+func (m *Manager) setQuestions(response ...dodp.UserResponse) {
 	qst, ok := m.provider.(Questioner)
 	if !ok {
 		m.messageBoxError(OperationNotSupported)
@@ -519,7 +519,7 @@ func (m *Manager) setQuestions(response ...daisy.UserResponse) {
 	m.mainWnd.MainListBox().Clear()
 	m.mainWnd.MenuBar().SetBookMenuEnabled(false)
 
-	ur := daisy.UserResponses{UserResponse: response}
+	ur := dodp.UserResponses{UserResponse: response}
 	questions, err := qst.GetQuestions(&ur)
 	if err != nil {
 		m.messageBoxError(fmt.Errorf("GetQuestions: %w", err))
@@ -530,7 +530,7 @@ func (m *Manager) setQuestions(response ...daisy.UserResponse) {
 		// We have received a notification from the library. Show it to the user
 		m.mainWnd.MessageBoxWarning(gotext.Get("Warning"), questions.Label.Text)
 		// Return to the main menu of the library
-		m.setQuestions(daisy.UserResponse{QuestionID: daisy.Default})
+		m.setQuestions(dodp.UserResponse{QuestionID: dodp.Default})
 		return
 	}
 
@@ -541,7 +541,7 @@ func (m *Manager) setQuestions(response ...daisy.UserResponse) {
 	}
 
 	m.questions = questions
-	m.userResponses = make([]daisy.UserResponse, 0)
+	m.userResponses = make([]dodp.UserResponse, 0)
 
 	if len(m.questions.MultipleChoiceQuestion) > 0 {
 		m.setMultipleChoiceQuestion(0)
@@ -566,11 +566,11 @@ func (m *Manager) setInputQuestion() {
 		var text string
 		if !m.mainWnd.TextEntryDialog(gotext.Get("Entering text"), inputQuestion.Label.Text, m.lastInputText, &text) {
 			// Return to the main menu of the library
-			m.setQuestions(daisy.UserResponse{QuestionID: daisy.Default})
+			m.setQuestions(dodp.UserResponse{QuestionID: dodp.Default})
 			return
 		}
 		m.lastInputText = text
-		m.userResponses = append(m.userResponses, daisy.UserResponse{QuestionID: inputQuestion.ID, Value: text})
+		m.userResponses = append(m.userResponses, dodp.UserResponse{QuestionID: inputQuestion.ID, Value: text})
 	}
 	m.setQuestions(m.userResponses...)
 }
@@ -592,7 +592,7 @@ func (m *Manager) setContentList(contentID string) {
 		return
 	}
 
-	if contentID == daisy.Issued {
+	if contentID == dodp.Issued {
 		if lib, ok := m.provider.(*Library); ok {
 			ids := make([]string, len(contentList.Items))
 			for i := range ids {
@@ -666,7 +666,7 @@ func (m *Manager) downloadBook(book ContentItem) error {
 		}
 	}
 
-	dlFunc := func(rsrc []daisy.Resource, bookDir, bookID string) {
+	dlFunc := func(rsrc []dodp.Resource, bookDir, bookID string) {
 		var err error
 		var totalSize, downloadedSize int64
 		ctx, cancelFunc := context.WithCancel(context.TODO())

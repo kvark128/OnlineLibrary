@@ -4,8 +4,8 @@ github.com/davecgh/go-spew v1.1.0 h1:ZDRjVQ15GmhC3fiQ8ni8+OwkZQO4DARzQgrnXU1Liz8
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/josephspurrier/goversioninfo v1.4.0 h1:Puhl12NSHUSALHSuzYwPYQkqa2E1+7SrtAPJorKK0C8=
 github.com/josephspurrier/goversioninfo v1.4.0/go.mod h1:JWzv5rKQr+MmW+LvM412ToT/IkYDZjaclF2pKDss8IY=
-github.com/kvark128/daisyonline v0.0.0-20210403215904-853f4b0031ec h1:tQAJE3v3w9ME/h5XeEBtXVD+48WCj7rfUFmc9MB5ywE=
-github.com/kvark128/daisyonline v0.0.0-20210403215904-853f4b0031ec/go.mod h1:FzBWC2NYNJu3GtkttkC3spTLG/mIg1P+MRMg5SVUanc=
+github.com/kvark128/dodp v0.0.0-20220916012521-ea56f43448fa h1:vbPTXj4cETpjeMnghWNjCizwnMB4biSnA92fVaFtQmA=
+github.com/kvark128/dodp v0.0.0-20220916012521-ea56f43448fa/go.mod h1:DR4VNI484NRHD/dbuLiFLydEySjlODKi+IH7ZHzUGk0=
 github.com/kvark128/lkf v0.0.0-20200906212533-0cc542d11ec8 h1:Aqw38uFO5FQwpLG2w0+7ot7GYIFtoYiiKN54Nvshbfk=
 github.com/kvark128/lkf v0.0.0-20200906212533-0cc542d11ec8/go.mod h1:XYk24siMM2Awb3zhupGfdS62SqWOrDFMtx7Cg7C2KeU=
 github.com/kvark128/minimp3 v0.0.0-20220408223524-dd428325fce7 h1:N9WLIYcr2SEk+bmAMY7gVF7ElF1ZmFaQjJ4bJcSJLxU=

@@ -8,7 +8,7 @@ import (
 
 	"github.com/kvark128/OnlineLibrary/internal/config"
 	"github.com/kvark128/OnlineLibrary/internal/player"
-	daisy "github.com/kvark128/daisyonline"
+	"github.com/kvark128/dodp"
 )
 
 type ContentList struct {
@@ -47,7 +47,7 @@ func (ci *LibraryContentItem) Name() string {
 	return ci.conf.Name
 }
 
-func (ci *LibraryContentItem) Resources() ([]daisy.Resource, error) {
+func (ci *LibraryContentItem) Resources() ([]dodp.Resource, error) {
 	r, err := ci.library.GetContentResources(ci.conf.ID)
 	if err != nil {
 		return nil, err
@@ -55,7 +55,7 @@ func (ci *LibraryContentItem) Resources() ([]daisy.Resource, error) {
 	return r.Resources, nil
 }
 
-func (ci *LibraryContentItem) ContentMetadata() (*daisy.ContentMetadata, error) {
+func (ci *LibraryContentItem) ContentMetadata() (*dodp.ContentMetadata, error) {
 	return ci.library.GetContentMetadata(ci.conf.ID)
 }
 
@@ -109,8 +109,8 @@ func (ci *LocalContentItem) ID() string {
 	return ci.conf.ID
 }
 
-func (ci *LocalContentItem) Resources() ([]daisy.Resource, error) {
-	rsrc := make([]daisy.Resource, 0)
+func (ci *LocalContentItem) Resources() ([]dodp.Resource, error) {
+	rsrc := make([]dodp.Resource, 0)
 	walker := func(targpath string, info fs.FileInfo, err error) error {
 		if err != nil || info.IsDir() {
 			return err
@@ -119,7 +119,7 @@ func (ci *LocalContentItem) Resources() ([]daisy.Resource, error) {
 		if err != nil {
 			return err
 		}
-		r := daisy.Resource{
+		r := dodp.Resource{
 			LocalURI: localURI,
 			Size:     info.Size(),
 		}
@@ -133,14 +133,14 @@ func (ci *LocalContentItem) Resources() ([]daisy.Resource, error) {
 	return rsrc, nil
 }
 
-func (ci *LocalContentItem) ContentMetadata() (*daisy.ContentMetadata, error) {
+func (ci *LocalContentItem) ContentMetadata() (*dodp.ContentMetadata, error) {
 	path := filepath.Join(ci.path, MetadataFileName)
 	f, err := os.Open(path)
 	if err != nil {
 		return nil, err
 	}
 	defer f.Close()
-	md := new(daisy.ContentMetadata)
+	md := new(dodp.ContentMetadata)
 	d := xml.NewDecoder(f)
 	if err := d.Decode(md); err != nil {
 		return nil, err

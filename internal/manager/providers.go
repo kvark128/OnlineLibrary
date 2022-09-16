@@ -7,19 +7,19 @@ import (
 	"path/filepath"
 
 	"github.com/kvark128/OnlineLibrary/internal/config"
-	daisy "github.com/kvark128/daisyonline"
+	"github.com/kvark128/dodp"
 	"github.com/leonelquinteros/gotext"
 )
 
 type Library struct {
-	*daisy.Client
+	*dodp.Client
 	service           *config.Service
-	serviceAttributes *daisy.ServiceAttributes
+	serviceAttributes *dodp.ServiceAttributes
 	conf              *config.Config
 }
 
 func NewLibrary(conf *config.Config, service *config.Service) (*Library, error) {
-	client := daisy.NewClient(service.URL, config.HTTPTimeout)
+	client := dodp.NewClient(service.URL, config.HTTPTimeout)
 	success, err := client.LogOn(service.Username, service.Password)
 	if err != nil {
 		return nil, fmt.Errorf("logOn operation: %w", err)
@@ -69,7 +69,7 @@ func (l *Library) ContentList(id string) (*ContentList, error) {
 		lst.Items = append(lst.Items, item)
 	}
 
-	l.service.OpenBookshelfOnLogin = id == daisy.Issued
+	l.service.OpenBookshelfOnLogin = id == dodp.Issued
 	return lst, nil
 }
 
@@ -77,7 +77,7 @@ func (l *Library) LastContentListID() (string, error) {
 	if !l.service.OpenBookshelfOnLogin {
 		return "", errors.New("last content list not available")
 	}
-	return daisy.Issued, nil
+	return dodp.Issued, nil
 }
 
 func (l *Library) ContentItem(id string) (ContentItem, error) {
@@ -95,7 +95,7 @@ func (l *Library) LastContentItemID() (string, error) {
 	return book.ID, nil
 }
 
-func (l *Library) GetQuestions(ur *daisy.UserResponses) (*daisy.Questions, error) {
+func (l *Library) GetQuestions(ur *dodp.UserResponses) (*dodp.Questions, error) {
 	questions, err := l.Client.GetQuestions(ur)
 	if err == nil {
 		l.service.OpenBookshelfOnLogin = false

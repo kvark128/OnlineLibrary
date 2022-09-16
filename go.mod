@@ -4,7 +4,7 @@ go 1.19
 
 require (
 	github.com/josephspurrier/goversioninfo v1.4.0
-	github.com/kvark128/daisyonline v0.0.0-20210403215904-853f4b0031ec
+	github.com/kvark128/dodp v0.0.0-20220916012521-ea56f43448fa
 	github.com/kvark128/lkf v0.0.0-20200906212533-0cc542d11ec8
 	github.com/kvark128/minimp3 v0.0.0-20220408223524-dd428325fce7
 	github.com/kvark128/sonic v0.0.0-20211205024230-32ad421f268d

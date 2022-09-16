@@ -2,20 +2,20 @@ package manager
 
 import (
 	"github.com/kvark128/OnlineLibrary/internal/config"
-	daisy "github.com/kvark128/daisyonline"
+	"github.com/kvark128/dodp"
 )
 
 type ContentItem interface {
 	Name() string
 	ID() string
-	Resources() ([]daisy.Resource, error)
-	ContentMetadata() (*daisy.ContentMetadata, error)
+	Resources() ([]dodp.Resource, error)
+	ContentMetadata() (*dodp.ContentMetadata, error)
 	Config() config.Book
 	SetConfig(config.Book)
 }
 
 type Questioner interface {
-	GetQuestions(*daisy.UserResponses) (*daisy.Questions, error)
+	GetQuestions(*dodp.UserResponses) (*dodp.Questions, error)
 }
 
 type Returner interface {
