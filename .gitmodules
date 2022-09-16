@@ -1,0 +1,6 @@
+[submodule "external/sonic"]
+	path = external/sonic
+	url = https://github.com/waywardgeek/sonic
+[submodule "external/minimp3"]
+	path = external/minimp3
+	url = https://github.com/lieff/minimp3

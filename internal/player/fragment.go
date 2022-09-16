@@ -8,10 +8,10 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/kvark128/OnlineLibrary/internal/minimp3"
+	"github.com/kvark128/OnlineLibrary/internal/sonic"
 	"github.com/kvark128/OnlineLibrary/internal/util/syncio"
 	"github.com/kvark128/OnlineLibrary/internal/waveout"
-	"github.com/kvark128/minimp3"
-	"github.com/kvark128/sonic"
 )
 
 type Fragment struct {
