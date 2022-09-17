@@ -46,17 +46,11 @@ func NewMainWindow() (*MainWnd, error) {
 						AssignTo: &wnd.menuBar.libraryMenu,
 						Items: []MenuItem{
 							Action{
-								Text:        gotext.Get("Add account"),
+								Text:        gotext.Get("New account"),
 								Shortcut:    Shortcut{Modifiers: walk.ModControl, Key: walk.KeyN},
 								OnTriggered: func() { wnd.msgChan <- msg.Message{Code: msg.LIBRARY_ADD} },
 							},
 						},
-					},
-					Action{
-						Text:        gotext.Get("Main menu"),
-						Shortcut:    Shortcut{Modifiers: walk.ModControl, Key: walk.KeyM},
-						Enabled:     Bind("libraryLogon"),
-						OnTriggered: func() { wnd.msgChan <- msg.Message{Code: msg.MAIN_MENU} },
 					},
 					Action{
 						Text:        gotext.Get("Bookshelf"),
@@ -71,10 +65,16 @@ func NewMainWindow() (*MainWnd, error) {
 						OnTriggered: func() { wnd.msgChan <- msg.Message{Code: msg.OPEN_NEWBOOKS} },
 					},
 					Action{
-						Text:        gotext.Get("Search..."),
+						Text:        gotext.Get("Find..."),
 						Shortcut:    Shortcut{Modifiers: walk.ModControl, Key: walk.KeyF},
 						Enabled:     Bind("libraryLogon"),
 						OnTriggered: func() { wnd.msgChan <- msg.Message{Code: msg.SEARCH_BOOK} },
+					},
+					Action{
+						Text:        gotext.Get("Main menu"),
+						Shortcut:    Shortcut{Modifiers: walk.ModControl, Key: walk.KeyM},
+						Enabled:     Bind("libraryLogon"),
+						OnTriggered: func() { wnd.msgChan <- msg.Message{Code: msg.MAIN_MENU} },
 					},
 					Action{
 						Text:        gotext.Get("Previous menu"),
@@ -111,6 +111,12 @@ func NewMainWindow() (*MainWnd, error) {
 				Enabled:  Bind("bookMenuEnabled"),
 				Items: []MenuItem{
 					Action{
+						Text:        gotext.Get("Add book to bookshelf"),
+						Shortcut:    Shortcut{Modifiers: walk.ModControl, Key: walk.KeyA},
+						Enabled:     Bind("libraryLogon"),
+						OnTriggered: func() { wnd.msgChan <- msg.Message{Code: msg.ISSUE_BOOK} },
+					},
+					Action{
 						Text:        gotext.Get("Download book"),
 						Shortcut:    Shortcut{Modifiers: walk.ModControl, Key: walk.KeyD},
 						Enabled:     Bind("libraryLogon"),
@@ -121,12 +127,6 @@ func NewMainWindow() (*MainWnd, error) {
 						Shortcut:    Shortcut{Modifiers: walk.ModShift, Key: walk.KeyDelete},
 						Enabled:     Bind("libraryLogon"),
 						OnTriggered: func() { wnd.msgChan <- msg.Message{Code: msg.REMOVE_BOOK} },
-					},
-					Action{
-						Text:        gotext.Get("Put book on bookshelf"),
-						Shortcut:    Shortcut{Modifiers: walk.ModControl, Key: walk.KeyA},
-						Enabled:     Bind("libraryLogon"),
-						OnTriggered: func() { wnd.msgChan <- msg.Message{Code: msg.ISSUE_BOOK} },
 					},
 					Action{
 						Text:        gotext.Get("Book information"),
@@ -144,7 +144,7 @@ func NewMainWindow() (*MainWnd, error) {
 						AssignTo: &wnd.menuBar.bookmarkMenu,
 						Items: []MenuItem{
 							Action{
-								Text:        gotext.Get("Add bookmark"),
+								Text:        gotext.Get("New bookmark"),
 								Shortcut:    Shortcut{Modifiers: walk.ModControl, Key: walk.KeyB},
 								OnTriggered: func() { wnd.msgChan <- msg.Message{Code: msg.BOOKMARK_SET} },
 							},
@@ -165,12 +165,12 @@ func NewMainWindow() (*MainWnd, error) {
 						Text: gotext.Get("Book navigation"),
 						Items: []MenuItem{
 							Action{
-								Text:        gotext.Get("First fragment"),
+								Text:        gotext.Get("Beginning of the book"),
 								Shortcut:    Shortcut{Modifiers: walk.ModControl, Key: walk.KeyBack},
 								OnTriggered: func() { wnd.msgChan <- msg.Message{Code: msg.PLAYER_GOTO_FRAGMENT, Data: 0} },
 							},
 							Action{
-								Text:        gotext.Get("Go to fragment"),
+								Text:        gotext.Get("Go to fragment..."),
 								Shortcut:    Shortcut{Modifiers: walk.ModControl, Key: walk.KeyG},
 								OnTriggered: func() { wnd.msgChan <- msg.Message{Code: msg.PLAYER_GOTO_FRAGMENT} },
 							},
@@ -196,7 +196,7 @@ func NewMainWindow() (*MainWnd, error) {
 								OnTriggered: func() { wnd.msgChan <- msg.Message{Code: msg.PLAYER_GOTO_POSITION, Data: time.Duration(0)} },
 							},
 							Action{
-								Text:        gotext.Get("Go to position"),
+								Text:        gotext.Get("Go to position..."),
 								Shortcut:    Shortcut{Modifiers: walk.ModShift, Key: walk.KeyG},
 								OnTriggered: func() { wnd.msgChan <- msg.Message{Code: msg.PLAYER_GOTO_POSITION} },
 							},
