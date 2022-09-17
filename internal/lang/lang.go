@@ -78,11 +78,14 @@ func availableLanguages(lib string) []Language {
 		return langs
 	}
 
+	locales := []string{"en"}
 	for _, e := range entrys {
-		if !e.IsDir() {
-			continue
+		if e.IsDir() && e.Name() != "en" {
+			locales = append(locales, e.Name())
 		}
-		locale := e.Name()
+	}
+
+	for _, locale := range locales {
 		lcid, err := LocaleNameToLCID(locale)
 		if err != nil {
 			continue
