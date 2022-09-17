@@ -180,19 +180,17 @@ func (m *Manager) Start(conf *config.Config, done chan<- bool) {
 
 		case msg.ISSUE_BOOK:
 			if m.contentList == nil {
-				m.logger.Warning("Attempt to add book to bookshelf when there is no content list")
 				break
 			}
 			book := m.contentList.Items[m.mainWnd.MainListBox().CurrentIndex()]
 			if err := m.issueBook(book); err != nil {
-				m.messageBoxError(fmt.Errorf("Issue book: %w", err))
+				m.messageBoxError(fmt.Errorf("Adding book: %w", err))
 				break
 			}
-			m.mainWnd.MessageBoxWarning(gotext.Get("Warning"), gotext.Get("\"%v\" is added to the bookshelf", book.Name()))
+			m.mainWnd.MessageBoxWarning(gotext.Get("Warning"), gotext.Get("Selected book has been added to the bookshelf"))
 
 		case msg.REMOVE_BOOK:
 			if m.contentList == nil {
-				m.logger.Warning("Attempt to remove book from bookshelf when there is no content list")
 				break
 			}
 			book := m.contentList.Items[m.mainWnd.MainListBox().CurrentIndex()]
@@ -200,7 +198,7 @@ func (m *Manager) Start(conf *config.Config, done chan<- bool) {
 				m.messageBoxError(fmt.Errorf("Removing book: %w", err))
 				break
 			}
-			m.mainWnd.MessageBoxWarning(gotext.Get("Warning"), gotext.Get("\"%v\" removed from bookshelf", book.Name()))
+			m.mainWnd.MessageBoxWarning(gotext.Get("Warning"), gotext.Get("Selected book has been removed from the bookshelf"))
 			// If a bookshelf is open, it must be updated to reflect the changes made
 			if m.contentList.ID == dodp.Issued {
 				m.setContentList(dodp.Issued)
