@@ -407,6 +407,10 @@ func (mw *MainWnd) CredentialsEntryDialog(service *config.Service) bool {
 	var (
 		dlg                                   *walk.Dialog
 		nameLE, urlLE, usernameLE, passwordLE *walk.LineEdit
+		nameLabel                             = gotext.Get("Displayed name:")
+		urlLabel                              = gotext.Get("Server address:")
+		usernameLabel                         = gotext.Get("User name:")
+		passwordLabel                         = gotext.Get("Password:")
 		OkPB, CancelPB                        *walk.PushButton
 	)
 
@@ -417,27 +421,27 @@ func (mw *MainWnd) CredentialsEntryDialog(service *config.Service) bool {
 		CancelButton:  &CancelPB,
 		DefaultButton: &OkPB,
 		Children: []Widget{
-			TextLabel{Text: gotext.Get("Displayed name:")},
+			TextLabel{Text: nameLabel},
 			LineEdit{
-				Accessibility: Accessibility{Name: gotext.Get("Displayed name:")},
+				Accessibility: Accessibility{Name: nameLabel},
 				AssignTo:      &nameLE,
 			},
 
-			TextLabel{Text: gotext.Get("Server address:")},
+			TextLabel{Text: urlLabel},
 			LineEdit{
-				Accessibility: Accessibility{Name: gotext.Get("Server address:")},
+				Accessibility: Accessibility{Name: urlLabel},
 				AssignTo:      &urlLE,
 			},
 
-			TextLabel{Text: gotext.Get("User name:")},
+			TextLabel{Text: usernameLabel},
 			LineEdit{
-				Accessibility: Accessibility{Name: gotext.Get("User name:")},
+				Accessibility: Accessibility{Name: usernameLabel},
 				AssignTo:      &usernameLE,
 			},
 
-			TextLabel{Text: gotext.Get("Password:")},
+			TextLabel{Text: passwordLabel},
 			LineEdit{
-				Accessibility: Accessibility{Name: gotext.Get("Password:")},
+				Accessibility: Accessibility{Name: passwordLabel},
 				AssignTo:      &passwordLE,
 				PasswordMode:  true,
 			},
