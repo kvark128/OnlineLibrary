@@ -1,6 +1,20 @@
 #!/bin/sh
 
-ARCH=386
+case "$1" in
+	32)
+		ARCH=386
+		MFLAG="-m32"
+		;;
+	64)
+		ARCH=amd64
+		MFLAG="-m64"
+		;;
+	*)
+		echo "Usage: $0 (32|64)"
+		exit 1
+		;;
+esac
+
 BUILD_DIR="$PWD/.build/$ARCH"
 INCLUDE_DIR="$BUILD_DIR/include"
 LIB_DIR="$BUILD_DIR/lib"
@@ -9,7 +23,7 @@ EXTERNAL_DIR="$PWD/external"
 SONIC_DIR="$EXTERNAL_DIR/sonic"
 MINIMP3_DIR="$EXTERNAL_DIR/minimp3"
 
-gcc -m32 -c -O2 -o $SONIC_DIR/sonic.o $SONIC_DIR/sonic.c
+gcc $MFLAG -c -O2 -o $SONIC_DIR/sonic.o $SONIC_DIR/sonic.c
 ar rcs $SONIC_DIR/libsonic.a $SONIC_DIR/sonic.o
 install -D -p $SONIC_DIR/sonic.h $INCLUDE_DIR/sonic.h
 install -D -p $SONIC_DIR/libsonic.a $LIB_DIR/libsonic.a
