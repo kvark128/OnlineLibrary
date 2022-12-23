@@ -423,7 +423,7 @@ func (m *Manager) Start(conf *config.Config, done chan<- bool) {
 			}
 			conf.General.LogLevel = level.String()
 			m.logger.SetLevel(level)
-			m.logger.Info("Set log level to %s", level)
+			m.logger.Info("Set log level to %v", level)
 
 		case msg.LIBRARY_INFO:
 			if m.provider == nil {

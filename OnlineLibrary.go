@@ -28,7 +28,7 @@ func main() {
 		defer fl.Close()
 	}
 
-	logger.Info("Starting OnlineLibrary version %s", config.ProgramVersion)
+	logger.Info("Starting OnlineLibrary version %v", config.ProgramVersion)
 	conf := config.NewConfig()
 	logger.Info("Loading config file from %v", configFile)
 	if err := conf.Load(configFile); err != nil {

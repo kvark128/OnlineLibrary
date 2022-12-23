@@ -45,7 +45,7 @@ func StringToLevel(str string) (Level, error) {
 	case Debug.String():
 		return Debug, nil
 	default:
-		return 0, fmt.Errorf("%s is not a supported log level", str)
+		return 0, fmt.Errorf("%v is not a supported log level", str)
 	}
 }
 
@@ -74,7 +74,7 @@ func (l *Logger) log(calldepth int, level Level, format string, args ...any) {
 		line = 0
 	}
 	msg := fmt.Sprintf(strings.ReplaceAll(format, "\n", "\n"+l.indent), args...)
-	fmt.Fprintf(l.out, "%s - %s:%d (%s):\r\n%s%s\r\n", level, filepath.Base(file), line, clock, l.indent, msg)
+	fmt.Fprintf(l.out, "%v - %v:%v (%v):\r\n%v%v\r\n", level, filepath.Base(file), line, clock, l.indent, msg)
 }
 
 func (l *Logger) Error(format string, args ...any) {

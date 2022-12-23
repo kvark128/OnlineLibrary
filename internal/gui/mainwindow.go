@@ -397,7 +397,7 @@ func (mw *MainWnd) SetTitle(title string) {
 	mw.mainWindow.Synchronize(func() {
 		var windowTitle = config.ProgramName
 		if title != "" {
-			windowTitle = fmt.Sprintf("%s \u2014 %s", title, windowTitle)
+			windowTitle = fmt.Sprintf("%v \u2014 %v", title, windowTitle)
 		}
 		mw.mainWindow.SetTitle(windowTitle)
 	})

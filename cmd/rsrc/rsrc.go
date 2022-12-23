@@ -15,7 +15,7 @@ func main() {
 	flagSysoFile := flag.String("o", "", "output file name")
 
 	flag.Usage = func() {
-		fmt.Fprintf(os.Stderr, "Usage: %s [flags]\n\nPossible flags:\n", os.Args[0])
+		fmt.Fprintf(os.Stderr, "Usage: %v [flags]\n\nPossible flags:\n", os.Args[0])
 		flag.PrintDefaults()
 	}
 	flag.Parse()
