@@ -6,9 +6,9 @@ import (
 
 	"github.com/kvark128/OnlineLibrary/internal/config"
 	"github.com/kvark128/OnlineLibrary/internal/gui/msg"
+	"github.com/kvark128/walk"
+	. "github.com/kvark128/walk/declarative"
 	"github.com/leonelquinteros/gotext"
-	"github.com/lxn/walk"
-	. "github.com/lxn/walk/declarative"
 )
 
 type MainWnd struct {

@@ -1,7 +1,7 @@
 package gui
 
 import (
-	"github.com/lxn/walk"
+	"github.com/kvark128/walk"
 	"github.com/lxn/win"
 )
 

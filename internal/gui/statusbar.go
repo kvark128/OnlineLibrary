@@ -5,8 +5,8 @@ import (
 	"time"
 
 	"github.com/kvark128/OnlineLibrary/internal/util"
+	"github.com/kvark128/walk"
 	"github.com/leonelquinteros/gotext"
-	"github.com/lxn/walk"
 )
 
 type StatusBar struct {

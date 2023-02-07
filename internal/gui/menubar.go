@@ -5,8 +5,8 @@ import (
 	"github.com/kvark128/OnlineLibrary/internal/gui/msg"
 	"github.com/kvark128/OnlineLibrary/internal/lang"
 	"github.com/kvark128/OnlineLibrary/internal/log"
+	"github.com/kvark128/walk"
 	"github.com/leonelquinteros/gotext"
-	"github.com/lxn/walk"
 )
 
 type MenuBar struct {

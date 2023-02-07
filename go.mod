@@ -6,10 +6,10 @@ require (
 	github.com/josephspurrier/goversioninfo v1.4.0
 	github.com/kvark128/dodp v0.0.0-20220916012521-ea56f43448fa
 	github.com/kvark128/lkf v0.0.0-20200906212533-0cc542d11ec8
+	github.com/kvark128/walk v0.0.0-20230207142514-5a069a9628da
 	github.com/leonelquinteros/gotext v1.5.0
-	github.com/lxn/walk v0.0.0-20210112085537-c389da54e794
-	github.com/lxn/win v0.0.0-20201111105847-2a20daff6a55
-	golang.org/x/sys v0.0.0-20210216224549-f992740a1bac
+	github.com/lxn/win v0.0.0-20210218163916-a377121e959e
+	golang.org/x/sys v0.5.0
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b
 )
 

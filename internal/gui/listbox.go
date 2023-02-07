@@ -4,7 +4,7 @@ import (
 	"time"
 
 	"github.com/kvark128/OnlineLibrary/internal/gui/msg"
-	"github.com/lxn/walk"
+	"github.com/kvark128/walk"
 	"github.com/lxn/win"
 )
 
