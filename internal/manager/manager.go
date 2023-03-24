@@ -60,7 +60,7 @@ func (m *Manager) Start(conf *config.Config, done chan<- bool) {
 			m.logger.Error("Manager panic: %v:\n\n%v", p, string(buf[:n]))
 			os.Exit(1)
 		}
-		m.cleaning()
+		m.cleaning(conf)
 		m.logger.Debug("Exiting from Manager Loop")
 		done <- true
 	}()
@@ -175,7 +175,7 @@ func (m *Manager) Start(conf *config.Config, done chan<- bool) {
 				break
 			}
 			conf.RemoveService(lib.service)
-			m.cleaning()
+			m.cleaning(conf)
 			m.mainWnd.MenuBar().SetProvidersMenu(conf.Services, "")
 
 		case msg.ISSUE_BOOK:
@@ -457,9 +457,10 @@ func (m *Manager) Start(conf *config.Config, done chan<- bool) {
 	}
 }
 
-func (m *Manager) cleaning() {
+func (m *Manager) cleaning(conf *config.Config) {
 	if m.book != nil {
-		m.book.Close()
+		m.book.Save(conf)
+		m.book.Stop()
 		m.book = nil
 	}
 	m.mainWnd.MainListBox().Clear()
@@ -482,7 +483,7 @@ func (m *Manager) cleaning() {
 
 func (m *Manager) setProvider(provider Provider, conf *config.Config, id string) {
 	m.logger.Info("Set provider: %v", id)
-	m.cleaning()
+	m.cleaning(conf)
 	m.provider = provider
 	conf.General.Provider = id
 	if id, err := m.provider.LastContentListID(); err == nil {
@@ -619,15 +620,18 @@ func (m *Manager) updateContentList(contentList *ContentList) {
 }
 
 func (m *Manager) setBook(conf *config.Config, contentItem ContentItem) error {
-	book, err := NewBook(conf, contentItem, m.logger, m.mainWnd.StatusBar())
+	book, err := NewBook(conf.General.OutputDevice, contentItem, m.logger, m.mainWnd.StatusBar())
 	if err != nil {
 		return err
 	}
 
 	if m.book != nil {
-		m.book.Close()
+		m.book.Save(conf)
+		m.book.Stop()
 	}
 
+	book.SetTimerDuration(conf.General.PauseTimer)
+	book.SetVolume(conf.General.Volume)
 	m.mainWnd.SetTitle(book.Name())
 	m.mainWnd.MenuBar().SetBookmarksMenu(book.Bookmarks())
 	m.book = book
