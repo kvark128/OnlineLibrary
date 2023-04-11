@@ -1,0 +1,420 @@
+msgid ""
+msgstr ""
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Language: \n"
+"X-Generator: xgotext\n"
+
+#: gui\mainwindow.go:318
+msgid "%v version %v\nWorking directory: %v\nAuthor: %v"
+msgstr ""
+
+#: gui\mainwindow.go:109
+msgid "&Book"
+msgstr ""
+
+#: gui\mainwindow.go:313
+msgid "&Help"
+msgstr ""
+
+#: gui\mainwindow.go:42
+msgid "&Library"
+msgstr ""
+
+#: gui\mainwindow.go:140
+msgid "&Playback"
+msgstr ""
+
+#: gui\mainwindow.go:290
+msgid "&Settings"
+msgstr ""
+
+#: gui\mainwindow.go:229
+msgid "1 min. backward"
+msgstr ""
+
+#: gui\mainwindow.go:224
+msgid "1 min. forward"
+msgstr ""
+
+#: gui\mainwindow.go:219
+msgid "30 sec. backward"
+msgstr ""
+
+#: gui\mainwindow.go:214
+msgid "30 sec. forward"
+msgstr ""
+
+#: gui\mainwindow.go:239
+msgid "5 min. backward"
+msgstr ""
+
+#: gui\mainwindow.go:234
+msgid "5 min. forward"
+msgstr ""
+
+#: gui\mainwindow.go:209
+msgid "5 sec. backward"
+msgstr ""
+
+#: gui\mainwindow.go:204
+msgid "5 sec. forward"
+msgstr ""
+
+#: gui\mainwindow.go:316
+#: gui\mainwindow.go:319
+msgid "About"
+msgstr ""
+
+#: manager\manager.go:146
+msgid "Account \"%v\" already exists"
+msgstr ""
+
+#: gui\mainwindow.go:45
+msgid "Accounts"
+msgstr ""
+
+#: gui\mainwindow.go:114
+msgid "Add book to bookshelf"
+msgstr ""
+
+#: gui\mainwindow.go:418
+msgid "Adding a new account"
+msgstr ""
+
+#: manager\manager.go:382
+msgid "Adding a new bookmark"
+msgstr ""
+
+#: manager\manager.go:173
+msgid "Are you sure you want to delete the account \"%v\"?\nAll saved bookmarks of all books in this library will also be deleted.\nThis action cannot be undone."
+msgstr ""
+
+#: manager\manager.go:410
+msgid "Are you sure you want to delete the bookmark \"%v\"?"
+msgstr ""
+
+#: manager\manager.go:441
+msgid "Audio labels support: %v"
+msgstr ""
+
+#: gui\mainwindow.go:293
+msgid "Audio output device"
+msgstr ""
+
+#: manager\manager.go:439
+msgid "Back command support: %v"
+msgstr ""
+
+#: gui\mainwindow.go:168
+msgid "Beginning of the book"
+msgstr ""
+
+#: gui\mainwindow.go:194
+msgid "Beginning of the fragment"
+msgstr ""
+
+#: manager\manager.go:794
+msgid "Book description not available"
+msgstr ""
+
+#: manager\manager.go:675
+msgid "Book downloading"
+msgstr ""
+
+#: gui\mainwindow.go:132
+#: manager\manager.go:228
+msgid "Book information"
+msgstr ""
+
+#: gui\mainwindow.go:165
+msgid "Book navigation"
+msgstr ""
+
+#: manager\manager.go:746
+msgid "Book successfully downloaded"
+msgstr ""
+
+#: manager\manager.go:382
+msgid "Bookmark name:"
+msgstr ""
+
+#: gui\mainwindow.go:143
+msgid "Bookmarks"
+msgstr ""
+
+#: gui\mainwindow.go:56
+msgid "Bookshelf"
+msgstr ""
+
+#: gui\mainwindow.go:466
+#: gui\mainwindow.go:523
+#: gui\progress.go:39
+msgid "Cancel"
+msgstr ""
+
+#: manager\manager.go:451
+msgid "Changes will be reflected upon restarting the program"
+msgstr ""
+
+#: gui\mainwindow.go:276
+msgid "Decrease speed"
+msgstr ""
+
+#: gui\mainwindow.go:255
+msgid "Decrease volume"
+msgstr ""
+
+#: gui\menubar.go:121
+msgid "Default"
+msgstr ""
+
+#: gui\mainwindow.go:96
+msgid "Delete account"
+msgstr ""
+
+#: manager\manager.go:411
+msgid "Deleting a bookmark"
+msgstr ""
+
+#: manager\manager.go:174
+msgid "Deleting an account"
+msgstr ""
+
+#: gui\mainwindow.go:410
+msgid "Displayed name:"
+msgstr ""
+
+#: gui\mainwindow.go:120
+msgid "Download book"
+msgstr ""
+
+#: manager\manager.go:742
+msgid "Download canceled by user"
+msgstr ""
+
+#: manager\manager.go:675
+#: manager\manager.go:713
+msgid "Downloading \"%v\"\nSpeed: %d KB/s"
+msgstr ""
+
+#: manager\manager.go:307
+msgid "Enter fragment number:"
+msgstr ""
+
+#: manager\manager.go:328
+msgid "Enter fragment position:"
+msgstr ""
+
+#: manager\manager.go:357
+msgid "Enter the timer value in minutes:"
+msgstr ""
+
+#: manager\manager.go:566
+msgid "Entering text"
+msgstr ""
+
+#: manager\manager.go:146
+#: manager\manager.go:744
+#: manager\manager.go:796
+msgid "Error"
+msgstr ""
+
+#: gui\mainwindow.go:101
+msgid "Exit"
+msgstr ""
+
+#: gui\mainwindow.go:68
+msgid "Find..."
+msgstr ""
+
+#: gui\statusbar.go:33
+msgid "Fragment %d of %d"
+msgstr ""
+
+#: gui\mainwindow.go:191
+msgid "Fragment navigation"
+msgstr ""
+
+#: manager\manager.go:307
+msgid "Go to fragment"
+msgstr ""
+
+#: gui\mainwindow.go:173
+msgid "Go to fragment..."
+msgstr ""
+
+#: manager\manager.go:328
+msgid "Go to position"
+msgstr ""
+
+#: gui\mainwindow.go:199
+msgid "Go to position..."
+msgstr ""
+
+#: gui\mainwindow.go:271
+msgid "Increase speed"
+msgstr ""
+
+#: gui\mainwindow.go:250
+msgid "Increase volume"
+msgstr ""
+
+#: gui\mainwindow.go:297
+msgid "Language"
+msgstr ""
+
+#: gui\mainwindow.go:91
+#: manager\manager.go:443
+msgid "Library information"
+msgstr ""
+
+#: manager\manager.go:590
+msgid "List of books is empty"
+msgstr ""
+
+#: gui\mainwindow.go:86
+#: manager\providers.go:122
+msgid "Local books"
+msgstr ""
+
+#: gui\mainwindow.go:307
+msgid "Logging level"
+msgstr ""
+
+#: gui\mainwindow.go:74
+msgid "Main menu"
+msgstr ""
+
+#: gui\menubar.go:70
+msgid "Move"
+msgstr ""
+
+#: manager\manager.go:438
+msgid "Name: %v (%v)"
+msgstr ""
+
+#: manager\manager.go:790
+msgid "Network error. Please check your internet connection"
+msgstr ""
+
+#: gui\mainwindow.go:49
+msgid "New account"
+msgstr ""
+
+#: gui\mainwindow.go:147
+msgid "New bookmark"
+msgstr ""
+
+#: gui\mainwindow.go:62
+msgid "New books"
+msgstr ""
+
+#: gui\mainwindow.go:178
+msgid "Next fragment"
+msgstr ""
+
+#: gui\mainwindow.go:455
+#: gui\mainwindow.go:515
+msgid "OK"
+msgstr ""
+
+#: manager\manager.go:792
+msgid "Operation not supported"
+msgstr ""
+
+#: gui\mainwindow.go:413
+msgid "Password:"
+msgstr ""
+
+#: gui\menubar.go:147
+msgid "Pause timer (%d min.)"
+msgstr ""
+
+#: gui\menubar.go:145
+msgid "Pause timer (no)"
+msgstr ""
+
+#: gui\mainwindow.go:301
+msgid "Pause timer"
+msgstr ""
+
+#: gui\mainwindow.go:154
+msgid "Play / Pause"
+msgstr ""
+
+#: gui\mainwindow.go:183
+msgid "Previous fragment"
+msgstr ""
+
+#: gui\mainwindow.go:80
+msgid "Previous menu"
+msgstr ""
+
+#: gui\mainwindow.go:126
+msgid "Remove book from bookshelf"
+msgstr ""
+
+#: gui\menubar.go:76
+msgid "Remove..."
+msgstr ""
+
+#: gui\mainwindow.go:281
+msgid "Reset speed"
+msgstr ""
+
+#: gui\mainwindow.go:260
+msgid "Reset volume"
+msgstr ""
+
+#: manager\manager.go:440
+msgid "Search command support: %v"
+msgstr ""
+
+#: manager\manager.go:190
+msgid "Selected book has been added to the bookshelf"
+msgstr ""
+
+#: manager\manager.go:201
+msgid "Selected book has been removed from the bookshelf"
+msgstr ""
+
+#: gui\mainwindow.go:411
+msgid "Server address:"
+msgstr ""
+
+#: manager\manager.go:357
+msgid "Setting the pause timer"
+msgstr ""
+
+#: gui\mainwindow.go:268
+msgid "Speed"
+msgstr ""
+
+#: gui\mainwindow.go:159
+msgid "Stop"
+msgstr ""
+
+#: manager\manager.go:442
+msgid "Supported Optional Operations: %v"
+msgstr ""
+
+#: gui\mainwindow.go:412
+msgid "User name:"
+msgstr ""
+
+#: gui\mainwindow.go:247
+msgid "Volume"
+msgstr ""
+
+#: manager\manager.go:190
+#: manager\manager.go:201
+#: manager\manager.go:451
+#: manager\manager.go:530
+#: manager\manager.go:590
+#: manager\manager.go:742
+#: manager\manager.go:746
+msgid "Warning"
+msgstr ""
