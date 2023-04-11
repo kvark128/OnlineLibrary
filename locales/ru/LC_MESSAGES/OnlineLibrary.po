@@ -45,76 +45,72 @@ msgstr "&Настройки"
 
 #: gui\mainwindow.go:229
 msgid "1 min. backward"
-msgstr ""
+msgstr "1 мин. назад"
 
 #: gui\mainwindow.go:224
 msgid "1 min. forward"
-msgstr ""
+msgstr "1 мин. вперёд"
 
 #: gui\mainwindow.go:219
 msgid "30 sec. backward"
-msgstr ""
+msgstr "30 сек. назад"
 
 #: gui\mainwindow.go:214
 msgid "30 sec. forward"
-msgstr ""
+msgstr "30 сек. вперёд"
 
 #: gui\mainwindow.go:239
 msgid "5 min. backward"
-msgstr ""
+msgstr "5 мин. назад"
 
 #: gui\mainwindow.go:234
 msgid "5 min. forward"
-msgstr ""
+msgstr "5 мин. вперёд"
 
 #: gui\mainwindow.go:209
 msgid "5 sec. backward"
-msgstr ""
+msgstr "5 сек. назад"
 
 #: gui\mainwindow.go:204
 msgid "5 sec. forward"
-msgstr ""
+msgstr "5 сек. вперёд"
 
 #: gui\mainwindow.go:316 gui\mainwindow.go:319
 msgid "About"
-msgstr ""
+msgstr "О программе"
 
-#: manager\manager.go:148
+#: manager\manager.go:146
 msgid "Account \"%v\" already exists"
-msgstr ""
+msgstr "Учётная запись «%v» уже существует"
 
 #: gui\mainwindow.go:45
 msgid "Accounts"
 msgstr "Учётные записи"
 
-#: gui\mainwindow.go:49
-msgid "Add account"
-msgstr "Добавить учётную запись"
+#: gui\mainwindow.go:114
+msgid "Add book to bookshelf"
+msgstr "Добавить книгу на книжную полку"
 
-#: gui\mainwindow.go:147
-msgid "Add bookmark"
-msgstr "Добавить закладку"
-
-#: gui\mainwindow.go:411
+#: gui\mainwindow.go:418
 msgid "Adding a new account"
 msgstr "Добавление новой учётной записи"
 
-#: manager\manager.go:386
+#: manager\manager.go:382
 msgid "Adding a new bookmark"
 msgstr "Добавление новой закладки"
 
-#: manager\manager.go:175
+#: manager\manager.go:173
 msgid ""
 "Are you sure you want to delete the account \"%v\"?\n"
 "All saved bookmarks of all books in this library will also be deleted.\n"
 "This action cannot be undone."
 msgstr ""
 
-#: manager\manager.go:414
+#: manager\manager.go:410
 msgid "Are you sure you want to delete the bookmark \"%v\"?"
 msgstr ""
 
-#: manager\manager.go:445
+#: manager\manager.go:441
 msgid "Audio labels support: %v"
 msgstr ""
 
@@ -122,35 +118,39 @@ msgstr ""
 msgid "Audio output device"
 msgstr "Устройство вывода звука"
 
-#: manager\manager.go:443
+#: manager\manager.go:439
 msgid "Back command support: %v"
 msgstr ""
 
+#: gui\mainwindow.go:168
+msgid "Beginning of the book"
+msgstr "Начало книги"
+
 #: gui\mainwindow.go:194
 msgid "Beginning of the fragment"
-msgstr ""
+msgstr "Начало фрагмента"
 
-#: manager\manager.go:795
+#: manager\manager.go:794
 msgid "Book description not available"
-msgstr ""
+msgstr "Описание книги недоступно"
 
-#: manager\manager.go:676
+#: manager\manager.go:675
 msgid "Book downloading"
 msgstr ""
 
-#: gui\mainwindow.go:132 manager\manager.go:232
+#: gui\mainwindow.go:132 manager\manager.go:228
 msgid "Book information"
 msgstr "Информация о книге"
 
 #: gui\mainwindow.go:165
 msgid "Book navigation"
-msgstr ""
+msgstr "Переход по книге"
 
-#: manager\manager.go:747
+#: manager\manager.go:746
 msgid "Book successfully downloaded"
-msgstr ""
+msgstr "Книга успешно загружена"
 
-#: manager\manager.go:386
+#: manager\manager.go:382
 msgid "Bookmark name:"
 msgstr "Имя закладки:"
 
@@ -158,25 +158,25 @@ msgstr "Имя закладки:"
 msgid "Bookmarks"
 msgstr "Закладки"
 
-#: gui\mainwindow.go:62
+#: gui\mainwindow.go:56
 msgid "Bookshelf"
 msgstr "Книжная полка"
 
-#: gui\mainwindow.go:459 gui\mainwindow.go:516 gui\progress.go:39
+#: gui\mainwindow.go:466 gui\mainwindow.go:523 gui\progress.go:39
 msgid "Cancel"
 msgstr "Отмена"
 
-#: manager\manager.go:455
+#: manager\manager.go:451
 msgid "Changes will be reflected upon restarting the program"
-msgstr ""
+msgstr "Изменения вступят в силу при перезапуске программы"
 
 #: gui\mainwindow.go:276
 msgid "Decrease speed"
-msgstr ""
+msgstr "Уменьшить скорость"
 
 #: gui\mainwindow.go:255
 msgid "Decrease volume"
-msgstr ""
+msgstr "Уменьшить громкость"
 
 #: gui\menubar.go:121
 msgid "Default"
@@ -186,49 +186,49 @@ msgstr ""
 msgid "Delete account"
 msgstr ""
 
-#: manager\manager.go:415
+#: manager\manager.go:411
 msgid "Deleting a bookmark"
 msgstr ""
 
-#: manager\manager.go:176
+#: manager\manager.go:174
 msgid "Deleting an account"
 msgstr ""
 
-#: gui\mainwindow.go:417 gui\mainwindow.go:419
+#: gui\mainwindow.go:410
 msgid "Displayed name:"
 msgstr "Отображаемое имя:"
 
-#: gui\mainwindow.go:114
+#: gui\mainwindow.go:120
 msgid "Download book"
 msgstr ""
 
-#: manager\manager.go:743
+#: manager\manager.go:742
 msgid "Download canceled by user"
 msgstr ""
 
-#: manager\manager.go:675
+#: manager\manager.go:675 manager\manager.go:713
 msgid ""
 "Downloading \"%v\"\n"
 "Speed: %d KB/s"
 msgstr ""
 
-#: manager\manager.go:311
+#: manager\manager.go:307
 msgid "Enter fragment number:"
 msgstr "Введите номер фрагмента:"
 
-#: manager\manager.go:332
+#: manager\manager.go:328
 msgid "Enter fragment position:"
 msgstr "Введите позицию фрагмента:"
 
-#: manager\manager.go:361
+#: manager\manager.go:357
 msgid "Enter the timer value in minutes:"
 msgstr ""
 
-#: manager\manager.go:569
+#: manager\manager.go:566
 msgid "Entering text"
 msgstr "Ввод текста"
 
-#: manager\manager.go:148 manager\manager.go:745 manager\manager.go:797
+#: manager\manager.go:146 manager\manager.go:744 manager\manager.go:796
 msgid "Error"
 msgstr "Ошибка"
 
@@ -236,9 +236,9 @@ msgstr "Ошибка"
 msgid "Exit"
 msgstr "Выход"
 
-#: gui\mainwindow.go:168
-msgid "First fragment"
-msgstr ""
+#: gui\mainwindow.go:68
+msgid "Find..."
+msgstr "Найти..."
 
 #: gui\statusbar.go:33
 msgid "Fragment %d of %d"
@@ -246,33 +246,41 @@ msgstr "Фрагмент %d из %d"
 
 #: gui\mainwindow.go:191
 msgid "Fragment navigation"
-msgstr ""
+msgstr "Переход по фрагменту"
 
-#: gui\mainwindow.go:173 manager\manager.go:311
+#: manager\manager.go:307
 msgid "Go to fragment"
-msgstr ""
+msgstr "Переход к фрагменту"
 
-#: gui\mainwindow.go:199 manager\manager.go:332
+#: gui\mainwindow.go:173
+msgid "Go to fragment..."
+msgstr "Переход к фрагменту..."
+
+#: manager\manager.go:328
 msgid "Go to position"
-msgstr ""
+msgstr "Переход к позиции"
+
+#: gui\mainwindow.go:199
+msgid "Go to position..."
+msgstr "Переход к позиции..."
 
 #: gui\mainwindow.go:271
 msgid "Increase speed"
-msgstr ""
+msgstr "Увеличить скорость"
 
 #: gui\mainwindow.go:250
 msgid "Increase volume"
-msgstr ""
+msgstr "Увеличить громкость"
 
 #: gui\mainwindow.go:297
 msgid "Language"
 msgstr "Язык"
 
-#: gui\mainwindow.go:91 manager\manager.go:447
+#: gui\mainwindow.go:91 manager\manager.go:443
 msgid "Library information"
 msgstr "Информация о библиотеке"
 
-#: manager\manager.go:593
+#: manager\manager.go:590
 msgid "List of books is empty"
 msgstr "Список книг пуст"
 
@@ -282,9 +290,9 @@ msgstr "Локальные книги"
 
 #: gui\mainwindow.go:307
 msgid "Logging level"
-msgstr ""
+msgstr "Уровень ведения журнала"
 
-#: gui\mainwindow.go:56
+#: gui\mainwindow.go:74
 msgid "Main menu"
 msgstr "Главное меню"
 
@@ -292,31 +300,39 @@ msgstr "Главное меню"
 msgid "Move"
 msgstr ""
 
-#: manager\manager.go:442
+#: manager\manager.go:438
 msgid "Name: %v (%v)"
 msgstr ""
 
-#: manager\manager.go:791
+#: manager\manager.go:790
 msgid "Network error. Please check your internet connection"
-msgstr ""
+msgstr "Ошибка сети. Пожалуйста, проверьте ваше интернет-соединение"
 
-#: gui\mainwindow.go:68
+#: gui\mainwindow.go:49
+msgid "New account"
+msgstr "Добавить учётную запись"
+
+#: gui\mainwindow.go:147
+msgid "New bookmark"
+msgstr "Добавить закладку"
+
+#: gui\mainwindow.go:62
 msgid "New books"
-msgstr ""
+msgstr "Новые книги"
 
 #: gui\mainwindow.go:178
 msgid "Next fragment"
-msgstr ""
+msgstr "Следующий фрагмент"
 
-#: gui\mainwindow.go:448 gui\mainwindow.go:508
+#: gui\mainwindow.go:455 gui\mainwindow.go:515
 msgid "OK"
 msgstr "OK"
 
-#: manager\manager.go:793
+#: manager\manager.go:792
 msgid "Operation not supported"
-msgstr ""
+msgstr "Операция не поддерживается"
 
-#: gui\mainwindow.go:435 gui\mainwindow.go:437
+#: gui\mainwindow.go:413
 msgid "Password:"
 msgstr "Пароль:"
 
@@ -334,23 +350,19 @@ msgstr ""
 
 #: gui\mainwindow.go:154
 msgid "Play / Pause"
-msgstr ""
+msgstr "Воспроизведение / Пауза"
 
 #: gui\mainwindow.go:183
 msgid "Previous fragment"
-msgstr ""
+msgstr "Предыдущий фрагмент"
 
 #: gui\mainwindow.go:80
 msgid "Previous menu"
 msgstr ""
 
 #: gui\mainwindow.go:126
-msgid "Put book on bookshelf"
-msgstr ""
-
-#: gui\mainwindow.go:120
 msgid "Remove book from bookshelf"
-msgstr ""
+msgstr "Убрать книгу с книжной полки"
 
 #: gui\menubar.go:76
 msgid "Remove..."
@@ -358,58 +370,57 @@ msgstr ""
 
 #: gui\mainwindow.go:281
 msgid "Reset speed"
-msgstr ""
+msgstr "Сбросить скорость"
 
 #: gui\mainwindow.go:260
 msgid "Reset volume"
-msgstr ""
+msgstr "Сбросить громкость"
 
-#: manager\manager.go:444
+#: manager\manager.go:440
 msgid "Search command support: %v"
 msgstr ""
 
-#: gui\mainwindow.go:74
-msgid "Search..."
-msgstr "Поиск..."
+#: manager\manager.go:190
+msgid "Selected book has been added to the bookshelf"
+msgstr "Выбранная книга добавлена на книжную полку"
 
-#: gui\mainwindow.go:423 gui\mainwindow.go:425
+#: manager\manager.go:201
+msgid "Selected book has been removed from the bookshelf"
+msgstr "Выбранная книга удалена с книжной полки"
+
+#: gui\mainwindow.go:411
 msgid "Server address:"
 msgstr "Адрес сервера:"
 
-#: manager\manager.go:361
+#: manager\manager.go:357
 msgid "Setting the pause timer"
 msgstr ""
 
 #: gui\mainwindow.go:268
 msgid "Speed"
-msgstr ""
+msgstr "Скорость"
 
 #: gui\mainwindow.go:159
 msgid "Stop"
-msgstr ""
+msgstr "Стоп"
 
-#: manager\manager.go:446
+#: manager\manager.go:442
 msgid "Supported Optional Operations: %v"
 msgstr ""
 
-#: gui\mainwindow.go:429 gui\mainwindow.go:431
+#: gui\mainwindow.go:412
 msgid "User name:"
-msgstr ""
+msgstr "Имя пользователя:"
 
 #: gui\mainwindow.go:247
 msgid "Volume"
-msgstr ""
+msgstr "Громкость"
 
-#: manager\manager.go:193 manager\manager.go:205 manager\manager.go:455
-#: manager\manager.go:533 manager\manager.go:593 manager\manager.go:743
-#: manager\manager.go:747
+#: manager\manager.go:190 manager\manager.go:201 manager\manager.go:451
+#: manager\manager.go:530 manager\manager.go:590 manager\manager.go:742
+#: manager\manager.go:746
 msgid "Warning"
 msgstr "Предупреждение"
 
-#: manager\manager.go:193
-msgid "\"%v\" is added to the bookshelf"
-msgstr ""
-
-#: manager\manager.go:205
-msgid "\"%v\" removed from bookshelf"
-msgstr ""
+#~ msgid "Search..."
+#~ msgstr "Поиск..."
