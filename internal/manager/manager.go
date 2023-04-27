@@ -644,13 +644,15 @@ func (m *Manager) downloadBook(book ContentItem) error {
 		return OperationNotSupported
 	}
 
+	bookDir, err := BookDir(book.Name())
+	if err != nil {
+		return err
+	}
+
 	rsrc, err := book.Resources()
 	if err != nil {
 		return fmt.Errorf("getContentResources: %w", err)
 	}
-
-	// Path to the directory where we will download a resources. Make sure that it does not contain prohibited characters
-	bookDir := filepath.Join(config.UserData(), util.ReplaceForbiddenCharacters(book.Name()))
 
 	if md, err := book.ContentMetadata(); err == nil {
 		path := filepath.Join(bookDir, MetadataFileName)

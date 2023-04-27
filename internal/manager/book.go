@@ -3,6 +3,7 @@ package manager
 import (
 	"fmt"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/kvark128/OnlineLibrary/internal/config"
@@ -11,6 +12,19 @@ import (
 	"github.com/kvark128/OnlineLibrary/internal/player"
 	"github.com/kvark128/OnlineLibrary/internal/util"
 )
+
+// BookDir returns the full path to the book directory by it name
+func BookDir(name string) (string, error) {
+	name = util.ReplaceForbiddenCharacters(name)
+	// Windows does not allow trailing dots and spaces in a directory name
+	name = strings.TrimRight(name, ". ")
+	// Whitespace around the edges of a directory name is a very bad thing
+	name = strings.TrimSpace(name)
+	if len(name) == 0 {
+		return "", fmt.Errorf("book directory is invalid")
+	}
+	return filepath.Join(config.UserData(), name), nil
+}
 
 type Book struct {
 	ContentItem
@@ -24,6 +38,11 @@ func NewBook(outputDevice string, contentItem ContentItem, logger *log.Logger, s
 		conf:        contentItem.Config(),
 	}
 
+	bookDir, err := BookDir(book.Name())
+	if err != nil {
+		return nil, err
+	}
+
 	rsrc, err := book.Resources()
 	if err != nil {
 		return nil, fmt.Errorf("GetContentResources: %v", err)
@@ -33,7 +52,6 @@ func NewBook(outputDevice string, contentItem ContentItem, logger *log.Logger, s
 		book.conf.Bookmarks = make(map[string]config.Bookmark)
 	}
 
-	bookDir := filepath.Join(config.UserData(), util.ReplaceForbiddenCharacters(book.Name()))
 	book.Player = player.NewPlayer(bookDir, rsrc, outputDevice, logger, statusBar)
 	book.SetSpeed(book.conf.Speed)
 	if bookmark, err := book.Bookmark(config.ListeningPosition); err == nil {
