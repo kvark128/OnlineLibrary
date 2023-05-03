@@ -620,6 +620,10 @@ func (m *Manager) updateContentList(contentList *ContentList) {
 }
 
 func (m *Manager) setBook(conf *config.Config, contentItem ContentItem) error {
+	if m.book != nil {
+		m.book.Pause(true)
+	}
+
 	book, err := NewBook(conf.General.OutputDevice, contentItem, m.logger, m.mainWnd.StatusBar())
 	if err != nil {
 		return err

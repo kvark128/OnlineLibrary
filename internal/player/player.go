@@ -107,7 +107,7 @@ func (p *Player) updateTimer(d time.Duration) {
 		p.logger.Debug("Playback timer stopped")
 	}
 	if d > 0 {
-		p.pauseTimer = time.AfterFunc(d, p.PlayPause)
+		p.pauseTimer = time.AfterFunc(d, func() { p.Pause(true) })
 		p.logger.Debug("Playback timer started on %v", d)
 	}
 }
@@ -223,19 +223,30 @@ func (p *Player) SetVolume(volume float64) {
 	}
 }
 
-func (p *Player) PlayPause() {
+func (p *Player) Pause(state bool) bool {
 	p.Lock()
 	defer p.Unlock()
 	if !p.playing.Load() {
+		if state {
+			return false
+		}
 		p.startPlayback()
-		return
+		return true
 	}
 	if p.fragment != nil {
 		p.updateTimer(0)
-		if !p.fragment.pause(true) {
-			p.fragment.pause(false)
+		ok := p.fragment.pause(state)
+		if !p.fragment.IsPause() {
 			p.updateTimer(p.timerDuration)
 		}
+		return ok
+	}
+	return false
+}
+
+func (p *Player) PlayPause() {
+	if !p.Pause(true) {
+		p.Pause(false)
 	}
 }
 
