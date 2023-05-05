@@ -36,6 +36,14 @@ var (
 	OperationNotSupported       = errors.New("operation not supported")
 )
 
+type ChoiceItem struct {
+	dodp.Choice
+}
+
+func (c ChoiceItem) Name() string {
+	return c.Label.Text
+}
+
 type Manager struct {
 	provider      Provider
 	mainWnd       *gui.MainWnd
@@ -68,9 +76,8 @@ func (m *Manager) Start(conf *config.Config, done chan<- bool) {
 	for message := range m.mainWnd.MsgChan() {
 		switch message.Code {
 		case msg.ACTIVATE_MENU:
-			index := message.Data.(int)
 			if m.contentList != nil {
-				book := m.contentList.Items[index]
+				book := m.mainWnd.MainListBox().CurrentItem().(ContentItem)
 				if m.book == nil || m.book.ID() != book.ID() {
 					if err := m.setBook(conf, book); err != nil {
 						m.messageBoxError(fmt.Errorf("Set book: %w", err))
@@ -81,7 +88,7 @@ func (m *Manager) Start(conf *config.Config, done chan<- bool) {
 			} else if m.questions != nil {
 				questionIndex := len(m.userResponses)
 				questionID := m.questions.MultipleChoiceQuestion[questionIndex].ID
-				value := m.questions.MultipleChoiceQuestion[questionIndex].Choices.Choice[index].ID
+				value := m.mainWnd.MainListBox().CurrentItem().(ChoiceItem).ID
 				m.userResponses = append(m.userResponses, dodp.UserResponse{QuestionID: questionID, Value: value})
 				questionIndex++
 				if questionIndex < len(m.questions.MultipleChoiceQuestion) {
@@ -182,7 +189,7 @@ func (m *Manager) Start(conf *config.Config, done chan<- bool) {
 			if m.contentList == nil {
 				break
 			}
-			book := m.contentList.Items[m.mainWnd.MainListBox().CurrentIndex()]
+			book := m.mainWnd.MainListBox().CurrentItem().(ContentItem)
 			if err := m.issueBook(book); err != nil {
 				m.messageBoxError(fmt.Errorf("Adding book: %w", err))
 				break
@@ -193,7 +200,7 @@ func (m *Manager) Start(conf *config.Config, done chan<- bool) {
 			if m.contentList == nil {
 				break
 			}
-			book := m.contentList.Items[m.mainWnd.MainListBox().CurrentIndex()]
+			book := m.mainWnd.MainListBox().CurrentItem().(ContentItem)
 			if err := m.removeBook(book); err != nil {
 				m.messageBoxError(fmt.Errorf("Removing book: %w", err))
 				break
@@ -208,8 +215,7 @@ func (m *Manager) Start(conf *config.Config, done chan<- bool) {
 			if m.contentList == nil {
 				break
 			}
-			index := m.mainWnd.MainListBox().CurrentIndex()
-			book := m.contentList.Items[index]
+			book := m.mainWnd.MainListBox().CurrentItem().(ContentItem)
 			if err := m.downloadBook(book); err != nil {
 				m.messageBoxError(fmt.Errorf("Book downloading: %w", err))
 			}
@@ -218,8 +224,7 @@ func (m *Manager) Start(conf *config.Config, done chan<- bool) {
 			if m.contentList == nil {
 				break
 			}
-			index := m.mainWnd.MainListBox().CurrentIndex()
-			book := m.contentList.Items[index]
+			book := m.mainWnd.MainListBox().CurrentItem().(ContentItem)
 			text, err := m.bookDescription(book)
 			if err != nil {
 				m.messageBoxError(err)
@@ -551,12 +556,12 @@ func (m *Manager) setQuestions(response ...dodp.UserResponse) {
 
 func (m *Manager) setMultipleChoiceQuestion(index int) {
 	choiceQuestion := m.questions.MultipleChoiceQuestion[index]
-	labels := make([]string, len(choiceQuestion.Choices.Choice))
+	items := make([]gui.ListItem, len(choiceQuestion.Choices.Choice))
 	for i, c := range choiceQuestion.Choices.Choice {
-		labels[i] = c.Label.Text
+		items[i] = ChoiceItem{Choice: c}
 	}
 	m.contentList = nil
-	m.mainWnd.MainListBox().SetItems(labels, choiceQuestion.Label.Text, nil)
+	m.mainWnd.MainListBox().SetItems(items, choiceQuestion.Label.Text, nil)
 	m.mainWnd.MenuBar().SetBookMenuEnabled(false)
 }
 
@@ -609,13 +614,12 @@ func (m *Manager) setContentList(contentID string) {
 }
 
 func (m *Manager) updateContentList(contentList *ContentList) {
-	labels := make([]string, len(contentList.Items))
-	for i := range labels {
-		book := contentList.Items[i]
-		labels[i] = book.Name()
-	}
 	m.contentList = contentList
-	m.mainWnd.MainListBox().SetItems(labels, contentList.Name, m.mainWnd.MenuBar().BookMenu())
+	items := make([]gui.ListItem, len(m.contentList.Items))
+	for i, v := range m.contentList.Items {
+		items[i] = v
+	}
+	m.mainWnd.MainListBox().SetItems(items, contentList.Name, m.mainWnd.MenuBar().BookMenu())
 	m.mainWnd.MenuBar().SetBookMenuEnabled(true)
 }
 

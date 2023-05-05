@@ -330,7 +330,7 @@ func NewMainWindow() (*MainWnd, error) {
 			ListBox{
 				AssignTo: &wnd.mainListBox.ListBox,
 				OnItemActivated: func() {
-					wnd.msgChan <- msg.Message{Code: msg.ACTIVATE_MENU, Data: wnd.mainListBox.ListBox.CurrentIndex()}
+					wnd.msgChan <- msg.Message{Code: msg.ACTIVATE_MENU}
 				},
 			},
 		},

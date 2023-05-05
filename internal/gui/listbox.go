@@ -29,29 +29,39 @@ var (
 type MainListBox struct {
 	*walk.ListBox
 	label *walk.TextLabel
+	items []ListItem
 	msgCH chan msg.Message
 }
 
-func (mlb *MainListBox) SetItems(items []string, label string, contextMenu *walk.Menu) {
+type ListItem interface {
+	Name() string
+}
+
+func (mlb *MainListBox) SetItems(items []ListItem, label string, contextMenu *walk.Menu) {
 	mlb.Synchronize(func() {
 		mlb.label.SetText(label)
 		mlb.Accessibility().SetName(label)
-		mlb.SetModel(items)
+		mlb.items = items
+		labels := make([]string, len(mlb.items))
+		for i, v := range mlb.items {
+			labels[i] = v.Name()
+		}
+		mlb.SetModel(labels)
 		mlb.ListBox.SetContextMenu(contextMenu)
 		mlb.SetCurrentIndex(0)
 	})
 }
 
 func (mlb *MainListBox) Clear() {
-	mlb.SetItems([]string{}, "", nil)
+	mlb.SetItems(nil, "", nil)
 }
 
-func (mlb *MainListBox) CurrentIndex() int {
+func (mlb *MainListBox) CurrentItem() ListItem {
 	ic := make(chan int)
 	mlb.Synchronize(func() {
 		ic <- mlb.ListBox.CurrentIndex()
 	})
-	return <-ic
+	return mlb.items[<-ic]
 }
 
 func (mlb *MainListBox) WndProc(hwnd win.HWND, winmsg uint32, wParam, lParam uintptr) uintptr {
