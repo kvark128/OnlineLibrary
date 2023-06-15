@@ -101,7 +101,7 @@ func availableLanguages(lib string) []Language {
 }
 
 func Init(lang string) ([]Language, bool) {
-	lib := "locales"
+	lib := "locale"
 	langs := availableLanguages(lib)
 
 	langIsAvailable := false
