@@ -2,8 +2,10 @@ package config
 
 import (
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/kvark128/OnlineLibrary/internal/util"
@@ -26,6 +28,7 @@ const (
 	MessageBufferSize  = 16
 	HTTPTimeout        = time.Second * 12
 	LocalStorageID     = "localstorage"
+	MetadataFileName   = "metadata.xml"
 )
 
 // Supported mime types of content
@@ -69,6 +72,19 @@ func UserData() string {
 		userDataPath = filepath.Join(os.Getenv("USERPROFILE"), ProgramName)
 	}
 	return userDataPath
+}
+
+// BookDir returns the full path to the book directory by it name
+func BookDir(name string) (string, error) {
+	name = util.ReplaceForbiddenCharacters(name)
+	// Windows does not allow trailing dots and spaces in a directory name
+	name = strings.TrimRight(name, ". ")
+	// Whitespace around the edges of a directory name is a very bad thing
+	name = strings.TrimSpace(name)
+	if len(name) == 0 {
+		return "", fmt.Errorf("book directory is invalid")
+	}
+	return filepath.Join(UserData(), name), nil
 }
 
 type Service struct {

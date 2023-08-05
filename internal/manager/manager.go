@@ -16,6 +16,7 @@ import (
 
 	"github.com/kvark128/OnlineLibrary/internal/config"
 	"github.com/kvark128/OnlineLibrary/internal/connection"
+	"github.com/kvark128/OnlineLibrary/internal/content"
 	"github.com/kvark128/OnlineLibrary/internal/gui"
 	"github.com/kvark128/OnlineLibrary/internal/gui/msg"
 	"github.com/kvark128/OnlineLibrary/internal/log"
@@ -24,11 +25,14 @@ import (
 	"github.com/kvark128/OnlineLibrary/internal/util/buffer"
 	"github.com/kvark128/dodp"
 	"github.com/leonelquinteros/gotext"
+
+	"github.com/kvark128/OnlineLibrary/internal/providers"
+	"github.com/kvark128/OnlineLibrary/internal/providers/library"
+	"github.com/kvark128/OnlineLibrary/internal/providers/localstorage"
 )
 
 const (
-	MetadataFileName = "metadata.xml"
-	CRLF             = "\r\n"
+	CRLF = "\r\n"
 )
 
 var (
@@ -40,16 +44,16 @@ type ChoiceItem struct {
 	dodp.Choice
 }
 
-func (c ChoiceItem) Name() string {
-	return c.Label.Text
+func (c ChoiceItem) Label() string {
+	return c.Choice.Label.Text
 }
 
 type Manager struct {
-	provider      Provider
+	provider      providers.Provider
 	mainWnd       *gui.MainWnd
 	logger        *log.Logger
 	book          *Book
-	contentList   *ContentList
+	contentList   *content.List
 	questions     *dodp.Questions
 	userResponses []dodp.UserResponse
 	lastInputText string
@@ -77,7 +81,7 @@ func (m *Manager) Start(conf *config.Config, done chan<- bool) {
 		switch message.Code {
 		case msg.ACTIVATE_MENU:
 			if m.contentList != nil {
-				book := m.mainWnd.MainListBox().CurrentItem().(ContentItem)
+				book := m.mainWnd.MainListBox().CurrentItem().(content.Item)
 				if m.book == nil || m.book.ID() != book.ID() {
 					if err := m.setBook(conf, book); err != nil {
 						m.messageBoxError(fmt.Errorf("Set book: %w", err))
@@ -122,10 +126,10 @@ func (m *Manager) Start(conf *config.Config, done chan<- bool) {
 				id = conf.General.Provider
 			}
 
-			var provider Provider
+			var provider providers.Provider
 			var err error
 			if id == config.LocalStorageID {
-				provider = NewLocalStorage(conf)
+				provider = localstorage.NewLocalStorage(conf)
 			} else {
 				var service *config.Service
 				service, err = conf.ServiceByID(id)
@@ -133,7 +137,7 @@ func (m *Manager) Start(conf *config.Config, done chan<- bool) {
 					m.logger.Debug("Get service %v: %v", id, err)
 					break
 				}
-				provider, err = NewLibrary(conf, service)
+				provider, err = library.NewLibrary(conf, service)
 			}
 
 			if err != nil {
@@ -164,7 +168,7 @@ func (m *Manager) Start(conf *config.Config, done chan<- bool) {
 				}
 			}
 
-			provider, err := NewLibrary(conf, service)
+			provider, err := library.NewLibrary(conf, service)
 			if err != nil {
 				m.messageBoxError(fmt.Errorf("library creating: %w", err))
 				break
@@ -173,15 +177,15 @@ func (m *Manager) Start(conf *config.Config, done chan<- bool) {
 			m.setProvider(provider, conf, service.ID)
 
 		case msg.LIBRARY_REMOVE:
-			lib, ok := m.provider.(*Library)
+			lib, ok := m.provider.(*library.Library)
 			if !ok {
 				break
 			}
-			msg := gotext.Get("Are you sure you want to delete the account \"%v\"?\nAll saved bookmarks of all books in this library will also be deleted.\nThis action cannot be undone.", lib.service.Name)
+			msg := gotext.Get("Are you sure you want to delete the account \"%v\"?\nAll saved bookmarks of all books in this library will also be deleted.\nThis action cannot be undone.", lib.Service().Name)
 			if !m.mainWnd.MessageBoxQuestion(gotext.Get("Deleting an account"), msg) {
 				break
 			}
-			conf.RemoveService(lib.service)
+			conf.RemoveService(lib.Service())
 			m.cleaning(conf)
 			m.mainWnd.MenuBar().SetProvidersMenu(conf.Services, "")
 
@@ -189,7 +193,7 @@ func (m *Manager) Start(conf *config.Config, done chan<- bool) {
 			if m.contentList == nil {
 				break
 			}
-			book := m.mainWnd.MainListBox().CurrentItem().(ContentItem)
+			book := m.mainWnd.MainListBox().CurrentItem().(content.Item)
 			if err := m.issueBook(book); err != nil {
 				m.messageBoxError(fmt.Errorf("Adding book: %w", err))
 				break
@@ -200,7 +204,7 @@ func (m *Manager) Start(conf *config.Config, done chan<- bool) {
 			if m.contentList == nil {
 				break
 			}
-			book := m.mainWnd.MainListBox().CurrentItem().(ContentItem)
+			book := m.mainWnd.MainListBox().CurrentItem().(content.Item)
 			if err := m.removeBook(book); err != nil {
 				m.messageBoxError(fmt.Errorf("Removing book: %w", err))
 				break
@@ -215,7 +219,7 @@ func (m *Manager) Start(conf *config.Config, done chan<- bool) {
 			if m.contentList == nil {
 				break
 			}
-			book := m.mainWnd.MainListBox().CurrentItem().(ContentItem)
+			book := m.mainWnd.MainListBox().CurrentItem().(content.Item)
 			if err := m.downloadBook(book); err != nil {
 				m.messageBoxError(fmt.Errorf("Book downloading: %w", err))
 			}
@@ -224,7 +228,7 @@ func (m *Manager) Start(conf *config.Config, done chan<- bool) {
 			if m.contentList == nil {
 				break
 			}
-			book := m.mainWnd.MainListBox().CurrentItem().(ContentItem)
+			book := m.mainWnd.MainListBox().CurrentItem().(content.Item)
 			text, err := m.bookDescription(book)
 			if err != nil {
 				m.messageBoxError(err)
@@ -434,12 +438,12 @@ func (m *Manager) Start(conf *config.Config, done chan<- bool) {
 			if m.provider == nil {
 				break
 			}
-			lib, ok := m.provider.(*Library)
+			lib, ok := m.provider.(*library.Library)
 			if !ok {
 				break
 			}
 			var lines []string
-			attrs := lib.serviceAttributes
+			attrs := lib.ServiceAttributes()
 			lines = append(lines, gotext.Get("Name: %v (%v)", attrs.Service.Label.Text, attrs.Service.ID))
 			lines = append(lines, gotext.Get("Back command support: %v", attrs.SupportsServerSideBack))
 			lines = append(lines, gotext.Get("Search command support: %v", attrs.SupportsSearch))
@@ -463,20 +467,15 @@ func (m *Manager) Start(conf *config.Config, done chan<- bool) {
 }
 
 func (m *Manager) cleaning(conf *config.Config) {
-	if m.book != nil {
-		m.book.Save(conf)
-		m.book.Stop()
-		m.book = nil
-	}
+	m.setBook(conf, nil)
 	m.mainWnd.MainListBox().Clear()
 	m.mainWnd.MenuBar().SetBookMenuEnabled(false)
-	m.mainWnd.SetTitle("")
 	m.contentList = nil
 	m.questions = nil
 	m.userResponses = nil
 
 	if m.provider != nil {
-		if lib, ok := m.provider.(*Library); ok {
+		if lib, ok := m.provider.(*library.Library); ok {
 			_, err := lib.LogOff()
 			if err != nil {
 				m.logger.Warning("Library logoff: %v", err)
@@ -486,14 +485,14 @@ func (m *Manager) cleaning(conf *config.Config) {
 	}
 }
 
-func (m *Manager) setProvider(provider Provider, conf *config.Config, id string) {
+func (m *Manager) setProvider(provider providers.Provider, conf *config.Config, id string) {
 	m.logger.Info("Set provider: %v", id)
 	m.cleaning(conf)
 	m.provider = provider
 	conf.General.Provider = id
 	if id, err := m.provider.LastContentListID(); err == nil {
 		m.setContentList(id)
-	} else if _, ok := m.provider.(Questioner); ok {
+	} else if _, ok := m.provider.(providers.Questioner); ok {
 		m.setQuestions(dodp.UserResponse{QuestionID: dodp.Default})
 	}
 	if id, err := m.provider.LastContentItemID(); err == nil {
@@ -507,7 +506,7 @@ func (m *Manager) setProvider(provider Provider, conf *config.Config, id string)
 }
 
 func (m *Manager) setQuestions(response ...dodp.UserResponse) {
-	qst, ok := m.provider.(Questioner)
+	qst, ok := m.provider.(providers.Questioner)
 	if !ok {
 		m.messageBoxError(OperationNotSupported)
 		return
@@ -597,7 +596,7 @@ func (m *Manager) setContentList(contentID string) {
 	}
 
 	if contentID == dodp.Issued {
-		if lib, ok := m.provider.(*Library); ok {
+		if lib, ok := m.provider.(*library.Library); ok {
 			ids := make([]string, len(contentList.Items))
 			for i := range ids {
 				book := contentList.Items[i]
@@ -606,14 +605,14 @@ func (m *Manager) setContentList(contentID string) {
 			if m.book != nil && !util.StringInSlice(m.book.ID(), ids) {
 				ids = append(ids, m.book.ID())
 			}
-			lib.service.RecentBooks.Tidy(ids)
+			lib.Service().RecentBooks.Tidy(ids)
 		}
 	}
 
 	m.updateContentList(contentList)
 }
 
-func (m *Manager) updateContentList(contentList *ContentList) {
+func (m *Manager) updateContentList(contentList *content.List) {
 	m.contentList = contentList
 	items := make([]gui.ListItem, len(m.contentList.Items))
 	for i, v := range m.contentList.Items {
@@ -623,36 +622,48 @@ func (m *Manager) updateContentList(contentList *ContentList) {
 	m.mainWnd.MenuBar().SetBookMenuEnabled(true)
 }
 
-func (m *Manager) setBook(conf *config.Config, contentItem ContentItem) error {
+func (m *Manager) setBook(conf *config.Config, contentItem content.Item) error {
 	if m.book != nil {
 		m.book.Pause(true)
 	}
 
-	book, err := NewBook(conf.General.OutputDevice, contentItem, m.logger, m.mainWnd.StatusBar())
+	if contentItem != nil {
+		book, err := NewBook(conf.General.OutputDevice, contentItem, m.logger, m.mainWnd.StatusBar())
+		if err != nil {
+			return err
+		}
+		defer func() {
+			book.SetTimerDuration(conf.General.PauseTimer)
+			book.SetVolume(conf.General.Volume)
+			m.mainWnd.SetTitle(book.Title())
+			m.mainWnd.MenuBar().SetBookmarksMenu(book.Bookmarks())
+			m.book = book
+			m.logger.Debug("Set book: %v", book.ID())
+		}()
+	}
+
+	if m.book != nil {
+		conf.General.Volume = m.book.Volume()
+		m.book.Save()
+		m.book.Stop()
+		m.mainWnd.SetTitle("")
+		m.mainWnd.MenuBar().SetBookmarksMenu(nil)
+		m.book = nil
+	}
+	return nil
+}
+
+func (m *Manager) downloadBook(book content.Item) error {
+	if _, ok := m.provider.(*library.Library); !ok {
+		return OperationNotSupported
+	}
+
+	name, err := book.Name()
 	if err != nil {
 		return err
 	}
 
-	if m.book != nil {
-		m.book.Save(conf)
-		m.book.Stop()
-	}
-
-	book.SetTimerDuration(conf.General.PauseTimer)
-	book.SetVolume(conf.General.Volume)
-	m.mainWnd.SetTitle(book.Name())
-	m.mainWnd.MenuBar().SetBookmarksMenu(book.Bookmarks())
-	m.book = book
-	m.logger.Debug("Set book: %v", book.ID())
-	return nil
-}
-
-func (m *Manager) downloadBook(book ContentItem) error {
-	if _, ok := m.provider.(*Library); !ok {
-		return OperationNotSupported
-	}
-
-	bookDir, err := BookDir(book.Name())
+	dir, err := config.BookDir(name)
 	if err != nil {
 		return err
 	}
@@ -663,36 +674,36 @@ func (m *Manager) downloadBook(book ContentItem) error {
 	}
 
 	if md, err := book.ContentMetadata(); err == nil {
-		path := filepath.Join(bookDir, MetadataFileName)
+		path := filepath.Join(dir, config.MetadataFileName)
 		f, err := util.CreateSecureFile(path)
 		if err != nil {
-			m.logger.Warning("Creating %v: %v", MetadataFileName, err)
+			m.logger.Warning("Creating %v: %v", config.MetadataFileName, err)
 		} else {
 			defer f.Close()
 			e := xml.NewEncoder(f)
 			e.Indent("", "\t") // for readability
 			if err := e.Encode(md); err != nil {
 				f.Corrupted()
-				m.logger.Error("Writing to %v: %v", MetadataFileName, err)
+				m.logger.Error("Writing to %v: %v", config.MetadataFileName, err)
 			}
 		}
 	}
 
-	dlFunc := func(rsrc []dodp.Resource, bookDir, bookID string) {
+	dlFunc := func(rsrc []dodp.Resource, dir string, id string) {
 		var err error
 		var totalSize, downloadedSize int64
 		ctx, cancelFunc := context.WithCancel(context.TODO())
-		dlg := gui.NewProgressDialog(m.mainWnd, gotext.Get("Book downloading"), gotext.Get("Downloading \"%v\"\nSpeed: %d KB/s", book.Name(), 0), 100, cancelFunc)
+		dlg := gui.NewProgressDialog(m.mainWnd, gotext.Get("Book downloading"), gotext.Get("Downloading \"%v\"\nSpeed: %d KB/s", name, 0), 100, cancelFunc)
 		dlg.Run()
 
 		for _, r := range rsrc {
 			totalSize += r.Size
 		}
 
-		m.logger.Debug("Downloading book %v started", bookID)
+		m.logger.Debug("Downloading book %v started", id)
 		for _, r := range rsrc {
 			err = func() error {
-				path := filepath.Join(bookDir, r.LocalURI)
+				path := filepath.Join(dir, r.LocalURI)
 				if util.FileIsExist(path, r.Size) {
 					// This fragment already exists on disk
 					downloadedSize += r.Size
@@ -720,7 +731,7 @@ func (m *Manager) downloadBook(book ContentItem) error {
 					n, err = io.CopyN(dst, src, 512*1024)
 					sec := time.Since(t).Seconds()
 					speed := int(float64(n) / 1024 / sec)
-					dlg.SetLabel(gotext.Get("Downloading \"%v\"\nSpeed: %d KB/s", book.Name(), speed))
+					dlg.SetLabel(gotext.Get("Downloading \"%v\"\nSpeed: %d KB/s", name, speed))
 					downloadedSize += n
 					fragmentSize += n
 					dlg.SetValue(int(downloadedSize / (totalSize / 100)))
@@ -754,32 +765,32 @@ func (m *Manager) downloadBook(book ContentItem) error {
 			m.mainWnd.MessageBoxError(gotext.Get("Error"), err.Error())
 		default:
 			m.mainWnd.MessageBoxWarning(gotext.Get("Warning"), gotext.Get("Book successfully downloaded"))
-			m.logger.Debug("Book %v has been successfully downloaded. Total size: %v", bookID, totalSize)
+			m.logger.Debug("Book %v has been successfully downloaded. Total size: %v", id, totalSize)
 		}
 	}
 
 	// Book downloading should not block handling of other messages
-	go dlFunc(rsrc, bookDir, book.ID())
+	go dlFunc(rsrc, dir, book.ID())
 	return nil
 }
 
-func (m *Manager) removeBook(book ContentItem) error {
-	returner, ok := book.(Returner)
+func (m *Manager) removeBook(book content.Item) error {
+	returner, ok := book.(content.Returner)
 	if !ok {
 		return OperationNotSupported
 	}
 	return returner.Return()
 }
 
-func (m *Manager) issueBook(book ContentItem) error {
-	issuer, ok := book.(Issuer)
+func (m *Manager) issueBook(book content.Item) error {
+	issuer, ok := book.(content.Issuer)
 	if !ok {
 		return OperationNotSupported
 	}
 	return issuer.Issue()
 }
 
-func (m *Manager) bookDescription(book ContentItem) (string, error) {
+func (m *Manager) bookDescription(book content.Item) (string, error) {
 	md, err := book.ContentMetadata()
 	if err != nil {
 		return "", BookDescriptionNotAvailable

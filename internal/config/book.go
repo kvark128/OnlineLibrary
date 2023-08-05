@@ -24,8 +24,6 @@ type Bookmark struct {
 type Book struct {
 	// Unique ID of the book
 	ID string `yaml:"id"`
-	// Human-readable title of the book
-	Name string `yaml:"name"`
 	// Values for speed when playing the book
 	Speed float64 `yaml:"speed,omitempty"`
 	// Set of bookmarks in the book
@@ -34,13 +32,13 @@ type Book struct {
 
 type BookSet []Book
 
-func (setP *BookSet) Book(id string) (Book, error) {
+func (setP *BookSet) Book(id string, defaultSpeed float64) Book {
 	for _, b := range *setP {
 		if b.ID == id {
-			return b, nil
+			return b
 		}
 	}
-	return Book{}, BookNotFound
+	return Book{ID: id, Speed: defaultSpeed}
 }
 
 func (setP *BookSet) SetBook(book Book) {

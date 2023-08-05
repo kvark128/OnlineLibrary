@@ -1,14 +1,12 @@
-package manager
+package library
 
 import (
 	"errors"
 	"fmt"
-	"os"
-	"path/filepath"
 
 	"github.com/kvark128/OnlineLibrary/internal/config"
+	"github.com/kvark128/OnlineLibrary/internal/content"
 	"github.com/kvark128/dodp"
-	"github.com/leonelquinteros/gotext"
 )
 
 type Library struct {
@@ -53,19 +51,19 @@ func NewLibrary(conf *config.Config, service *config.Service) (*Library, error) 
 	return library, nil
 }
 
-func (l *Library) ContentList(id string) (*ContentList, error) {
+func (l *Library) ContentList(id string) (*content.List, error) {
 	contentList, err := l.GetContentList(id, 0, -1)
 	if err != nil {
 		return nil, err
 	}
 
-	lst := &ContentList{
+	lst := &content.List{
 		Name: contentList.Label.Text,
 		ID:   contentList.ID,
 	}
 
 	for _, contentItem := range contentList.ContentItems {
-		item := NewLibraryContentItem(l, contentItem.ID, contentItem.Label.Text)
+		item := NewLibraryContentItemWithLabel(l, contentItem.ID, contentItem.Label.Text)
 		lst.Items = append(lst.Items, item)
 	}
 
@@ -80,10 +78,8 @@ func (l *Library) LastContentListID() (string, error) {
 	return dodp.Issued, nil
 }
 
-func (l *Library) ContentItem(id string) (ContentItem, error) {
-	book, _ := l.service.RecentBooks.Book(id)
-	item := NewLibraryContentItem(l, id, book.Name)
-	l.service.RecentBooks.SetBook(item.Config())
+func (l *Library) ContentItem(id string) (content.Item, error) {
+	item := NewLibraryContentItem(l, id)
 	return item, nil
 }
 
@@ -95,67 +91,18 @@ func (l *Library) LastContentItemID() (string, error) {
 	return book.ID, nil
 }
 
+func (l *Library) Service() *config.Service {
+	return l.service
+}
+
+func (l *Library) ServiceAttributes() *dodp.ServiceAttributes {
+	return l.serviceAttributes
+}
+
 func (l *Library) GetQuestions(ur *dodp.UserResponses) (*dodp.Questions, error) {
 	questions, err := l.Client.GetQuestions(ur)
 	if err == nil {
 		l.service.OpenBookshelfOnLogin = false
 	}
 	return questions, err
-}
-
-type LocalStorage struct {
-	conf *config.Config
-}
-
-func NewLocalStorage(conf *config.Config) *LocalStorage {
-	return &LocalStorage{conf: conf}
-}
-
-func (s *LocalStorage) ContentList(string) (*ContentList, error) {
-	userData := config.UserData()
-	entrys, err := os.ReadDir(userData)
-	if err != nil {
-		return nil, err
-	}
-
-	lst := &ContentList{
-		Name: gotext.Get("Local books"),
-	}
-
-	for _, e := range entrys {
-		if e.IsDir() {
-			path := filepath.Join(userData, e.Name())
-			item := NewLocalContentItem(s, path)
-			lst.Items = append(lst.Items, item)
-		}
-	}
-
-	return lst, nil
-}
-
-func (s *LocalStorage) LastContentListID() (string, error) {
-	return "", nil
-}
-
-func (s *LocalStorage) ContentItem(id string) (ContentItem, error) {
-	lst, err := s.ContentList("")
-	if err != nil {
-		return nil, err
-	}
-
-	for _, item := range lst.Items {
-		if item.ID() == id {
-			s.conf.LocalBooks.SetBook(item.Config())
-			return item, nil
-		}
-	}
-	return nil, errors.New("content item not found")
-}
-
-func (s *LocalStorage) LastContentItemID() (string, error) {
-	book, err := s.conf.LocalBooks.LastBook()
-	if err != nil {
-		return "", err
-	}
-	return book.ID, nil
 }

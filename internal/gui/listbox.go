@@ -34,7 +34,7 @@ type MainListBox struct {
 }
 
 type ListItem interface {
-	Name() string
+	Label() string
 }
 
 func (mlb *MainListBox) SetItems(items []ListItem, label string, contextMenu *walk.Menu) {
@@ -44,7 +44,7 @@ func (mlb *MainListBox) SetItems(items []ListItem, label string, contextMenu *wa
 		mlb.items = items
 		labels := make([]string, len(mlb.items))
 		for i, v := range mlb.items {
-			labels[i] = v.Name()
+			labels[i] = v.Label()
 		}
 		mlb.SetModel(labels)
 		mlb.ListBox.SetContextMenu(contextMenu)

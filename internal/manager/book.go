@@ -2,43 +2,34 @@ package manager
 
 import (
 	"fmt"
-	"path/filepath"
-	"strings"
 	"time"
 
 	"github.com/kvark128/OnlineLibrary/internal/config"
+	"github.com/kvark128/OnlineLibrary/internal/content"
 	"github.com/kvark128/OnlineLibrary/internal/gui"
 	"github.com/kvark128/OnlineLibrary/internal/log"
 	"github.com/kvark128/OnlineLibrary/internal/player"
-	"github.com/kvark128/OnlineLibrary/internal/util"
 )
 
-// BookDir returns the full path to the book directory by it name
-func BookDir(name string) (string, error) {
-	name = util.ReplaceForbiddenCharacters(name)
-	// Windows does not allow trailing dots and spaces in a directory name
-	name = strings.TrimRight(name, ". ")
-	// Whitespace around the edges of a directory name is a very bad thing
-	name = strings.TrimSpace(name)
-	if len(name) == 0 {
-		return "", fmt.Errorf("book directory is invalid")
-	}
-	return filepath.Join(config.UserData(), name), nil
-}
-
 type Book struct {
-	ContentItem
+	content.Item
 	*player.Player
-	conf config.Book
+	title string
+	conf  *config.Book
 }
 
-func NewBook(outputDevice string, contentItem ContentItem, logger *log.Logger, statusBar *gui.StatusBar) (*Book, error) {
+func NewBook(outputDevice string, contentItem content.Item, logger *log.Logger, statusBar *gui.StatusBar) (*Book, error) {
 	book := &Book{
-		ContentItem: contentItem,
-		conf:        contentItem.Config(),
+		Item: contentItem,
+		conf: contentItem.Config(),
 	}
 
-	bookDir, err := BookDir(book.Name())
+	name, err := book.Name()
+	if err != nil {
+		return nil, err
+	}
+
+	dir, err := config.BookDir(name)
 	if err != nil {
 		return nil, err
 	}
@@ -52,7 +43,8 @@ func NewBook(outputDevice string, contentItem ContentItem, logger *log.Logger, s
 		book.conf.Bookmarks = make(map[string]config.Bookmark)
 	}
 
-	book.Player = player.NewPlayer(bookDir, rsrc, outputDevice, logger, statusBar)
+	book.title = name
+	book.Player = player.NewPlayer(dir, rsrc, outputDevice, logger, statusBar)
 	book.SetSpeed(book.conf.Speed)
 	if bookmark, err := book.Bookmark(config.ListeningPosition); err == nil {
 		book.SetFragment(bookmark.Fragment)
@@ -123,9 +115,12 @@ func (book *Book) Bookmarks() map[string]string {
 	return bookmarks
 }
 
-func (book *Book) Save(conf *config.Config) {
+func (book *Book) Save() {
 	book.SetBookmarkWithID(config.ListeningPosition)
 	book.conf.Speed = book.Speed()
-	conf.General.Volume = book.Volume()
-	book.SetConfig(book.conf)
+	book.SaveConfig()
+}
+
+func (book *Book) Title() string {
+	return book.title
 }
