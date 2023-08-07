@@ -63,7 +63,7 @@ func (l *Library) ContentList(id string) (*content.List, error) {
 	}
 
 	for _, contentItem := range contentList.ContentItems {
-		item := NewLibraryContentItemWithLabel(l, contentItem.ID, contentItem.Label.Text)
+		item := NewContentItemWithLabel(l, contentItem.ID, contentItem.Label.Text)
 		lst.Items = append(lst.Items, item)
 	}
 
@@ -79,7 +79,7 @@ func (l *Library) LastContentListID() (string, error) {
 }
 
 func (l *Library) ContentItem(id string) (content.Item, error) {
-	item := NewLibraryContentItem(l, id)
+	item := NewContentItem(l, id)
 	return item, nil
 }
 

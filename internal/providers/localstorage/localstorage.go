@@ -32,7 +32,7 @@ func (s *LocalStorage) ContentList(string) (*content.List, error) {
 	for _, e := range entrys {
 		if e.IsDir() {
 			path := filepath.Join(userData, e.Name())
-			item := NewLocalContentItem(s, path)
+			item := NewContentItem(s, path)
 			lst.Items = append(lst.Items, item)
 		}
 	}

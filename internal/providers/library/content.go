@@ -6,26 +6,26 @@ import (
 	"github.com/kvark128/dodp"
 )
 
-type LibraryContentItem struct {
+type ContentItem struct {
 	library  *Library
 	label    string
 	metadata *dodp.ContentMetadata
 	conf     config.Book
 }
 
-func NewLibraryContentItem(library *Library, id string) *LibraryContentItem {
-	return NewLibraryContentItemWithLabel(library, id, "")
+func NewContentItem(library *Library, id string) *ContentItem {
+	return NewContentItemWithLabel(library, id, "")
 }
 
-func NewLibraryContentItemWithLabel(library *Library, id, label string) *LibraryContentItem {
-	return &LibraryContentItem{
+func NewContentItemWithLabel(library *Library, id, label string) *ContentItem {
+	return &ContentItem{
 		library: library,
 		label:   label,
 		conf:    library.service.RecentBooks.Book(id, player.DEFAULT_SPEED),
 	}
 }
 
-func (ci *LibraryContentItem) Name() (string, error) {
+func (ci *ContentItem) Name() (string, error) {
 	md, err := ci.ContentMetadata()
 	if err != nil {
 		return "", err
@@ -33,15 +33,15 @@ func (ci *LibraryContentItem) Name() (string, error) {
 	return md.Metadata.Title, nil
 }
 
-func (ci *LibraryContentItem) Label() string {
+func (ci *ContentItem) Label() string {
 	return ci.label
 }
 
-func (ci *LibraryContentItem) ID() string {
+func (ci *ContentItem) ID() string {
 	return ci.conf.ID
 }
 
-func (ci *LibraryContentItem) Resources() ([]dodp.Resource, error) {
+func (ci *ContentItem) Resources() ([]dodp.Resource, error) {
 	r, err := ci.library.GetContentResources(ci.conf.ID)
 	if err != nil {
 		return nil, err
@@ -49,7 +49,7 @@ func (ci *LibraryContentItem) Resources() ([]dodp.Resource, error) {
 	return r.Resources, nil
 }
 
-func (ci *LibraryContentItem) ContentMetadata() (*dodp.ContentMetadata, error) {
+func (ci *ContentItem) ContentMetadata() (*dodp.ContentMetadata, error) {
 	if ci.metadata != nil {
 		return ci.metadata, nil
 	}
@@ -61,20 +61,20 @@ func (ci *LibraryContentItem) ContentMetadata() (*dodp.ContentMetadata, error) {
 	return ci.metadata, nil
 }
 
-func (ci *LibraryContentItem) Issue() error {
+func (ci *ContentItem) Issue() error {
 	_, err := ci.library.IssueContent(ci.conf.ID)
 	return err
 }
 
-func (ci *LibraryContentItem) Return() error {
+func (ci *ContentItem) Return() error {
 	_, err := ci.library.ReturnContent(ci.conf.ID)
 	return err
 }
 
-func (ci *LibraryContentItem) Config() *config.Book {
+func (ci *ContentItem) Config() *config.Book {
 	return &ci.conf
 }
 
-func (ci *LibraryContentItem) SaveConfig() {
+func (ci *ContentItem) SaveConfig() {
 	ci.library.service.RecentBooks.SetBook(ci.conf)
 }
