@@ -19,12 +19,7 @@ type Book struct {
 }
 
 func NewBook(outputDevice string, contentItem content.Item, logger *log.Logger, statusBar *gui.StatusBar) (*Book, error) {
-	book := &Book{
-		Item: contentItem,
-		conf: contentItem.Config(),
-	}
-
-	name, err := book.Name()
+	name, err := contentItem.Name()
 	if err != nil {
 		return nil, err
 	}
@@ -34,17 +29,18 @@ func NewBook(outputDevice string, contentItem content.Item, logger *log.Logger, 
 		return nil, err
 	}
 
-	rsrc, err := book.Resources()
+	rsrc, err := contentItem.Resources()
 	if err != nil {
-		return nil, fmt.Errorf("GetContentResources: %v", err)
+		return nil, err
 	}
 
-	if book.conf.Bookmarks == nil {
-		book.conf.Bookmarks = make(map[string]config.Bookmark)
+	book := &Book{
+		Item:   contentItem,
+		Player: player.NewPlayer(dir, rsrc, outputDevice, logger, statusBar),
+		title:  name,
+		conf:   contentItem.Config(),
 	}
 
-	book.title = name
-	book.Player = player.NewPlayer(dir, rsrc, outputDevice, logger, statusBar)
 	book.SetSpeed(book.conf.Speed)
 	if bookmark, err := book.Bookmark(config.ListeningPosition); err == nil {
 		book.SetFragment(bookmark.Fragment)

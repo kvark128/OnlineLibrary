@@ -38,7 +38,11 @@ func (setP *BookSet) Book(id string, defaultSpeed float64) Book {
 			return b
 		}
 	}
-	return Book{ID: id, Speed: defaultSpeed}
+	return Book{
+		ID:        id,
+		Speed:     defaultSpeed,
+		Bookmarks: make(map[string]Bookmark),
+	}
 }
 
 func (setP *BookSet) SetBook(book Book) {

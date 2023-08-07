@@ -243,7 +243,6 @@ func (m *Manager) Start(conf *config.Config, done chan<- bool) {
 
 		case msg.PLAYER_STOP:
 			if m.book != nil {
-				m.book.SetBookmarkWithID(config.ListeningPosition)
 				m.book.Stop()
 			}
 
