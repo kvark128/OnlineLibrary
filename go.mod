@@ -4,7 +4,7 @@ go 1.19
 
 require (
 	github.com/josephspurrier/goversioninfo v1.4.0
-	github.com/kvark128/dodp v0.0.0-20220916012521-ea56f43448fa
+	github.com/kvark128/dodp v0.0.0-20230808192243-da96b2e0327e
 	github.com/kvark128/lkf v0.0.0-20200906212533-0cc542d11ec8
 	github.com/kvark128/walk v0.0.0-20230207150301-925603f55833
 	github.com/leonelquinteros/gotext v1.5.1
