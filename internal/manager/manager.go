@@ -14,6 +14,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/kvark128/OnlineLibrary/internal/books"
 	"github.com/kvark128/OnlineLibrary/internal/config"
 	"github.com/kvark128/OnlineLibrary/internal/connection"
 	"github.com/kvark128/OnlineLibrary/internal/content"
@@ -52,7 +53,7 @@ type Manager struct {
 	provider      providers.Provider
 	mainWnd       *gui.MainWnd
 	logger        *log.Logger
-	book          *Book
+	book          *books.Book
 	contentList   *content.List
 	questions     *dodp.Questions
 	userResponses []dodp.UserResponse
@@ -627,14 +628,14 @@ func (m *Manager) setBook(conf *config.Config, contentItem content.Item) error {
 	}
 
 	if contentItem != nil {
-		book, err := NewBook(conf.General.OutputDevice, contentItem, m.logger, m.mainWnd.StatusBar())
+		book, err := books.NewBook(conf.General.OutputDevice, contentItem, m.logger, m.mainWnd.StatusBar())
 		if err != nil {
 			return err
 		}
 		defer func() {
 			book.SetTimerDuration(conf.General.PauseTimer)
 			book.SetVolume(conf.General.Volume)
-			m.mainWnd.SetTitle(book.Title())
+			m.mainWnd.SetTitle(book.Title)
 			m.mainWnd.MenuBar().SetBookmarksMenu(book.Bookmarks())
 			m.book = book
 			m.logger.Debug("Set book: %v", book.ID())

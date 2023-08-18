@@ -1,4 +1,4 @@
-package manager
+package books
 
 import (
 	"fmt"
@@ -14,7 +14,7 @@ import (
 type Book struct {
 	content.Item
 	*player.Player
-	title string
+	Title string
 	conf  *config.Book
 }
 
@@ -37,7 +37,7 @@ func NewBook(outputDevice string, contentItem content.Item, logger *log.Logger, 
 	book := &Book{
 		Item:   contentItem,
 		Player: player.NewPlayer(dir, rsrc, outputDevice, logger, statusBar),
-		title:  name,
+		Title:  name,
 		conf:   contentItem.Config(),
 	}
 
@@ -115,8 +115,4 @@ func (book *Book) Save() {
 	book.SetBookmarkWithID(config.ListeningPosition)
 	book.conf.Speed = book.Speed()
 	book.SaveConfig()
-}
-
-func (book *Book) Title() string {
-	return book.title
 }
