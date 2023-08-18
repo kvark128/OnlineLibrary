@@ -475,10 +475,10 @@ func (m *Manager) cleaning(conf *config.Config) {
 	m.userResponses = nil
 
 	if m.provider != nil {
-		if lib, ok := m.provider.(*library.Library); ok {
-			_, err := lib.LogOff()
-			if err != nil {
-				m.logger.Warning("Library logoff: %v", err)
+		if term, ok := m.provider.(providers.Terminator); ok {
+			m.logger.Warning("Terminating current provider")
+			if err := term.Terminate(); err != nil {
+				m.logger.Warning("Provider terminating: %v", err)
 			}
 		}
 		m.provider = nil
@@ -595,18 +595,16 @@ func (m *Manager) setContentList(contentID string) {
 		return
 	}
 
-	if contentID == dodp.Issued {
-		if lib, ok := m.provider.(*library.Library); ok {
-			ids := make([]string, len(contentList.Items))
-			for i := range ids {
-				book := contentList.Items[i]
-				ids[i] = book.ID()
-			}
-			if m.book != nil && !util.StringInSlice(m.book.ID(), ids) {
-				ids = append(ids, m.book.ID())
-			}
-			lib.Service().RecentBooks.Tidy(ids)
+	if contentList.ID == dodp.Issued {
+		ids := make([]string, len(contentList.Items))
+		for i := range ids {
+			book := contentList.Items[i]
+			ids[i] = book.ID()
 		}
+		if m.book != nil && !util.StringInSlice(m.book.ID(), ids) {
+			ids = append(ids, m.book.ID())
+		}
+		m.provider.Tidy(ids)
 	}
 
 	m.updateContentList(contentList)

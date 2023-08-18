@@ -7,6 +7,7 @@ import (
 
 	"github.com/kvark128/OnlineLibrary/internal/config"
 	"github.com/kvark128/OnlineLibrary/internal/content"
+	"github.com/kvark128/dodp"
 	"github.com/leonelquinteros/gotext"
 )
 
@@ -26,6 +27,7 @@ func (s *LocalStorage) ContentList(string) (*content.List, error) {
 	}
 
 	lst := &content.List{
+		ID:   dodp.Issued,
 		Name: gotext.Get("Local books"),
 	}
 
@@ -41,7 +43,7 @@ func (s *LocalStorage) ContentList(string) (*content.List, error) {
 }
 
 func (s *LocalStorage) LastContentListID() (string, error) {
-	return "", nil
+	return dodp.Issued, nil
 }
 
 func (s *LocalStorage) ContentItem(id string) (content.Item, error) {
@@ -64,4 +66,8 @@ func (s *LocalStorage) LastContentItemID() (string, error) {
 		return "", err
 	}
 	return book.ID, nil
+}
+
+func (s *LocalStorage) Tidy(ids []string) {
+	s.conf.LocalBooks.Tidy(ids)
 }

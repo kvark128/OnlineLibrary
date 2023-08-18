@@ -10,8 +10,13 @@ type Provider interface {
 	LastContentListID() (string, error)
 	ContentItem(string) (content.Item, error)
 	LastContentItemID() (string, error)
+	Tidy([]string)
 }
 
 type Questioner interface {
 	GetQuestions(*dodp.UserResponses) (*dodp.Questions, error)
+}
+
+type Terminator interface {
+	Terminate() error
 }

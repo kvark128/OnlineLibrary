@@ -91,6 +91,15 @@ func (l *Library) LastContentItemID() (string, error) {
 	return book.ID, nil
 }
 
+func (l *Library) Tidy(ids []string) {
+	l.service.RecentBooks.Tidy(ids)
+}
+
+func (l *Library) Terminate() error {
+	_, err := l.LogOff()
+	return err
+}
+
 func (l *Library) Service() *config.Service {
 	return l.service
 }
