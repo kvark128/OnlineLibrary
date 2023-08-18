@@ -146,12 +146,9 @@ func (p *Player) Fragment() int {
 func (p *Player) SetFragment(fragment int) {
 	p.Lock()
 	defer p.Unlock()
-	if fragment >= len(p.playList) {
-		// Attempt was made to start a non-existent track. Do nothing
+	if fragment < 0 || fragment >= len(p.playList) {
+		// This fragment does not exist. Don't need to do anything
 		return
-	}
-	if fragment < 0 {
-		fragment = 0
 	}
 	p.fragmentIndex = fragment
 	if p.playing.Load() {
