@@ -12,32 +12,35 @@ import (
 )
 
 type ContentItem struct {
-	storage  *LocalStorage
-	path     string
-	metadata *dodp.ContentMetadata
-	conf     config.Book
+	storage   *LocalStorage
+	resources []dodp.Resource
+	metadata  *dodp.ContentMetadata
+	conf      config.Book
 }
 
-func NewContentItem(storage *LocalStorage, path string) *ContentItem {
+func NewContentItem(storage *LocalStorage, id string) *ContentItem {
 	return &ContentItem{
 		storage: storage,
-		path:    path,
-		conf:    storage.conf.LocalBooks.Book(filepath.Base(path), player.DEFAULT_SPEED),
+		conf:    storage.conf.LocalBooks.Book(id, player.DEFAULT_SPEED),
 	}
+}
+
+func (ci *ContentItem) path() string {
+	return filepath.Join(ci.storage.path, ci.conf.ID)
 }
 
 func (ci *ContentItem) Name() (string, error) {
 	label := ci.Label()
-	if dir, err := config.BookDir(label); err == nil && dir == ci.path {
+	if dir, err := config.BookDir(label); err == nil && dir == ci.path() {
 		return label, nil
 	}
-	return filepath.Base(ci.path), nil
+	return ci.conf.ID, nil
 }
 
 func (ci *ContentItem) Label() string {
 	md, err := ci.ContentMetadata()
 	if err != nil {
-		return filepath.Base(ci.path)
+		return ci.conf.ID
 	}
 	return md.Metadata.Title
 }
@@ -47,12 +50,17 @@ func (ci *ContentItem) ID() string {
 }
 
 func (ci *ContentItem) Resources() ([]dodp.Resource, error) {
+	if ci.resources != nil {
+		return ci.resources, nil
+	}
+	path := ci.path()
 	rsrc := make([]dodp.Resource, 0)
+
 	walker := func(targpath string, info fs.FileInfo, err error) error {
 		if err != nil || info.IsDir() {
 			return err
 		}
-		localURI, err := filepath.Rel(ci.path, targpath)
+		localURI, err := filepath.Rel(path, targpath)
 		if err != nil {
 			return err
 		}
@@ -64,17 +72,18 @@ func (ci *ContentItem) Resources() ([]dodp.Resource, error) {
 		return nil
 	}
 
-	if err := filepath.Walk(ci.path, walker); err != nil {
+	if err := filepath.Walk(path, walker); err != nil {
 		return nil, err
 	}
-	return rsrc, nil
+	ci.resources = rsrc
+	return ci.resources, nil
 }
 
 func (ci *ContentItem) ContentMetadata() (*dodp.ContentMetadata, error) {
 	if ci.metadata != nil {
 		return ci.metadata, nil
 	}
-	path := filepath.Join(ci.path, config.MetadataFileName)
+	path := filepath.Join(ci.path(), config.MetadataFileName)
 	f, err := os.Open(path)
 	if err != nil {
 		return nil, err

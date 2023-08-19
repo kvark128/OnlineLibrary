@@ -7,10 +7,11 @@ import (
 )
 
 type ContentItem struct {
-	library  *Library
-	label    string
-	metadata *dodp.ContentMetadata
-	conf     config.Book
+	library   *Library
+	label     string
+	resources []dodp.Resource
+	metadata  *dodp.ContentMetadata
+	conf      config.Book
 }
 
 func NewContentItem(library *Library, id string) *ContentItem {
@@ -42,11 +43,15 @@ func (ci *ContentItem) ID() string {
 }
 
 func (ci *ContentItem) Resources() ([]dodp.Resource, error) {
+	if ci.resources != nil {
+		return ci.resources, nil
+	}
 	r, err := ci.library.GetContentResources(ci.conf.ID)
 	if err != nil {
 		return nil, err
 	}
-	return r.Resources, nil
+	ci.resources = r.Resources
+	return ci.resources, nil
 }
 
 func (ci *ContentItem) ContentMetadata() (*dodp.ContentMetadata, error) {

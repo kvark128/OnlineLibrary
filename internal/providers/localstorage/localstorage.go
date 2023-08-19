@@ -3,7 +3,6 @@ package localstorage
 import (
 	"errors"
 	"os"
-	"path/filepath"
 
 	"github.com/kvark128/OnlineLibrary/internal/config"
 	"github.com/kvark128/OnlineLibrary/internal/content"
@@ -12,16 +11,19 @@ import (
 )
 
 type LocalStorage struct {
+	path string
 	conf *config.Config
 }
 
 func NewLocalStorage(conf *config.Config) *LocalStorage {
-	return &LocalStorage{conf: conf}
+	return &LocalStorage{
+		path: config.UserData(),
+		conf: conf,
+	}
 }
 
 func (s *LocalStorage) ContentList(string) (*content.List, error) {
-	userData := config.UserData()
-	entrys, err := os.ReadDir(userData)
+	entrys, err := os.ReadDir(s.path)
 	if err != nil {
 		return nil, err
 	}
@@ -33,8 +35,7 @@ func (s *LocalStorage) ContentList(string) (*content.List, error) {
 
 	for _, e := range entrys {
 		if e.IsDir() {
-			path := filepath.Join(userData, e.Name())
-			item := NewContentItem(s, path)
+			item := NewContentItem(s, e.Name())
 			lst.Items = append(lst.Items, item)
 		}
 	}
