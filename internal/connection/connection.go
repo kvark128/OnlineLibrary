@@ -14,11 +14,11 @@ import (
 
 var (
 	ConnectionWasClosed = errors.New("connection was closed")
+	client              = new(http.Client)
 )
 
 type Connection struct {
 	url           string
-	client        http.Client
 	ctx           context.Context
 	resp          *http.Response
 	lastErr       error
@@ -62,7 +62,7 @@ func (c *Connection) createResponse() error {
 
 	var resp *http.Response
 	for attempt := 0; attempt < 3; attempt++ {
-		resp, err = c.client.Do(req)
+		resp, err = client.Do(req)
 		if err == nil {
 			break
 		}
