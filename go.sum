@@ -6,6 +6,8 @@ github.com/josephspurrier/goversioninfo v1.4.0 h1:Puhl12NSHUSALHSuzYwPYQkqa2E1+7
 github.com/josephspurrier/goversioninfo v1.4.0/go.mod h1:JWzv5rKQr+MmW+LvM412ToT/IkYDZjaclF2pKDss8IY=
 github.com/kvark128/dodp v0.0.0-20230808192243-da96b2e0327e h1:tnN239YaKmhKAms0U7EfCgD+Zhy8PUPYmZUxOCFllcM=
 github.com/kvark128/dodp v0.0.0-20230808192243-da96b2e0327e/go.mod h1:DR4VNI484NRHD/dbuLiFLydEySjlODKi+IH7ZHzUGk0=
+github.com/kvark128/dodp v0.0.0-20231014033647-0c99aca9744c h1:m9OLnK48WE0fHDcqYhK+C4yPULgWFEQQqF2NUXXEviE=
+github.com/kvark128/dodp v0.0.0-20231014033647-0c99aca9744c/go.mod h1:DR4VNI484NRHD/dbuLiFLydEySjlODKi+IH7ZHzUGk0=
 github.com/kvark128/lkf v0.0.0-20200906212533-0cc542d11ec8 h1:Aqw38uFO5FQwpLG2w0+7ot7GYIFtoYiiKN54Nvshbfk=
 github.com/kvark128/lkf v0.0.0-20200906212533-0cc542d11ec8/go.mod h1:XYk24siMM2Awb3zhupGfdS62SqWOrDFMtx7Cg7C2KeU=
 github.com/kvark128/walk v0.0.0-20230207150301-925603f55833 h1:ObjUKfZ4QTRluEv3bxCCW1EvTfbhZL7ZSXCfOORStf8=
@@ -46,6 +48,8 @@ golang.org/x/sys v0.8.0 h1:EBmGv8NaZBZTWvrbjNoL6HVt+IVy3QDQpJs7VRIw3tU=
 golang.org/x/sys v0.8.0/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=
 golang.org/x/sys v0.11.0 h1:eG7RXZHdqOJ1i+0lgLgCpSXAp6M3LYlAo6osgSi0xOM=
 golang.org/x/sys v0.11.0/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=
+golang.org/x/sys v0.13.0 h1:Af8nKPmuFypiUBjVoU9V20FiaFXOcuZI21p0ycVYYGE=
+golang.org/x/sys v0.13.0/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=
 golang.org/x/term v0.0.0-20201126162022-7de9c90e9dd1/go.mod h1:bj7SfCRtBDWHUb9snDiAeCFNEtKQo2Wmx5Cou7ajbmo=
 golang.org/x/term v0.0.0-20210927222741-03fcf44c2211/go.mod h1:jbD1KX2456YbFQfuXm/mYQcufACuNUgVhRMnK/tPxf8=
 golang.org/x/text v0.3.0/go.mod h1:NqM8EUOU14njkJ3fqMW+pc6Ldnwhi/IjpwHt7yyuwOQ=
