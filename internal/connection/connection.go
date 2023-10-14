@@ -14,7 +14,6 @@ import (
 
 var (
 	ConnectionWasClosed = errors.New("connection was closed")
-	client              = new(http.Client)
 )
 
 type Connection struct {
@@ -39,30 +38,31 @@ func NewConnectionWithContext(ctx context.Context, url string, logger *log.Logge
 		logger: logger,
 	}
 
-	if err := c.createResponse(); err != nil {
+	contentLength, err := c.createResponse(0)
+	if err != nil {
 		return nil, err
 	}
 
-	if c.resp.ContentLength <= 0 {
+	if contentLength <= 0 {
 		return nil, fmt.Errorf("content length <= 0")
 	}
 
-	c.contentLength = c.resp.ContentLength
+	c.contentLength = contentLength
 	return c, nil
 }
 
-func (c *Connection) createResponse() error {
+func (c *Connection) createResponse(startPos int64) (int64, error) {
 	ctx, cancelFunc := context.WithCancel(c.ctx)
 	c.timer = time.AfterFunc(config.HTTPTimeout, cancelFunc)
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.url, nil)
 	if err != nil {
-		return err
+		return 0, err
 	}
-	req.Header.Set("Range", fmt.Sprintf("bytes=%d-", c.reads))
+	req.Header.Set("Range", fmt.Sprintf("bytes=%d-", startPos))
 
 	var resp *http.Response
 	for attempt := 0; attempt < 3; attempt++ {
-		resp, err = client.Do(req)
+		resp, err = http.DefaultClient.Do(req)
 		if err == nil {
 			break
 		}
@@ -70,12 +70,12 @@ func (c *Connection) createResponse() error {
 	c.timer.Stop()
 
 	if err != nil {
-		return err
+		return 0, err
 	}
 
 	if resp.StatusCode != http.StatusPartialContent {
 		resp.Body.Close()
-		return fmt.Errorf("unexpected http status code: %d", resp.StatusCode)
+		return 0, fmt.Errorf("unexpected http status code: %v", resp.StatusCode)
 	}
 
 	if c.resp != nil {
@@ -83,7 +83,7 @@ func (c *Connection) createResponse() error {
 	}
 
 	c.resp = resp
-	return nil
+	return c.resp.ContentLength, nil
 }
 
 func (c *Connection) Read(p []byte) (int, error) {
@@ -98,7 +98,7 @@ func (c *Connection) Read(p []byte) (int, error) {
 
 	if err != nil && err != context.Canceled && c.reads < c.contentLength {
 		c.logger.Warning("Connection recovery: %v", err)
-		if c.createResponse() == nil {
+		if _, e := c.createResponse(c.reads); e == nil {
 			err = nil
 		}
 	}
@@ -130,11 +130,11 @@ func (c *Connection) Seek(offset int64, whence int) (int64, error) {
 		pos = 0
 	}
 
-	c.reads = pos
-	if err := c.createResponse(); err != nil {
+	if _, err := c.createResponse(pos); err != nil {
 		return 0, err
 	}
-	return pos, nil
+	c.reads = pos
+	return c.reads, nil
 }
 
 func (c *Connection) Close() error {

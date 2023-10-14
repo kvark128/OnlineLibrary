@@ -54,15 +54,6 @@ func (r *Reader) Seek(offset int64, whence int) (int64, error) {
 	if whence != io.SeekStart {
 		return 0, fmt.Errorf("whence %v not supported", whence)
 	}
-	startBufOffset := r.nReadsFromSource - int64(r.br.Len())
-	if offset >= startBufOffset && offset <= r.nReadsFromSource {
-		bufOffset := offset - startBufOffset
-		r.nReadsFromSource = offset
-		if _, err := r.br.Seek(bufOffset, io.SeekStart); err != nil {
-			panic(err)
-		}
-		return offset, nil
-	}
 	r.br.Reset(nil)
 	sourceOffset, err := r.source.Seek(offset, io.SeekStart)
 	if err != nil {
