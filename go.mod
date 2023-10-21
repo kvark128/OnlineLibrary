@@ -15,6 +15,6 @@ require (
 
 require (
 	github.com/akavel/rsrc v0.10.2 // indirect
-	golang.org/x/text v0.3.8 // indirect
+	golang.org/x/text v0.13.0 // indirect
 	gopkg.in/Knetic/govaluate.v3 v3.0.0 // indirect
 )
