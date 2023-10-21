@@ -127,6 +127,10 @@ func (m *Manager) Start(conf *config.Config, done chan<- bool) {
 				id = conf.General.Provider
 			}
 
+			if m.book != nil {
+				m.book.Pause(true)
+			}
+
 			var provider providers.Provider
 			var err error
 			if id == config.LocalStorageID {
