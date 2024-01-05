@@ -9,12 +9,12 @@ require (
 	github.com/kvark128/walk v0.0.0-20230207150301-925603f55833
 	github.com/leonelquinteros/gotext v1.5.2
 	github.com/lxn/win v0.0.0-20210218163916-a377121e959e
-	golang.org/x/sys v0.13.0
+	golang.org/x/sys v0.16.0
 	gopkg.in/yaml.v3 v3.0.1
 )
 
 require (
 	github.com/akavel/rsrc v0.10.2 // indirect
-	golang.org/x/text v0.13.0 // indirect
+	golang.org/x/text v0.14.0 // indirect
 	gopkg.in/Knetic/govaluate.v3 v3.0.0 // indirect
 )
