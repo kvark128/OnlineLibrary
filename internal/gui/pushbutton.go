@@ -2,7 +2,7 @@ package gui
 
 import (
 	"github.com/kvark128/walk"
-	"github.com/lxn/win"
+	"github.com/kvark128/win"
 )
 
 type FixedPushButton struct {
