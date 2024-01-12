@@ -6,8 +6,12 @@ github.com/josephspurrier/goversioninfo v1.4.0 h1:Puhl12NSHUSALHSuzYwPYQkqa2E1+7
 github.com/josephspurrier/goversioninfo v1.4.0/go.mod h1:JWzv5rKQr+MmW+LvM412ToT/IkYDZjaclF2pKDss8IY=
 github.com/kvark128/dodp v0.0.0-20231014033647-0c99aca9744c h1:m9OLnK48WE0fHDcqYhK+C4yPULgWFEQQqF2NUXXEviE=
 github.com/kvark128/dodp v0.0.0-20231014033647-0c99aca9744c/go.mod h1:DR4VNI484NRHD/dbuLiFLydEySjlODKi+IH7ZHzUGk0=
+github.com/kvark128/dodp v0.1.0 h1:iERU7LlRgpcdEyiVvHF0yUubmeln1xsFjIB8tZikLYE=
+github.com/kvark128/dodp v0.1.0/go.mod h1:x7PhPLzvqBl8Z4cKAMelPjlkyOFk3mQRH7JaU6NbJ80=
 github.com/kvark128/lkf v0.0.0-20200906212533-0cc542d11ec8 h1:Aqw38uFO5FQwpLG2w0+7ot7GYIFtoYiiKN54Nvshbfk=
 github.com/kvark128/lkf v0.0.0-20200906212533-0cc542d11ec8/go.mod h1:XYk24siMM2Awb3zhupGfdS62SqWOrDFMtx7Cg7C2KeU=
+github.com/kvark128/lkf v0.1.0 h1:BrEs99qwxBGu2Q9opM5tMINQ+cmReHDVnAwW72ZKGvM=
+github.com/kvark128/lkf v0.1.0/go.mod h1:EoTvxv8P2E0nuGCCpYT3nEP/XJYXQobZ5k2t6IKkG+Y=
 github.com/kvark128/walk v0.0.0-20240106010517-29d80e0c668e h1:wHs34hF2DLRwGn9ZKz+UlUyAsxY4pmEp1/1Mm+Rcltc=
 github.com/kvark128/walk v0.0.0-20240106010517-29d80e0c668e/go.mod h1:iKkLR3ySTqeF51tn/yzRkARlj7V3D++wB5hYvWFAreg=
 github.com/kvark128/win v0.0.0-20240106004609-9aec191c9816 h1:Yb+fCPH7d3wn7dugULQuxZ/0SMrXqUI3tyoNKX+8avM=

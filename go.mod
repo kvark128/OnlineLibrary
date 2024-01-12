@@ -1,11 +1,11 @@
 module github.com/kvark128/OnlineLibrary
 
-go 1.19
+go 1.20
 
 require (
 	github.com/josephspurrier/goversioninfo v1.4.0
-	github.com/kvark128/dodp v0.0.0-20231014033647-0c99aca9744c
-	github.com/kvark128/lkf v0.0.0-20200906212533-0cc542d11ec8
+	github.com/kvark128/dodp v0.1.0
+	github.com/kvark128/lkf v0.1.0
 	github.com/kvark128/walk v0.0.0-20240106010517-29d80e0c668e
 	github.com/kvark128/win v0.0.0-20240106004609-9aec191c9816
 	github.com/leonelquinteros/gotext v1.5.2
