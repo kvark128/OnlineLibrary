@@ -36,7 +36,5 @@ export CGO_CFLAGS="-I$INCLUDE_DIR $CFLAGS"
 export CGO_LDFLAGS=-L$LIB_DIR
 export GOOS=windows
 
-RSRC_FILE="rsrc.syso"
-go run cmd/rsrc/rsrc.go -arch $ARCH -manifest OnlineLibrary.exe.manifest -o $RSRC_FILE
+go run cmd/rsrc/rsrc.go -arch $ARCH -manifest OnlineLibrary.exe.manifest -o "rsrc_windows_$ARCH.syso"
 go build -tags walk_use_cgo -ldflags "-s -H=windowsgui"
-rm -f $RSRC_FILE
