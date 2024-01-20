@@ -20,9 +20,9 @@ var (
 const (
 	ProgramAuthor      = "Alexander Linkov <kvark128@yandex.ru>"
 	ProgramName        = "OnlineLibrary"
-	ProgramVersion     = "2023.06.12"
+	ProgramVersion     = "2024.01.20"
 	ProgramDescription = "DAISY Online Client"
-	CopyrightInfo      = "Copyright (C) 2020 - 2022 Alexander Linkov"
+	CopyrightInfo      = "Copyright (C) 2020 - 2024 Alexander Linkov"
 	ConfigFile         = "config.yaml"
 	LogFile            = "session.log"
 	MessageBufferSize  = 16
