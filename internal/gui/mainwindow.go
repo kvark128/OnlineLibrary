@@ -541,6 +541,54 @@ func (mw *MainWnd) TextEntryDialog(title, msg, value string, text *string) bool 
 	return <-res
 }
 
+func (mw *MainWnd) BookInfoDialog(title, description string) {
+	var (
+		dlg              *walk.Dialog
+		ClosePB          *walk.PushButton
+		parentSize       = mw.mainWindow.Size()
+		descriptionLabel = gotext.Get("Description:")
+	)
+
+	layout := Dialog{
+		Title:        title,
+		AssignTo:     &dlg,
+		Layout:       VBox{},
+		CancelButton: &ClosePB,
+		MinSize:      Size{Width: parentSize.Width / 2, Height: parentSize.Height / 2},
+		Children: []Widget{
+
+			TextLabel{Text: descriptionLabel},
+			TextEdit{
+				Accessibility: Accessibility{Name: descriptionLabel},
+				Text:          description,
+				ReadOnly:      true,
+			},
+
+			Composite{
+				Layout: HBox{},
+				Children: []Widget{
+					HSpacer{},
+					PushButton{
+						AssignTo: &ClosePB,
+						Text:     gotext.Get("Close"),
+						OnClicked: func() {
+							dlg.Close(walk.DlgCmdClose)
+						},
+					},
+				},
+			},
+		},
+	}
+
+	res := make(chan bool)
+	mw.mainWindow.Synchronize(func() {
+		layout.Create(mw.mainWindow)
+		dlg.Run()
+		res <- true
+	})
+	<-res
+}
+
 func (mw *MainWnd) messageBox(title, message string, style walk.MsgBoxStyle) int {
 	res := make(chan int)
 	mw.mainWindow.Synchronize(func() {

@@ -239,7 +239,7 @@ func (m *Manager) Start(conf *config.Config, done chan<- bool) {
 				m.messageBoxError(err)
 				break
 			}
-			m.mainWnd.MessageBoxWarning(gotext.Get("Book information"), text)
+			m.mainWnd.BookInfoDialog(gotext.Get("Book information"), text)
 
 		case msg.PLAYER_PLAY_PAUSE:
 			if m.book != nil {
