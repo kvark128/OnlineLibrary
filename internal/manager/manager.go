@@ -153,13 +153,13 @@ func (m *Manager) Start(conf *config.Config, done chan<- bool) {
 
 		case msg.LIBRARY_ADD:
 			service := new(config.Service)
-			if !m.mainWnd.CredentialsEntryDialog(service) || service.Name == "" {
+			if gui.CredentialsEntryDialog(m.mainWnd, service) != gui.DlgCmdOK || service.Name == "" {
 				m.logger.Warning("Library adding: pressed Cancel button or len(service.Name) == 0")
 				break
 			}
 
 			if _, err := conf.ServiceByName(service.Name); err == nil {
-				m.mainWnd.MessageBoxError(gotext.Get("Error"), gotext.Get("Account \"%v\" already exists", service.Name))
+				gui.MessageBox(m.mainWnd, gotext.Get("Error"), gotext.Get("Account \"%v\" already exists", service.Name), gui.MsgBoxOK|gui.MsgBoxIconError)
 				break
 			}
 
@@ -187,7 +187,7 @@ func (m *Manager) Start(conf *config.Config, done chan<- bool) {
 				break
 			}
 			msg := gotext.Get("Are you sure you want to delete the account \"%v\"?\nAll saved bookmarks of all books in this library will also be deleted.\nThis action cannot be undone.", lib.Service().Name)
-			if !m.mainWnd.MessageBoxQuestion(gotext.Get("Deleting an account"), msg) {
+			if gui.MessageBox(m.mainWnd, gotext.Get("Deleting an account"), msg, gui.MsgBoxYesNo|gui.MsgBoxIconQuestion) != gui.DlgCmdYes {
 				break
 			}
 			conf.RemoveService(lib.Service())
@@ -203,7 +203,9 @@ func (m *Manager) Start(conf *config.Config, done chan<- bool) {
 				m.messageBoxError(fmt.Errorf("Adding book: %w", err))
 				break
 			}
-			m.mainWnd.MessageBoxWarning(gotext.Get("Warning"), gotext.Get("Selected book has been added to the bookshelf"))
+			title := gotext.Get("Warning")
+			msg := gotext.Get("Selected book has been added to the bookshelf")
+			gui.MessageBox(m.mainWnd, title, msg, gui.MsgBoxOK|gui.MsgBoxIconWarning)
 
 		case msg.REMOVE_BOOK:
 			if m.contentList == nil {
@@ -214,7 +216,9 @@ func (m *Manager) Start(conf *config.Config, done chan<- bool) {
 				m.messageBoxError(fmt.Errorf("Removing book: %w", err))
 				break
 			}
-			m.mainWnd.MessageBoxWarning(gotext.Get("Warning"), gotext.Get("Selected book has been removed from the bookshelf"))
+			title := gotext.Get("Warning")
+			msg := gotext.Get("Selected book has been removed from the bookshelf")
+			gui.MessageBox(m.mainWnd, title, msg, gui.MsgBoxOK|gui.MsgBoxIconWarning)
 			// If a bookshelf is open, it must be updated to reflect the changes made
 			if m.contentList.ID == dodp.Issued {
 				m.setContentList(dodp.Issued)
@@ -239,7 +243,7 @@ func (m *Manager) Start(conf *config.Config, done chan<- bool) {
 				m.messageBoxError(err)
 				break
 			}
-			m.mainWnd.BookInfoDialog(gotext.Get("Book information"), text)
+			gui.BookInfoDialog(m.mainWnd, gotext.Get("Book information"), text)
 
 		case msg.PLAYER_PLAY_PAUSE:
 			if m.book != nil {
@@ -317,7 +321,7 @@ func (m *Manager) Start(conf *config.Config, done chan<- bool) {
 				var err error
 				fragment = m.book.Fragment()
 				fragment++ // User needs a fragment number instead of an index
-				if !m.mainWnd.TextEntryDialog(gotext.Get("Go to fragment"), gotext.Get("Enter fragment number:"), strconv.Itoa(fragment), &text) {
+				if gui.TextEntryDialog(m.mainWnd, gotext.Get("Go to fragment"), gotext.Get("Enter fragment number:"), strconv.Itoa(fragment), &text) != gui.DlgCmdOK {
 					break
 				}
 				fragment, err = strconv.Atoi(text)
@@ -338,7 +342,7 @@ func (m *Manager) Start(conf *config.Config, done chan<- bool) {
 				var text string
 				var err error
 				pos = m.book.Position()
-				if !m.mainWnd.TextEntryDialog(gotext.Get("Go to position"), gotext.Get("Enter fragment position:"), util.FmtDuration(pos), &text) {
+				if gui.TextEntryDialog(m.mainWnd, gotext.Get("Go to position"), gotext.Get("Enter fragment position:"), util.FmtDuration(pos), &text) != gui.DlgCmdOK {
 					break
 				}
 				pos, err = util.ParseDuration(text)
@@ -367,7 +371,7 @@ func (m *Manager) Start(conf *config.Config, done chan<- bool) {
 				d = int(m.book.TimerDuration().Minutes())
 			}
 
-			if !m.mainWnd.TextEntryDialog(gotext.Get("Setting the pause timer"), gotext.Get("Enter the timer value in minutes:"), strconv.Itoa(d), &text) {
+			if gui.TextEntryDialog(m.mainWnd, gotext.Get("Setting the pause timer"), gotext.Get("Enter the timer value in minutes:"), strconv.Itoa(d), &text) != gui.DlgCmdOK {
 				break
 			}
 
@@ -392,7 +396,7 @@ func (m *Manager) Start(conf *config.Config, done chan<- bool) {
 				break
 			}
 			var bookmarkName string
-			if !m.mainWnd.TextEntryDialog(gotext.Get("Adding a new bookmark"), gotext.Get("Bookmark name:"), "", &bookmarkName) {
+			if gui.TextEntryDialog(m.mainWnd, gotext.Get("Adding a new bookmark"), gotext.Get("Bookmark name:"), "", &bookmarkName) != gui.DlgCmdOK {
 				break
 			}
 			if err := m.book.SetBookmarkWithName(bookmarkName); err != nil {
@@ -421,7 +425,7 @@ func (m *Manager) Start(conf *config.Config, done chan<- bool) {
 					break
 				}
 				msg := gotext.Get("Are you sure you want to delete the bookmark \"%v\"?", bookmark.Name)
-				if !m.mainWnd.MessageBoxQuestion(gotext.Get("Deleting a bookmark"), msg) {
+				if gui.MessageBox(m.mainWnd, gotext.Get("Deleting a bookmark"), msg, gui.MsgBoxYesNo|gui.MsgBoxIconQuestion) != gui.DlgCmdYes {
 					break
 				}
 				m.book.RemoveBookmark(bookmarkID)
@@ -453,7 +457,9 @@ func (m *Manager) Start(conf *config.Config, done chan<- bool) {
 			lines = append(lines, gotext.Get("Search command support: %v", attrs.SupportsSearch))
 			lines = append(lines, gotext.Get("Audio labels support: %v", attrs.SupportsAudioLabels))
 			lines = append(lines, gotext.Get("Supported Optional Operations: %v", attrs.SupportedOptionalOperations.Operation))
-			m.mainWnd.MessageBoxWarning(gotext.Get("Library information"), strings.Join(lines, CRLF))
+			title := gotext.Get("Library information")
+			msg := strings.Join(lines, CRLF)
+			gui.MessageBox(m.mainWnd, title, msg, gui.MsgBoxOK|gui.MsgBoxIconWarning)
 
 		case msg.SET_LANGUAGE:
 			lang, ok := message.Data.(string)
@@ -461,7 +467,9 @@ func (m *Manager) Start(conf *config.Config, done chan<- bool) {
 				break
 			}
 			conf.General.Language = lang
-			m.mainWnd.MessageBoxWarning(gotext.Get("Warning"), gotext.Get("Changes will be reflected upon restarting the program"))
+			title := gotext.Get("Warning")
+			msg := gotext.Get("Changes will be reflected upon restarting the program")
+			gui.MessageBox(m.mainWnd, title, msg, gui.MsgBoxOK|gui.MsgBoxIconWarning)
 
 		default:
 			m.logger.Warning("Unknown message: %v", message.Code)
@@ -535,7 +543,7 @@ func (m *Manager) setQuestions(response ...dodp.UserResponse) {
 
 	if questions.Label.Text != "" {
 		// We have received a notification from the library. Show it to the user
-		m.mainWnd.MessageBoxWarning(gotext.Get("Warning"), questions.Label.Text)
+		gui.MessageBox(m.mainWnd, gotext.Get("Warning"), questions.Label.Text, gui.MsgBoxOK|gui.MsgBoxIconWarning)
 		// Return to the main menu of the library
 		m.setQuestions(dodp.UserResponse{QuestionID: dodp.Default})
 		return
@@ -571,7 +579,7 @@ func (m *Manager) setMultipleChoiceQuestion(index int) {
 func (m *Manager) setInputQuestion() {
 	for _, inputQuestion := range m.questions.InputQuestion {
 		var text string
-		if !m.mainWnd.TextEntryDialog(gotext.Get("Entering text"), inputQuestion.Label.Text, m.lastInputText, &text) {
+		if gui.TextEntryDialog(m.mainWnd, gotext.Get("Entering text"), inputQuestion.Label.Text, m.lastInputText, &text) != gui.DlgCmdOK {
 			// Return to the main menu of the library
 			m.setQuestions(dodp.UserResponse{QuestionID: dodp.Default})
 			return
@@ -595,7 +603,9 @@ func (m *Manager) setContentList(contentID string) {
 	}
 
 	if len(contentList.Items) == 0 {
-		m.mainWnd.MessageBoxWarning(gotext.Get("Warning"), gotext.Get("List of books is empty"))
+		title := gotext.Get("Warning")
+		msg := gotext.Get("List of books is empty")
+		gui.MessageBox(m.mainWnd, title, msg, gui.MsgBoxOK|gui.MsgBoxIconWarning)
 		return
 	}
 
@@ -762,11 +772,15 @@ func (m *Manager) downloadBook(book content.Item) error {
 
 		switch {
 		case errors.Is(err, context.Canceled):
-			m.mainWnd.MessageBoxWarning(gotext.Get("Warning"), gotext.Get("Download canceled by user"))
+			title := gotext.Get("Warning")
+			msg := gotext.Get("Download canceled by user")
+			gui.MessageBox(m.mainWnd, title, msg, gui.MsgBoxOK|gui.MsgBoxIconWarning)
 		case err != nil:
-			m.mainWnd.MessageBoxError(gotext.Get("Error"), err.Error())
+			gui.MessageBox(m.mainWnd, gotext.Get("Error"), err.Error(), gui.MsgBoxOK|gui.MsgBoxIconError)
 		default:
-			m.mainWnd.MessageBoxWarning(gotext.Get("Warning"), gotext.Get("Book successfully downloaded"))
+			title := gotext.Get("Warning")
+			msg := gotext.Get("Book successfully downloaded")
+			gui.MessageBox(m.mainWnd, title, msg, gui.MsgBoxOK|gui.MsgBoxIconWarning)
 			m.logger.Debug("Book %v has been successfully downloaded. Total size: %v", id, totalSize)
 		}
 	}
@@ -816,5 +830,5 @@ func (m *Manager) messageBoxError(err error) {
 	case errors.Is(err, BookDescriptionNotAvailable):
 		msg = gotext.Get("Book description not available")
 	}
-	m.mainWnd.MessageBoxError(gotext.Get("Error"), msg)
+	gui.MessageBox(m.mainWnd, gotext.Get("Error"), msg, gui.MsgBoxOK|gui.MsgBoxIconError)
 }

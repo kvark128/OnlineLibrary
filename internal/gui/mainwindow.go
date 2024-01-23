@@ -11,6 +11,10 @@ import (
 	"github.com/leonelquinteros/gotext"
 )
 
+type Form interface {
+	form() walk.Form
+}
+
 type MainWnd struct {
 	mainWindow  *walk.MainWindow
 	msgChan     chan msg.Message
@@ -375,6 +379,10 @@ func (mw *MainWnd) MsgChan() chan msg.Message {
 	return mw.msgChan
 }
 
+func (mw *MainWnd) form() walk.Form {
+	return mw.mainWindow
+}
+
 func (mw *MainWnd) Run() {
 	mw.msgChan <- msg.Message{Code: msg.SET_PROVIDER}
 	mw.mainWindow.Run()
@@ -401,210 +409,4 @@ func (mw *MainWnd) SetTitle(title string) {
 		}
 		mw.mainWindow.SetTitle(windowTitle)
 	})
-}
-
-func (mw *MainWnd) CredentialsEntryDialog(service *config.Service) bool {
-	var (
-		dlg                                   *walk.Dialog
-		nameLE, urlLE, usernameLE, passwordLE *walk.LineEdit
-		nameLabel                             = gotext.Get("Displayed name:")
-		urlLabel                              = gotext.Get("Server address:")
-		usernameLabel                         = gotext.Get("User name:")
-		passwordLabel                         = gotext.Get("Password:")
-		OkPB, CancelPB                        *walk.PushButton
-	)
-
-	layout := Dialog{
-		Title:         gotext.Get("Adding a new account"),
-		AssignTo:      &dlg,
-		Layout:        VBox{},
-		CancelButton:  &CancelPB,
-		DefaultButton: &OkPB,
-		Children: []Widget{
-			TextLabel{Text: nameLabel},
-			LineEdit{
-				Accessibility: Accessibility{Name: nameLabel},
-				AssignTo:      &nameLE,
-			},
-
-			TextLabel{Text: urlLabel},
-			LineEdit{
-				Accessibility: Accessibility{Name: urlLabel},
-				AssignTo:      &urlLE,
-			},
-
-			TextLabel{Text: usernameLabel},
-			LineEdit{
-				Accessibility: Accessibility{Name: usernameLabel},
-				AssignTo:      &usernameLE,
-			},
-
-			TextLabel{Text: passwordLabel},
-			LineEdit{
-				Accessibility: Accessibility{Name: passwordLabel},
-				AssignTo:      &passwordLE,
-				PasswordMode:  true,
-			},
-
-			Composite{
-				Layout: HBox{},
-				Children: []Widget{
-					HSpacer{},
-					PushButton{
-						AssignTo: &OkPB,
-						Text:     gotext.Get("OK"),
-						OnClicked: func() {
-							service.Name = nameLE.Text()
-							service.URL = urlLE.Text()
-							service.Username = usernameLE.Text()
-							service.Password = passwordLE.Text()
-							dlg.Accept()
-						},
-					},
-					PushButton{
-						AssignTo: &CancelPB,
-						Text:     gotext.Get("Cancel"),
-						OnClicked: func() {
-							dlg.Cancel()
-						},
-					},
-				},
-			},
-		},
-	}
-
-	res := make(chan bool)
-	mw.mainWindow.Synchronize(func() {
-		layout.Create(mw.mainWindow)
-		NewFixedPushButton(OkPB)
-		NewFixedPushButton(CancelPB)
-		dlg.Run()
-		res <- dlg.Result() == walk.DlgCmdOK
-	})
-	return <-res
-}
-
-func (mw *MainWnd) TextEntryDialog(title, msg, value string, text *string) bool {
-	var (
-		dlg            *walk.Dialog
-		textLE         *walk.LineEdit
-		OkPB, CancelPB *walk.PushButton
-	)
-
-	layout := Dialog{
-		Title:         title,
-		AssignTo:      &dlg,
-		Layout:        VBox{},
-		CancelButton:  &CancelPB,
-		DefaultButton: &OkPB,
-		Children: []Widget{
-
-			TextLabel{Text: msg},
-			LineEdit{
-				Accessibility: Accessibility{Name: msg},
-				Text:          value,
-				AssignTo:      &textLE,
-			},
-
-			Composite{
-				Layout: HBox{},
-				Children: []Widget{
-					HSpacer{},
-					PushButton{
-						AssignTo: &OkPB,
-						Text:     gotext.Get("OK"),
-						OnClicked: func() {
-							*text = textLE.Text()
-							dlg.Close(walk.DlgCmdOK)
-						},
-					},
-					PushButton{
-						AssignTo: &CancelPB,
-						Text:     gotext.Get("Cancel"),
-						OnClicked: func() {
-							dlg.Close(walk.DlgCmdCancel)
-						},
-					},
-				},
-			},
-		},
-	}
-
-	res := make(chan bool)
-	mw.mainWindow.Synchronize(func() {
-		layout.Create(mw.mainWindow)
-		NewFixedPushButton(OkPB)
-		NewFixedPushButton(CancelPB)
-		dlg.Run()
-		res <- dlg.Result() == walk.DlgCmdOK
-	})
-	return <-res
-}
-
-func (mw *MainWnd) BookInfoDialog(title, description string) {
-	var (
-		dlg              *walk.Dialog
-		ClosePB          *walk.PushButton
-		parentSize       = mw.mainWindow.Size()
-		descriptionLabel = gotext.Get("Description:")
-	)
-
-	layout := Dialog{
-		Title:        title,
-		AssignTo:     &dlg,
-		Layout:       VBox{},
-		CancelButton: &ClosePB,
-		MinSize:      Size{Width: parentSize.Width / 2, Height: parentSize.Height / 2},
-		Children: []Widget{
-
-			TextLabel{Text: descriptionLabel},
-			TextEdit{
-				Accessibility: Accessibility{Name: descriptionLabel},
-				Text:          description,
-				ReadOnly:      true,
-			},
-
-			Composite{
-				Layout: HBox{},
-				Children: []Widget{
-					HSpacer{},
-					PushButton{
-						AssignTo: &ClosePB,
-						Text:     gotext.Get("Close"),
-						OnClicked: func() {
-							dlg.Close(walk.DlgCmdClose)
-						},
-					},
-				},
-			},
-		},
-	}
-
-	res := make(chan bool)
-	mw.mainWindow.Synchronize(func() {
-		layout.Create(mw.mainWindow)
-		dlg.Run()
-		res <- true
-	})
-	<-res
-}
-
-func (mw *MainWnd) messageBox(title, message string, style walk.MsgBoxStyle) int {
-	res := make(chan int)
-	mw.mainWindow.Synchronize(func() {
-		res <- walk.MsgBox(mw.mainWindow, title, message, style)
-	})
-	return <-res
-}
-
-func (mw *MainWnd) MessageBoxError(title, message string) {
-	mw.messageBox(title, message, walk.MsgBoxOK|walk.MsgBoxIconError)
-}
-
-func (mw *MainWnd) MessageBoxWarning(title, message string) {
-	mw.messageBox(title, message, walk.MsgBoxOK|walk.MsgBoxIconWarning)
-}
-
-func (mw *MainWnd) MessageBoxQuestion(title, message string) bool {
-	return mw.messageBox(title, message, walk.MsgBoxYesNo|walk.MsgBoxIconQuestion) == walk.DlgCmdYes
 }
