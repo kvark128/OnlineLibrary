@@ -299,7 +299,7 @@ func (p *Player) playback(startFragment int) {
 				var err error
 				src, err = os.Open(localPath)
 				if err != nil {
-					return fmt.Errorf("opening local fragment: %w", err)
+					return fmt.Errorf("getting a local fragment: %w", err)
 				}
 				p.logger.Debug("Opening local fragment from %v", localPath)
 			} else {
@@ -307,7 +307,7 @@ func (p *Player) playback(startFragment int) {
 				var err error
 				src, err = connection.NewConnection(r.URI, p.logger)
 				if err != nil {
-					return fmt.Errorf("connection creating: %w", err)
+					return fmt.Errorf("getting a remote fragment: %w", err)
 				}
 				p.logger.Debug("Fetching fragment by network from %v", r.URI)
 			}
@@ -321,11 +321,11 @@ func (p *Player) playback(startFragment int) {
 
 				fragment, err := NewFragment(src, p.OutputDevice())
 				if err != nil {
-					return nil, fmt.Errorf("fragment creating: %w", err)
+					return nil, fmt.Errorf("creating a new fragment: %w", err)
 				}
 
 				if err := fragment.SetPosition(p.Position()); err != nil {
-					return nil, fmt.Errorf("set fragment position: %w", err)
+					return nil, fmt.Errorf("setting fragment position: %w", err)
 				}
 
 				fragment.setSpeed(p.Speed())
@@ -367,7 +367,7 @@ func (p *Player) playback(startFragment int) {
 			p.Unlock()
 
 			if err != nil {
-				return fmt.Errorf("fragment playing: %w", err)
+				return fmt.Errorf("playing a fragment: %w", err)
 			}
 
 			if !p.playing.Load() {

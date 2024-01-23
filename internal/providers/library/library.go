@@ -20,7 +20,7 @@ func NewLibrary(conf *config.Config, service *config.Service) (*Library, error) 
 	client := dodp.NewClient(service.URL, config.HTTPTimeout)
 	success, err := client.LogOn(service.Username, service.Password)
 	if err != nil {
-		return nil, fmt.Errorf("logOn operation: %w", err)
+		return nil, err
 	}
 
 	if !success {
@@ -29,12 +29,12 @@ func NewLibrary(conf *config.Config, service *config.Service) (*Library, error) 
 
 	serviceAttributes, err := client.GetServiceAttributes()
 	if err != nil {
-		return nil, fmt.Errorf("getServiceAttributes operation: %w", err)
+		return nil, err
 	}
 
 	success, err = client.SetReadingSystemAttributes(&config.ReadingSystemAttributes)
 	if err != nil {
-		return nil, fmt.Errorf("setReadingSystemAttributes operation: %w", err)
+		return nil, err
 	}
 
 	if !success {

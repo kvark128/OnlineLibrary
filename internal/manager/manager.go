@@ -83,7 +83,7 @@ func (m *Manager) Start(conf *config.Config, done chan<- bool) {
 				book := m.mainWnd.MainListBox().CurrentItem().(content.Item)
 				if m.book == nil || m.book.ID() != book.ID() {
 					if err := m.setBook(conf, book); err != nil {
-						m.messageBoxError(fmt.Errorf("Set book: %w", err))
+						m.messageBoxError(fmt.Errorf("Setting a book: %w", err))
 						break
 					}
 				}
@@ -144,7 +144,7 @@ func (m *Manager) Start(conf *config.Config, done chan<- bool) {
 			}
 
 			if err != nil {
-				m.messageBoxError(fmt.Errorf("Provider creating %v: %w", id, err))
+				m.messageBoxError(fmt.Errorf("Creating provider %v: %w", id, err))
 				break
 			}
 			m.setProvider(provider, conf, id)
@@ -173,7 +173,7 @@ func (m *Manager) Start(conf *config.Config, done chan<- bool) {
 
 			provider, err := library.NewLibrary(conf, service)
 			if err != nil {
-				m.messageBoxError(fmt.Errorf("library creating: %w", err))
+				m.messageBoxError(fmt.Errorf("Creating library: %w", err))
 				break
 			}
 			conf.SetService(service)
@@ -198,7 +198,7 @@ func (m *Manager) Start(conf *config.Config, done chan<- bool) {
 			}
 			book := m.mainWnd.MainListBox().CurrentItem().(content.Item)
 			if err := m.issueBook(book); err != nil {
-				m.messageBoxError(fmt.Errorf("Adding book: %w", err))
+				m.messageBoxError(fmt.Errorf("Adding a book: %w", err))
 				break
 			}
 			title := gotext.Get("Warning")
@@ -211,7 +211,7 @@ func (m *Manager) Start(conf *config.Config, done chan<- bool) {
 			}
 			book := m.mainWnd.MainListBox().CurrentItem().(content.Item)
 			if err := m.removeBook(book); err != nil {
-				m.messageBoxError(fmt.Errorf("Removing book: %w", err))
+				m.messageBoxError(fmt.Errorf("Removing a book: %w", err))
 				break
 			}
 			title := gotext.Get("Warning")
@@ -228,7 +228,7 @@ func (m *Manager) Start(conf *config.Config, done chan<- bool) {
 			}
 			book := m.mainWnd.MainListBox().CurrentItem().(content.Item)
 			if err := m.downloadBook(book); err != nil {
-				m.messageBoxError(fmt.Errorf("Book downloading: %w", err))
+				m.messageBoxError(fmt.Errorf("Downloading a book: %w", err))
 			}
 
 		case msg.BOOK_DESCRIPTION:
@@ -539,7 +539,7 @@ func (m *Manager) setQuestions(response ...dodp.UserResponse) {
 	ur := dodp.UserResponses{UserResponse: response}
 	questions, err := qst.GetQuestions(&ur)
 	if err != nil {
-		m.messageBoxError(fmt.Errorf("GetQuestions: %w", err))
+		m.messageBoxError(fmt.Errorf("Getting a questions: %w", err))
 		return
 	}
 
@@ -600,7 +600,7 @@ func (m *Manager) setContentList(contentID string) {
 
 	contentList, err := m.provider.ContentList(contentID)
 	if err != nil {
-		m.messageBoxError(fmt.Errorf("GetContentList: %w", err))
+		m.messageBoxError(fmt.Errorf("Getting a content list: %w", err))
 		return
 	}
 
@@ -684,7 +684,7 @@ func (m *Manager) downloadBook(book content.Item) error {
 
 	rsrc, err := book.Resources()
 	if err != nil {
-		return fmt.Errorf("getContentResources: %w", err)
+		return err
 	}
 
 	if md, err := book.ContentMetadata(); err == nil {
