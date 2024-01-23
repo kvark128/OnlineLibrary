@@ -2,7 +2,6 @@ package manager
 
 import (
 	"context"
-	"encoding/xml"
 	"errors"
 	"fmt"
 	"io"
@@ -690,17 +689,8 @@ func (m *Manager) downloadBook(book content.Item) error {
 
 	if md, err := book.ContentMetadata(); err == nil {
 		path := filepath.Join(dir, config.MetadataFileName)
-		f, err := util.CreateSecureFile(path)
-		if err != nil {
-			m.logger.Warning("Creating %v: %v", config.MetadataFileName, err)
-		} else {
-			defer f.Close()
-			e := xml.NewEncoder(f)
-			e.Indent("", "\t") // for readability
-			if err := e.Encode(md); err != nil {
-				f.Corrupted()
-				m.logger.Error("Writing to %v: %v", config.MetadataFileName, err)
-			}
+		if err := util.SaveXMLFile(path, &md); err != nil {
+			m.logger.Error("Saving metadata file: %v", err)
 		}
 	}
 

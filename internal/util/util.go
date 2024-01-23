@@ -1,6 +1,7 @@
 package util
 
 import (
+	"encoding/xml"
 	"fmt"
 	"os"
 	"strings"
@@ -52,4 +53,23 @@ func FileIsExist(path string, size int64) bool {
 		}
 	}
 	return false
+}
+
+func SaveXMLFile(path string, v any) error {
+	f, err := CreateSecureFile(path)
+	if err != nil {
+		return err
+	}
+	enc := xml.NewEncoder(f)
+	enc.Indent("", "\t") // for readability
+	err = enc.Encode(v)
+	if err == nil {
+		err = enc.Close()
+	}
+	if err != nil {
+		f.Corrupted()
+		f.Close()
+		return err
+	}
+	return f.Close()
 }
