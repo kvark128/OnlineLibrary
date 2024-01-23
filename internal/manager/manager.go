@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -811,7 +812,10 @@ func (m *Manager) issueBook(book content.Item) error {
 func (m *Manager) messageBoxError(err error) {
 	msg := err.Error()
 	m.logger.Error(msg)
+	var netErr *net.OpError
 	switch {
+	case errors.As(err, &netErr):
+		msg = gotext.Get("Network error. Check your Internet connection or try the operation later")
 	case errors.Is(err, OperationNotSupported):
 		msg = gotext.Get("Operation not supported")
 	}
