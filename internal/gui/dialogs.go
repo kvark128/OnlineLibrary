@@ -58,6 +58,7 @@ func BookInfoDialog(owner Form, title, description string) int {
 				Accessibility: Accessibility{Name: descriptionLabel},
 				Text:          description,
 				ReadOnly:      true,
+				CompactHeight: true,
 			},
 
 			Composite{

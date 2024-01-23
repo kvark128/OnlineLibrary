@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"net"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -37,8 +36,7 @@ const (
 )
 
 var (
-	BookDescriptionNotAvailable = errors.New("book description not available")
-	OperationNotSupported       = errors.New("operation not supported")
+	OperationNotSupported = errors.New("operation not supported")
 )
 
 type ChoiceItem struct {
@@ -238,12 +236,16 @@ func (m *Manager) Start(conf *config.Config, done chan<- bool) {
 				break
 			}
 			book := m.mainWnd.MainListBox().CurrentItem().(content.Item)
-			text, err := m.bookDescription(book)
+			md, err := book.ContentMetadata()
 			if err != nil {
 				m.messageBoxError(err)
 				break
 			}
-			gui.BookInfoDialog(m.mainWnd, gotext.Get("Book information"), text)
+			description := strings.Join(md.Metadata.Description, CRLF)
+			if description == "" {
+				description = gotext.Get("No description")
+			}
+			gui.BookInfoDialog(m.mainWnd, gotext.Get("Book information"), description)
 
 		case msg.PLAYER_PLAY_PAUSE:
 			if m.book != nil {
@@ -806,29 +808,12 @@ func (m *Manager) issueBook(book content.Item) error {
 	return issuer.Issue()
 }
 
-func (m *Manager) bookDescription(book content.Item) (string, error) {
-	md, err := book.ContentMetadata()
-	if err != nil {
-		return "", BookDescriptionNotAvailable
-	}
-
-	text := strings.Join(md.Metadata.Description, CRLF)
-	if text == "" {
-		return "", BookDescriptionNotAvailable
-	}
-	return text, nil
-}
-
 func (m *Manager) messageBoxError(err error) {
 	msg := err.Error()
 	m.logger.Error(msg)
 	switch {
-	case errors.As(err, new(net.Error)):
-		msg = gotext.Get("Network error. Please check your internet connection")
 	case errors.Is(err, OperationNotSupported):
 		msg = gotext.Get("Operation not supported")
-	case errors.Is(err, BookDescriptionNotAvailable):
-		msg = gotext.Get("Book description not available")
 	}
 	gui.MessageBox(m.mainWnd, gotext.Get("Error"), msg, gui.MsgBoxOK|gui.MsgBoxIconError)
 }
