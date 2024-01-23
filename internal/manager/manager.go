@@ -205,7 +205,7 @@ func (m *Manager) Start(conf *config.Config, done chan<- bool) {
 			}
 			title := gotext.Get("Warning")
 			msg := gotext.Get("Selected book has been added to the bookshelf")
-			gui.MessageBox(m.mainWnd, title, msg, gui.MsgBoxOK|gui.MsgBoxIconWarning)
+			gui.MessageBox(m.mainWnd, title, msg, gui.MsgBoxOK|gui.MsgBoxIconInformation)
 
 		case msg.REMOVE_BOOK:
 			if m.contentList == nil {
@@ -218,7 +218,7 @@ func (m *Manager) Start(conf *config.Config, done chan<- bool) {
 			}
 			title := gotext.Get("Warning")
 			msg := gotext.Get("Selected book has been removed from the bookshelf")
-			gui.MessageBox(m.mainWnd, title, msg, gui.MsgBoxOK|gui.MsgBoxIconWarning)
+			gui.MessageBox(m.mainWnd, title, msg, gui.MsgBoxOK|gui.MsgBoxIconInformation)
 			// If a bookshelf is open, it must be updated to reflect the changes made
 			if m.contentList.ID == dodp.Issued {
 				m.setContentList(dodp.Issued)
@@ -459,7 +459,7 @@ func (m *Manager) Start(conf *config.Config, done chan<- bool) {
 			lines = append(lines, gotext.Get("Supported Optional Operations: %v", attrs.SupportedOptionalOperations.Operation))
 			title := gotext.Get("Library information")
 			msg := strings.Join(lines, CRLF)
-			gui.MessageBox(m.mainWnd, title, msg, gui.MsgBoxOK|gui.MsgBoxIconWarning)
+			gui.MessageBox(m.mainWnd, title, msg, gui.MsgBoxOK|gui.MsgBoxIconInformation)
 
 		case msg.SET_LANGUAGE:
 			lang, ok := message.Data.(string)
@@ -543,7 +543,7 @@ func (m *Manager) setQuestions(response ...dodp.UserResponse) {
 
 	if questions.Label.Text != "" {
 		// We have received a notification from the library. Show it to the user
-		gui.MessageBox(m.mainWnd, gotext.Get("Warning"), questions.Label.Text, gui.MsgBoxOK|gui.MsgBoxIconWarning)
+		gui.MessageBox(m.mainWnd, gotext.Get("Warning"), questions.Label.Text, gui.MsgBoxOK|gui.MsgBoxIconInformation)
 		// Return to the main menu of the library
 		m.setQuestions(dodp.UserResponse{QuestionID: dodp.Default})
 		return

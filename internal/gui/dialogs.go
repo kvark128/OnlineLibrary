@@ -11,11 +11,12 @@ import (
 type MsgBoxStyle uint
 
 const (
-	MsgBoxIconError    MsgBoxStyle = win.MB_ICONERROR
-	MsgBoxIconWarning  MsgBoxStyle = win.MB_ICONWARNING
-	MsgBoxIconQuestion MsgBoxStyle = win.MB_ICONQUESTION
-	MsgBoxOK           MsgBoxStyle = win.MB_OK
-	MsgBoxYesNo        MsgBoxStyle = win.MB_YESNO
+	MsgBoxIconError       MsgBoxStyle = win.MB_ICONERROR
+	MsgBoxIconInformation MsgBoxStyle = win.MB_ICONINFORMATION
+	MsgBoxIconWarning     MsgBoxStyle = win.MB_ICONWARNING
+	MsgBoxIconQuestion    MsgBoxStyle = win.MB_ICONQUESTION
+	MsgBoxOK              MsgBoxStyle = win.MB_OK
+	MsgBoxYesNo           MsgBoxStyle = win.MB_YESNO
 )
 
 const (
