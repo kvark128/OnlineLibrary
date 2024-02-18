@@ -9,7 +9,7 @@ require (
 	github.com/kvark128/walk v0.0.0-20240106010517-29d80e0c668e
 	github.com/kvark128/win v0.0.0-20240106004609-9aec191c9816
 	github.com/leonelquinteros/gotext v1.5.2
-	golang.org/x/sys v0.16.0
+	golang.org/x/sys v0.17.0
 	gopkg.in/yaml.v3 v3.0.1
 )
 
