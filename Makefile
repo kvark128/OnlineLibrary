@@ -5,6 +5,8 @@
 ARCH = amd64
 CC = x86_64-w64-mingw32-gcc
 CFLAGS = -Werror -Wno-unused-result -O2
+MANIFEST_FILE = OnlineLibrary.exe.manifest
+SYSO_FILE = rsrc_windows_$(ARCH).syso
 
 ifeq ($(ARCH), 386)
 CC = i686-w64-mingw32-gcc
@@ -18,7 +20,7 @@ MINIMP3_DIR = external/minimp3
 VPATH = $(SONIC_DIR) $(MINIMP3_DIR) $(BUILD_DIR) $(INCLUDE_DIR) $(LIB_DIR)
 
 .SILENT: main
-main: libsonic.a headers rsrc_windows_$(ARCH).syso
+main: libs headers $(SYSO_FILE)
 	env GOOS=windows GOARCH=$(ARCH) CGO_ENABLED=1 CC=$(CC) CGO_CFLAGS="-I$(shell pwd)/$(INCLUDE_DIR) $(CFLAGS)" CGO_LDFLAGS="-L$(LIB_DIR)" \
 	go build -tags walk_use_cgo -ldflags "-s -H=windowsgui"
 
@@ -27,8 +29,8 @@ clean:
 	rm -r -f ./.build
 	rm -f *.exe *.syso
 
-rsrc_windows_$(ARCH).syso: $(wildcard cmd/rsrc/*.go) $(wildcard internal/config/*.go)
-	go run cmd/rsrc/rsrc.go -arch $(ARCH) -manifest OnlineLibrary.exe.manifest -o $@
+$(SYSO_FILE): $(MANIFEST_FILE) $(wildcard cmd/rsrc/*.go) $(wildcard internal/config/*.go)
+	go run cmd/rsrc/rsrc.go -arch $(ARCH) -manifest $(MANIFEST_FILE) -o $@
 
 $(LIB_DIR)/libsonic.a: sonic.o
 	mkdir -p $(LIB_DIR)
@@ -45,3 +47,4 @@ $(INCLUDE_DIR)/minimp3.h:
 	install -D -p $(MINIMP3_DIR)/minimp3.h $@
 
 headers: $(INCLUDE_DIR)/sonic.h $(INCLUDE_DIR)/minimp3.h
+libs: libsonic.a
