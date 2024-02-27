@@ -4,7 +4,7 @@
 
 ARCH = amd64
 CC = x86_64-w64-mingw32-gcc
-CFLAGS = -Werror -Wno-unused-result -O2
+CFLAGS = -Wall -Wextra -Werror -Wno-unused-function -Wno-unused-parameter -Wno-sign-compare -O2
 MANIFEST_FILE = OnlineLibrary.exe.manifest
 SYSO_FILE = rsrc_windows_$(ARCH).syso
 
